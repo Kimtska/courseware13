@@ -15,6 +15,9 @@
 @endsection
 
 @section('content')
+    <style>
+        .portal-card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 4px 14px -8px rgba(30,5,82,.1)}
+    </style>
         @if (session('status'))
             <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
                 <i class="fas fa-circle-check mr-2"></i>{{ session('status') }} 
@@ -50,12 +53,33 @@
             </section>
         @endif
 
+        <section class="portal-card p-4 mb-6 max-w-md">
+            <div class="flex items-center gap-3">
+                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+                    <i class="fas fa-users text-sm"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">Student Total</p>
+                    <p class="text-xl font-display font-bold text-gray-900 leading-tight">{{ $totalStudents ?? 0 }}</p>
+                </div>
+            </div>
+        </section>
+
         <section class="glass-card rounded-3xl p-5 sm:p-6 mb-6">
-            <form method="GET" action="{{ route('instructor.manage-students') }}" id="filter-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <form method="GET" action="{{ route('instructor.manage-students') }}" id="filter-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div class="relative">
                     <label class="block text-[10px] font-bold uppercase tracking-[0.28em] text-gray-500 mb-2">Live Search</label>
                     <input type="text" name="q" value="{{ $filters['q'] ?? '' }}" id="search-input" placeholder="Search student ID or full name" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
                     <i class="fas fa-magnifying-glass absolute right-4 top-10 text-gray-400"></i>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-[0.28em] text-gray-500 mb-2">Section</label>
+                    <select name="section" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
+                        <option value="">All Sections</option>
+                        @foreach(($sections ?? []) as $section)
+                            <option value="{{ $section }}" @selected(($filters['section'] ?? '') === $section)>{{ $section }}</option>
+                        @endforeach
+                    </select>
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold uppercase tracking-[0.28em] text-gray-500 mb-2">Enrollment Status</label>
@@ -85,24 +109,15 @@
                     <h2 class="font-display font-bold text-xl text-gray-900">Student Management Table</h2>
                     <p class="text-sm text-gray-500">Manage verified enrolled SPC students and their training access.</p>
                 </div>
-                <div class="flex flex-wrap gap-2 text-xs">
-                    <span class="chip bg-emerald-100 text-emerald-700"><i class="fas fa-circle-check"></i> Verified Enrolled</span>
-                    <span class="chip bg-violet-100 text-violet-700"><i class="fas fa-bolt"></i> Ready for Training</span>
-                    <span class="chip bg-cyan-100 text-cyan-700"><i class="fas fa-crosshairs"></i> Active in Firing Range</span>
-                    <span class="chip bg-amber-100 text-amber-700"><i class="fas fa-flag-checkered"></i> Completed Session</span>
-                    <span class="chip bg-slate-100 text-slate-700"><i class="fas fa-circle"></i> Inactive</span>
-                    <span class="chip bg-gray-200 text-gray-700"><i class="fas fa-box-archive"></i> Archived</span>
-                </div>
             </div>
 
             <div class="overflow-x-auto">
-                <table class="w-full text-left min-w-[1100px]">
+                <table class="w-full text-left min-w-[950px]">
                     <thead class="bg-violet-950 text-xs text-violet-100 uppercase tracking-wider">
                         <tr>
                             <th class="px-5 sm:px-6 py-4 font-semibold">Student ID</th>
                             <th class="px-5 sm:px-6 py-4 font-semibold">Full Name</th>
                             <th class="px-5 sm:px-6 py-4 font-semibold">Course/Year/Section</th>
-                            <th class="px-5 sm:px-6 py-4 font-semibold">Status</th>
                             <th class="px-5 sm:px-6 py-4 font-semibold">Module Access Status</th>
                             <th class="px-5 sm:px-6 py-4 font-semibold">Current Activity Status</th>
                             <th class="px-5 sm:px-6 py-4 font-semibold">Date Added</th>
@@ -158,14 +173,13 @@
                                     default => 'bg-slate-100 text-slate-700',
                                 };
                             @endphp
-                            <tr class="hover:bg-violet-50/50 transition-colors">
+                            <tr class="even:bg-gray-50/60 hover:bg-violet-50/50 transition-colors">
                                 <td class="px-5 sm:px-6 py-4 font-semibold text-gray-900">{{ $studentId }}</td>
                                 <td class="px-5 sm:px-6 py-4">
                                     <div class="font-medium text-gray-900">{{ $fullName }}</div>
                                     <div class="text-xs text-gray-500">{{ $course }}</div>
                                 </td>
                                 <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $course }} / {{ $yearLevel }} / {{ $section }}</td>
-                                <td class="px-5 sm:px-6 py-4"><span class="status-pill {{ $enrollmentClass }}">{{ str_replace('_', ' ', $enrollmentStatus) }}</span></td>
                                 <td class="px-5 sm:px-6 py-4"><span class="status-pill {{ $moduleClass }}">{{ str_replace('_', ' ', $moduleAccessStatus) }}</span></td>
                                 <td class="px-5 sm:px-6 py-4"><span class="status-pill {{ $activityClass }}">{{ str_replace('_', ' ', $activityStatus) }}</span></td>
                                 <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $dateAdded ? $dateAdded->format('M d, Y') : '—' }}</td>
@@ -188,7 +202,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-6 py-16 text-center text-gray-500">
+                                <td colspan="7" class="px-6 py-16 text-center text-gray-500">
                                     <div class="max-w-md mx-auto">
                                         <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-violet-100 text-violet-700 flex items-center justify-center text-2xl">
                                             <i class="fas fa-user-graduate"></i>
@@ -231,7 +245,7 @@
                         </thead>
                         <tbody class="divide-y divide-gray-100 bg-white">
                             @foreach ($archivedStudents as $student)
-                                <tr class="bg-gray-50/80">
+                                <tr class="even:bg-gray-100/80 bg-gray-50/80">
                                     <td class="px-5 sm:px-6 py-4 font-semibold text-gray-900">{{ $student->student_id_number }}</td>
                                     <td class="px-5 sm:px-6 py-4 text-gray-900">{{ $student->full_name }}</td>
                                     <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $student->course ?? '—' }} / {{ $student->year_level ?? '—' }} / {{ $student->section ?? '—' }}</td>
@@ -501,7 +515,7 @@
             searchTimer = setTimeout(() => filterForm.submit(), 250);
         });
 
-        document.querySelectorAll('select[name="enrollment_status"], select[name="activity_status"]').forEach(select => {
+        document.querySelectorAll('select[name="enrollment_status"], select[name="activity_status"], select[name="section"]').forEach(select => {
             select.addEventListener('change', () => filterForm.submit());
         });
 

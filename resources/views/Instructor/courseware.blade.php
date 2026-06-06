@@ -6,13 +6,9 @@
 
 @section('headerActions')
     <div class="flex items-center gap-3">
-        <form method="POST" action="{{ route('instructor.manage-portal.unlock', $moduleKey) }}" data-module-access-form>
-            @csrf
-            <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg {{ ($moduleState->is_unlocked ?? false) ? 'bg-rose-600 hover:bg-rose-700' : 'bg-violet-700 hover:bg-violet-800' }} text-white text-xs font-bold uppercase transition-colors" data-module-access-button>
-                <i class="fas {{ ($moduleState->is_unlocked ?? false) ? 'fa-lock' : 'fa-lock-open' }}"></i>
-                <span>{{ ($moduleState->is_unlocked ?? false) ? 'Lock Module Access' : 'Unlock Module Access?' }}</span>
-            </button>
-        </form>
+    <a href="{{ route('instructor.manage-lessons') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-colors">
+        <i class="fas fa-arrow-left"></i> Back to Lessons
+    </a>
     </div>
 @endsection
 
@@ -67,20 +63,6 @@
         }
     </style>
 
-    <div class="grid gap-6">
-        <div class="glass-card rounded-3xl p-6 sm:p-8">
-            <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
-                <div>
-                    <p class="text-[10px] uppercase tracking-[0.28em] text-violet-500 font-bold">Global module access</p>
-                    <h1 class="font-display font-bold text-3xl text-gray-900">{{ $moduleTitle }}</h1>
-                    <p class="text-sm text-gray-500">{{ $moduleDescription }}</p>
-                </div>
-                <span class="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-wider">
-                    <i class="fas fa-shield-halved"></i> Unlocked for all verified students
-                </span>
-            </div>
-        </div>
-
         <div class="glass-card rounded-3xl p-6 sm:p-8">
             <div class="presentation-wrapper">
                 <aside class="checkpoint-sidebar" aria-label="Presentation progress">
@@ -98,15 +80,10 @@
                     @endforeach
                 </aside>
 
-                @include('Students.partials.gun-parts-presentation-shell')
+                @include('Students.partials.lesson-presentation-shell')
             </div>
         </div>
     </div>
-
-    @include('shared.sweet-alerts.module-access', [
-        'moduleTitle' => $moduleTitle,
-        'moduleState' => $moduleState,
-    ])
 
     <script>
         const pages = Array.from(document.querySelectorAll('.presentation-page'));

@@ -44,25 +44,13 @@ class InstructorStudentProfileController extends Controller
     {
         $this->currentUser();
 
-        return view('Instructor.manage-portal', [
+        return view('Instructor.manage-lessons', [
             'modules' => [
                 [
                     'key' => 'module-1',
                     'title' => 'Courseware',
                     'description' => 'Instruction of guns and gun parts with descriptions.',
-                    'route' => route('instructor.manage-portal.module-1'),
-                ],
-                [
-                    'key' => 'module-3',
-                    'title' => 'Assembly Dissasemble',
-                    'description' => 'Drag-and-drop assembly and disassembly snapping activity.',
-                    'route' => route('instructor.manage-portal.module-3'),
-                ],
-                [
-                    'key' => 'module-4',
-                    'title' => 'Firing Range',
-                    'description' => 'Firing range test and scoring interface.',
-                    'route' => route('instructor.manage-portal.module-4'),
+                    'route' => route('instructor.manage-lessons.module-1'),
                 ],
             ],
         ]);
@@ -162,12 +150,116 @@ class InstructorStudentProfileController extends Controller
     {
         $moduleState = $this->moduleAccessState('module-4');
 
+        $weapon = $request->query('weapon', '9mm');
+        $time = (int) $request->query('time', 30);
+        $mode = $request->query('mode', 'steady');
+        $studentId = $request->query('student_id', '');
+
+        $weaponCycle = ['9mm', '.45'];
+        $modeCycle = ['steady', 'sideways'];
+
+        if ($weapon === 'all' || strpos($weapon, ',') !== false) {
+            $items = array_filter(array_map('trim', explode(',', $weapon)));
+            $items = array_values(array_intersect($items, $weaponCycle));
+            if (!empty($items)) {
+                $seed = $studentId !== '' ? (int) (hexdec(substr(md5($studentId), 0, 4)) ?: 0) : (int) (time() / 60);
+                $weapon = $items[$seed % count($items)];
+            } else {
+                $weapon = '9mm';
+            }
+        } elseif (!in_array($weapon, ['9mm', '.45', '38'], true)) {
+            $weapon = '9mm';
+        }
+
+        if ($mode === 'all' || strpos($mode, ',') !== false) {
+            $items = array_filter(array_map('trim', explode(',', $mode)));
+            $items = array_values(array_intersect($items, $modeCycle));
+            if (!empty($items)) {
+                $seed = $studentId !== '' ? (int) (hexdec(substr(md5($studentId), 0, 4)) ?: 0) : (int) (time() / 60);
+                $mode = $items[$seed % count($items)];
+            } else {
+                $mode = 'steady';
+            }
+        } elseif (!in_array($mode, ['steady', 'sideways', 'around'], true)) {
+            $mode = 'steady';
+        }
+
+        $time = max(5, min(999, $time));
+
         return view('Instructor.firing-range', [
             'moduleKey' => 'module-4',
             'moduleTitle' => 'Firing Range',
             'moduleDescription' => 'Firing range test and scoring interface.',
             'moduleState' => $moduleState,
-            'contentUrl' => route('student.firing-range', ['embedded' => 1]),
+            'weapon' => $weapon,
+            'time' => $time,
+            'mode' => $mode,
+            'studentId' => $studentId,
+        ]);
+    }
+
+    public function saveFiringRangeScore(Request $request)
+    {
+        $user = $this->currentUser();
+
+        $data = $request->validate([
+            'student_id' => ['required', 'string'],
+            'score' => ['required', 'numeric', 'min:0'],
+            'max_score' => ['required', 'numeric', 'min:0'],
+            'accuracy' => ['nullable', 'numeric'],
+            'bullseyes' => ['nullable', 'integer', 'min:0'],
+            'total_shots' => ['nullable', 'integer', 'min:0'],
+            'hits' => ['nullable', 'integer', 'min:0'],
+            'weapon' => ['nullable', 'string'],
+            'time_limit' => ['nullable', 'integer'],
+            'target_mode' => ['nullable', 'string'],
+        ]);
+
+        $profile = \App\Models\StudentProfile::where('student_number', $data['student_id'])->first();
+
+        if (!$profile) {
+            return response()->json(['message' => 'Student profile not found.'], 404);
+        }
+
+        $session = \App\Models\TrainingSession::firstOrCreate(
+            [
+                'instructor_id' => $user->id,
+                'module_key' => 'module-4',
+                'status' => 'active',
+            ],
+            [
+                'title' => 'Firing Range Session',
+                'started_at' => now(),
+                'metadata' => [
+                    'weapon' => $data['weapon'] ?? null,
+                    'time_limit' => $data['time_limit'] ?? null,
+                    'target_mode' => $data['target_mode'] ?? null,
+                ],
+            ]
+        );
+
+        $score = \App\Models\StudentScore::create([
+            'training_session_id' => $session->id,
+            'student_profile_id' => $profile->id,
+            'recorded_by_user_id' => $user->id,
+            'module_key' => 'module-4',
+            'score' => $data['score'],
+            'max_score' => $data['max_score'],
+            'recorded_at' => now(),
+            'metadata' => [
+                'accuracy' => $data['accuracy'] ?? null,
+                'bullseyes' => $data['bullseyes'] ?? null,
+                'total_shots' => $data['total_shots'] ?? null,
+                'hits' => $data['hits'] ?? null,
+                'weapon' => $data['weapon'] ?? null,
+                'time_limit' => $data['time_limit'] ?? null,
+                'target_mode' => $data['target_mode'] ?? null,
+            ],
+        ]);
+
+        return response()->json([
+            'message' => 'Score saved successfully.',
+            'data' => $score,
         ]);
     }
 

@@ -5,13 +5,9 @@
 @section('pageSubtitle', 'Instructor module view with assembly content')
 
 @section('headerActions')
-    <form method="POST" action="{{ route('instructor.manage-portal.unlock', $moduleKey) }}" class="flex items-center gap-3" data-module-access-form>
-        @csrf
-        <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg {{ ($moduleState->is_unlocked ?? false) ? 'bg-rose-600 hover:bg-rose-700' : 'bg-violet-700 hover:bg-violet-800' }} text-white text-xs font-bold uppercase transition-colors" data-module-access-button>
-            <i class="fas {{ ($moduleState->is_unlocked ?? false) ? 'fa-lock' : 'fa-lock-open' }}"></i>
-            <span>{{ ($moduleState->is_unlocked ?? false) ? 'Lock Module Access' : 'Unlock Module Access?' }}</span>
-        </button>
-    </form>
+    <a href="{{ route('instructor.manage-lessons') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-colors">
+        <i class="fas fa-arrow-left"></i> Back to Lessons
+    </a>
 @endsection
 
 @section('content')
@@ -223,11 +219,6 @@
             </div>
         </div>
     </div>
-
-    @include('shared.sweet-alerts.module-access', [
-        'moduleTitle' => $moduleTitle,
-        'moduleState' => $moduleState,
-    ])
 
     <script>
         const IMGS = {

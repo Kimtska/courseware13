@@ -142,62 +142,6 @@ body.simulation-locked{overflow:hidden}
 </header>
 @endunless
 <main id="assembly-shell" class="relative min-h-screen">
-<div id="start-overlay" class="light-selection">
-  <div class="menu-shell w-full max-w-4xl mt-2">
-    <div class="menu-hero px-6 sm:px-8 py-6 text-left">
-      <p class="text-[10px] uppercase tracking-[0.28em] text-violet-200 font-bold">Simulation Setup</p>
-      <h1 class="font-display font-bold text-3xl md:text-4xl mt-2">Assembly Menu</h1>
-      <p class="text-violet-100 text-sm mt-2 max-w-2xl">Choose a time limit and firearm profile before starting the assembly simulation.</p>
-    </div>
-
-    <div class="p-6 sm:p-8 text-left space-y-6">
-      <div>
-        <h3 class="text-xs text-violet-700 uppercase tracking-widest font-bold mb-3 flex items-center gap-2"><i class="fas fa-clock text-violet-500"></i> Time Limit</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          <div class="sel-card active" data-time="30" onclick="selectTime(30, this)"><p class="text-center font-bold text-gray-900">30s</p></div>
-          <div class="sel-card" data-time="60" onclick="selectTime(60, this)"><p class="text-center font-bold text-gray-900">60s</p></div>
-          <div class="sel-card" data-time="90" onclick="selectTime(90, this)"><p class="text-center font-bold text-gray-900">90s</p></div>
-          <div class="sel-card" data-time="120" onclick="selectTime(120, this)"><p class="text-center font-bold text-gray-900">120s</p></div>
-          <div class="sel-card" data-time="custom" onclick="selectCustomAssemblyTime(this)">
-            <div class="flex flex-col items-center gap-2">
-              <p class="text-center font-bold text-gray-900">Custom</p>
-              <input id="assembly-range-custom-time" type="number" min="5" max="999" value="30" class="w-full rounded-lg border border-violet-200 bg-white px-3 py-2 text-center text-sm font-bold text-gray-900 outline-none focus:border-violet-400">
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <h3 class="text-xs text-violet-700 uppercase tracking-widest font-bold mb-3 flex items-center gap-2"><i class="fas fa-gun text-violet-500"></i> Select Firearm</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="sel-card active" data-firearm="9mm" onclick="selectFirearm('9mm', this)">
-            <div class="flex items-center gap-3 mb-2"><div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700"><i class="fas fa-gun"></i></div><h4 class="font-display font-bold text-gray-900">9mm Pistol</h4></div>
-            <p class="text-[10px] text-gray-500 leading-relaxed">Default trainer profile for the assembly view.</p>
-          </div>
-          <div class="sel-card" data-firearm="45" onclick="selectFirearm('45', this)">
-            <div class="flex items-center gap-3 mb-2"><div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700"><i class="fas fa-gun"></i></div><h4 class="font-display font-bold text-gray-900">.45 Caliber</h4></div>
-            <p class="text-[10px] text-gray-500 leading-relaxed">Heavier caliber profile for menu selection only.</p>
-          </div>
-          <div class="sel-card" data-firearm="38" onclick="selectFirearm('38', this)">
-            <div class="flex items-center gap-3 mb-2"><div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700"><i class="fas fa-crosshairs"></i></div><h4 class="font-display font-bold text-gray-900">.38 Pistol Revolver</h4></div>
-            <p class="text-[10px] text-gray-500 leading-relaxed">Revolver-style profile for the simulation menu.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-violet-100">
-        <div class="menu-summary">
-          Selected: <strong id="menu-summary-time">30s</strong> · <strong id="menu-summary-firearm">9mm Pistol</strong>
-        </div>
-        <button onclick="startSimulation()" class="start-sim-btn">
-          <i class="fas fa-play"></i> Start Simulation
-        </button>
-      </div>
-
-      <p class="menu-footnote">The chosen firearm updates the session label only. The assembly workflow remains the same once the simulation starts.</p>
-    </div>
-  </div>
-</div>
 <div id="app">
   <div class="header">
     <h1>Glock 9mm - Assembly Trainer</h1>
@@ -351,7 +295,6 @@ function selectFirearm(firearm, element){
 function startSimulation(){
   simulationStarted = true;
   document.body.classList.remove('simulation-locked');
-  document.getElementById('start-overlay').classList.add('hidden');
   setInfo('Drag each part from the tray onto the pistol to assemble it layer by layer.');
   toast('Simulation started: ' + FIREARM_LABELS[selectedFirearm] + ' · ' + selectedTimeLimit + 's', 'ok');
   // Reveal the firing-range style timer widget (user can Start/Reset the countdown)
@@ -675,6 +618,11 @@ document.getElementById('assembly-range-custom-time')?.addEventListener('input',
 
 document.body.classList.add('simulation-locked');
 updateMenuSummary();
+
+// Auto-start the simulation so the assembly is directly accessible (unlocked)
+startSimulation();
+
+document.body.classList.remove('simulation-locked');
 
 render();
 prog();

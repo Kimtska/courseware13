@@ -284,6 +284,19 @@
                 </div>
             </section>
         @endforelse
+
+        <!-- Lesson 1.4: Assemble / Disassemble Trainer (always last page) -->
+        <section class="presentation-page" data-page="999" data-lesson="1.4">
+            <div class="presentation-content p-4 sm:p-6 overflow-auto">
+                <div class="max-w-5xl mx-auto text-left mb-4">
+                    <p class="text-violet-600 text-sm font-semibold uppercase tracking-wide mb-1">Hands-on Practice</p>
+                    <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">1.4 Assemble &amp; Disassemble Trainer</h2>
+                    <div class="h-1 w-24 bg-violet-500 mb-4"></div>
+                    <p class="text-gray-600">Drag each part from the tray onto the pistol to assemble it layer by layer, or switch to Disassemble to remove the parts back into the tray.</p>
+                </div>
+                @include('Students.partials.assembly-simulator')
+            </div>
+        </section>
     </div>
 
     <div class="border-t border-violet-100 bg-white/90 px-6 sm:px-8 py-4">
@@ -304,4 +317,195 @@
             </button>
         </div>
     </div>
+
+    <button type="button" id="la-toggle-btn" class="la-toggle-btn" aria-label="Toggle live activity panel">
+        <i class="fas fa-users"></i>
+        <span>Live</span>
+        <span class="la-toggle-count" id="la-toggle-count">0</span>
+    </button>
+
+    <aside id="la-panel" class="la-panel" aria-label="Students currently in the lesson" aria-hidden="true">
+        <div class="la-panel-header">
+            <div>
+                <p class="la-panel-kicker">Lesson activity</p>
+                <h3 class="la-panel-title">Students currently opening the lesson</h3>
+            </div>
+            <button type="button" id="la-panel-close" class="la-panel-close" aria-label="Close panel">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="la-panel-body">
+            <div class="la-panel-meta">
+                <span class="la-pulse-dot"></span>
+                <span id="la-panel-meta-text">Refreshing every 5 seconds</span>
+            </div>
+            <div class="la-panel-tablewrap">
+                <table class="la-panel-table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Course / Year / Section</th>
+                            <th>Page</th>
+                        </tr>
+                    </thead>
+                    <tbody id="la-panel-tbody">
+                        <tr id="la-panel-empty">
+                            <td colspan="3" class="la-panel-empty">
+                                <i class="fas fa-users-slash"></i>
+                                <p>No other students are viewing right now.</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </aside>
 </div>
+
+<style>
+    .la-toggle-btn{position:fixed;right:20px;bottom:20px;z-index:80;display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:9999px;background:linear-gradient(135deg,#5B21B6,#7C3AED);color:#fff;font-weight:800;font-size:12px;box-shadow:0 14px 30px -10px rgba(91,33,182,.55),0 0 0 1px rgba(255,255,255,.08) inset;cursor:pointer;border:none;transition:transform .2s,box-shadow .2s}
+    .la-toggle-btn:hover{transform:translateY(-2px);box-shadow:0 18px 36px -10px rgba(91,33,182,.7),0 0 0 1px rgba(255,255,255,.1) inset}
+    .la-toggle-btn .la-toggle-count{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:9999px;background:#fff;color:#5B21B6;font-size:11px;font-weight:800;line-height:1}
+    .la-pulse-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:laPulse 1.8s infinite}
+    @keyframes laPulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.6)}70%{box-shadow:0 0 0 10px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+    .la-panel{position:fixed;top:0;right:0;height:100vh;width:340px;max-width:92vw;background:#fff;border-left:1px solid #ede9fe;box-shadow:-22px 0 50px -16px rgba(30,5,82,.25);transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);z-index:90;display:flex;flex-direction:column}
+    .la-panel.open{transform:translateX(0)}
+    .la-panel-header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:18px 18px 12px;border-bottom:1px solid #f3f4f6;background:linear-gradient(135deg,#faf5ff,#fff)}
+    .la-panel-kicker{font-size:9px;letter-spacing:.28em;text-transform:uppercase;font-weight:800;color:#7c3aed;margin:0}
+    .la-panel-title{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:14px;color:#111827;margin:4px 0 0;line-height:1.3}
+    .la-panel-close{background:transparent;border:none;color:#6b7280;cursor:pointer;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s}
+    .la-panel-close:hover{background:#f3f4f6;color:#111827}
+    .la-panel-body{padding:14px 16px 18px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+    .la-panel-meta{display:inline-flex;align-items:center;gap:8px;font-size:11px;color:#6b7280;background:#f9fafb;border:1px solid #f3f4f6;border-radius:9999px;padding:6px 10px;align-self:flex-start}
+    .la-panel-tablewrap{flex:1;overflow:auto;border:1px solid #ede9fe;border-radius:12px;background:#fff}
+    .la-panel-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
+    .la-panel-table th{background:#faf5ff;font-size:9px;letter-spacing:.18em;text-transform:uppercase;font-weight:800;color:#5b21b6;padding:10px 12px;text-align:left;position:sticky;top:0;z-index:1}
+    .la-panel-table td{padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#1f2937;vertical-align:middle}
+    .la-panel-table tbody tr:last-child td{border-bottom:none}
+    .la-panel-table tbody tr:hover{background:#faf5ff}
+    .la-panel-empty{text-align:center;color:#6b7280;padding:32px 16px !important}
+    .la-panel-empty i{display:block;font-size:24px;color:#d1d5db;margin-bottom:8px}
+    .la-panel-empty p{margin:0;font-size:12px}
+    .la-panel-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:9px;flex-shrink:0}
+    .la-panel-name{font-weight:700;color:#111827;font-size:12px;line-height:1.2}
+    .la-panel-id{color:#6b7280;font-size:10px;margin-top:1px}
+    .la-panel-meta-line{color:#6b7280;font-size:10px;line-height:1.3}
+    .la-panel-page{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:9999px;background:#ede9fe;color:#5b21b6;font-size:9px;font-weight:700}
+    @media(max-width:480px){.la-toggle-btn span:not(.la-toggle-count){display:none}.la-toggle-btn{padding:12px 14px}}
+</style>
+
+<script>
+    (function () {
+        const lessonKey = 'gun-parts-presentation';
+        const apiBase = @json(route('api.lesson.active-students')) + '?lesson=' + lessonKey;
+        const heartbeatUrl = @json(route('api.lesson.heartbeat'));
+
+        const toggleBtn = document.getElementById('la-toggle-btn');
+        const panel = document.getElementById('la-panel');
+        const panelClose = document.getElementById('la-panel-close');
+        const tbody = document.getElementById('la-panel-tbody');
+        const countBadge = document.getElementById('la-toggle-count');
+        const metaText = document.getElementById('la-panel-meta-text');
+
+        let pollTimer = null;
+        let heartTimer = null;
+        let inFlight = false;
+        let isOpen = false;
+
+        function getCurrentPage() {
+            const active = document.querySelector('.presentation-page.active');
+            if (!active) return 0;
+            const idx = parseInt(active.dataset.page, 10);
+            return Number.isNaN(idx) ? 0 : idx;
+        }
+
+        function escapeHtml(s) {
+            if (s == null) return '';
+            return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        function initials(first, last, full) {
+            const f = (first || '').trim();
+            const l = (last || '').trim();
+            if (f || l) return (f.charAt(0) + l.charAt(0)).toUpperCase();
+            const parts = (full || '?').split(/\s+/);
+            return ((parts[0] || '?').charAt(0) + (parts[1] || '').charAt(0)).toUpperCase();
+        }
+
+        function render(rows) {
+            countBadge.textContent = rows.length;
+            if (rows.length === 0) {
+                tbody.innerHTML = '<tr id="la-panel-empty"><td colspan="3" class="la-panel-empty"><i class="fas fa-users-slash"></i><p>No other students are viewing right now.</p></td></tr>';
+                return;
+            }
+            tbody.innerHTML = rows.map(r => {
+                const page = Math.max(1, (parseInt(r.current_page, 10) || 0) + 1);
+                const init = initials(r.first_name, r.last_name, r.full_name);
+                const meta = ((r.course || '—') + ' / ' + (r.year_level || '—') + ' / ' + (r.section || '—')).replace(/^[\s\/]+|[\s\/]+$/g, '');
+                return '<tr>' +
+                    '<td><div style="display:flex;align-items:center;gap:8px"><div class="la-panel-avatar">' + escapeHtml(init) + '</div><div><div class="la-panel-name">' + escapeHtml(r.full_name || '—') + '</div><div class="la-panel-id">' + escapeHtml(r.student_id) + '</div></div></div></td>' +
+                    '<td><div class="la-panel-meta-line">' + escapeHtml(meta) + '</div></td>' +
+                    '<td><span class="la-panel-page"><i class="fas fa-file-lines"></i> ' + page + '</span></td>' +
+                '</tr>';
+            }).join('');
+        }
+
+        async function fetchActive() {
+            if (inFlight) return;
+            inFlight = true;
+            try {
+                const res = await fetch(apiBase, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
+                if (!res.ok) throw new Error('http ' + res.status);
+                const data = await res.json();
+                render(data.students || []);
+                if (metaText) metaText.textContent = 'Updated just now · ' + (data.count || 0) + ' active';
+            } catch (err) {
+                console.error('Active students fetch failed', err);
+            } finally {
+                inFlight = false;
+            }
+        }
+
+        async function sendHeartbeat() {
+            try {
+                await fetch(heartbeatUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': @json(csrf_token()) },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ lesson: lessonKey, current_page: getCurrentPage() })
+                });
+            } catch (err) {
+                console.error('Heartbeat failed', err);
+            }
+        }
+
+        function openPanel() {
+            isOpen = true;
+            panel.classList.add('open');
+            panel.setAttribute('aria-hidden', 'false');
+            fetchActive();
+        }
+
+        function closePanel() {
+            isOpen = false;
+            panel.classList.remove('open');
+            panel.setAttribute('aria-hidden', 'true');
+        }
+
+        toggleBtn && toggleBtn.addEventListener('click', function () {
+            if (isOpen) closePanel(); else openPanel();
+        });
+        panelClose && panelClose.addEventListener('click', closePanel);
+
+        if (pollTimer) clearInterval(pollTimer);
+        pollTimer = setInterval(() => { if (isOpen) fetchActive(); }, 5000);
+
+        if (heartTimer) clearInterval(heartTimer);
+        sendHeartbeat();
+        heartTimer = setInterval(sendHeartbeat, 15000);
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && isOpen) closePanel();
+        });
+    })();
+</script>

@@ -18,11 +18,11 @@ class StudentController extends Controller
     }
 
     /**
-     * Show the student firing range.
+     * Firing range is now instructor-managed.
      */
     public function firingRange()
     {
-        return view('Students.firing-range', $this->studentViewData());
+        return redirect()->route('student.dashboard');
     }
 
     /**

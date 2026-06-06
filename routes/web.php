@@ -6,6 +6,7 @@ use App\Http\Controllers\DepartmentHeadController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\InstructorStudentProfileController;
 use App\Http\Controllers\InstructorStudentManagementController;
+use App\Http\Controllers\LessonActivityController;
 use App\Http\Controllers\StudentController;
 
 /*
@@ -35,18 +36,21 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->midd
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/instructor/dashboard', [InstructorController::class, 'dashboard'])->name('instructor.dashboard');
     Route::get('/instructor/manage-students', [InstructorStudentManagementController::class, 'index'])->name('instructor.manage-students');
+    Route::get('/instructor/manage-marksmanship', [InstructorStudentManagementController::class, 'manageMarksmanship'])->name('instructor.manage-marksmanship');
     Route::post('/instructor/manage-students', [InstructorStudentManagementController::class, 'store'])->name('instructor.manage-students.store');
     Route::post('/instructor/manage-students/import', [InstructorStudentManagementController::class, 'bulkImport'])->name('instructor.manage-students.import');
     Route::patch('/instructor/manage-students/{studentId}', [InstructorStudentManagementController::class, 'update'])->name('instructor.manage-students.update');
         Route::get('/instructor/manage-students/template', [InstructorStudentManagementController::class, 'downloadTemplate'])->name('instructor.manage-students.template');
     Route::post('/instructor/manage-students/{studentId}/archive', [InstructorStudentManagementController::class, 'archive'])->name('instructor.manage-students.archive');
     Route::get('/instructor/students', [InstructorController::class, 'getStudents'])->name('instructor.students');
-    Route::get('/instructor/manage-portal', [InstructorStudentProfileController::class, 'portal'])->name('instructor.manage-portal');
-    Route::post('/instructor/manage-portal/select', [InstructorStudentProfileController::class, 'selectStudent'])->name('instructor.manage-portal.select');
-    Route::get('/instructor/manage-portal/module-1', [InstructorStudentProfileController::class, 'moduleOne'])->name('instructor.manage-portal.module-1');
-    Route::get('/instructor/manage-portal/module-3', [InstructorStudentProfileController::class, 'moduleThree'])->name('instructor.manage-portal.module-3');
-    Route::get('/instructor/manage-portal/module-4', [InstructorStudentProfileController::class, 'moduleFour'])->name('instructor.manage-portal.module-4');
-    Route::post('/instructor/manage-portal/{module}/unlock', [InstructorStudentProfileController::class, 'unlockModule'])->name('instructor.manage-portal.unlock');
+    Route::get('/instructor/manage-lessons', [InstructorStudentProfileController::class, 'portal'])->name('instructor.manage-lessons');
+    Route::post('/instructor/manage-lessons/select', [InstructorStudentProfileController::class, 'selectStudent'])->name('instructor.manage-lessons.select');
+    Route::get('/instructor/manage-lessons/module-1', [InstructorStudentProfileController::class, 'moduleOne'])->name('instructor.manage-lessons.module-1');
+    Route::get('/instructor/manage-lessons/module-3', [InstructorStudentProfileController::class, 'moduleThree'])->name('instructor.manage-lessons.module-3');
+    Route::get('/instructor/manage-lessons/module-4', [InstructorStudentProfileController::class, 'moduleFour'])->name('instructor.manage-lessons.module-4');
+    Route::post('/instructor/firing-range/save-score', [InstructorStudentProfileController::class, 'saveFiringRangeScore'])->name('instructor.firing-range.save-score');
+    Route::get('/instructor/lesson-activity', [LessonActivityController::class, 'index'])->name('instructor.lesson-activity');
+    Route::get('/instructor/lesson-activity/active', [LessonActivityController::class, 'activeStudents'])->name('instructor.lesson-activity.active');
     Route::get('/instructor/reports', [InstructorController::class, 'reports'])->name('instructor.reports');
     Route::get('/instructor/student-profiles', [InstructorStudentProfileController::class, 'index'])->name('instructor.student-profiles.index');
     Route::post('/instructor/student-profiles', [InstructorStudentProfileController::class, 'store'])->name('instructor.student-profiles.store');
@@ -65,6 +69,14 @@ Route::middleware(['auth:web,student', 'student.active'])->group(function () {
     Route::get('/student/leaderboard', [StudentController::class, 'leaderboard'])->name('student.leaderboard');
     // AJAX endpoint for student pages to poll module unlock states
     Route::get('/student/module-states', [\App\Http\Controllers\ModuleAccessController::class, 'index'])->name('student.module-states');
+    // Lesson activity presence (heartbeat + leave)
+    Route::post('/api/lesson/heartbeat', [LessonActivityController::class, 'heartbeat'])->name('api.lesson.heartbeat');
+    Route::post('/api/lesson/leave', [LessonActivityController::class, 'leave'])->name('api.lesson.leave');
+});
+
+Route::middleware(['auth:web,student'])->group(function () {
+    // Lesson activity: list active students (read-only, accessible to both instructors and students)
+    Route::get('/api/lesson/active-students', [LessonActivityController::class, 'activeStudentsApi'])->name('api.lesson.active-students');
 });
 
 // Department Head Routes

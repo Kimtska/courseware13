@@ -119,7 +119,7 @@
 
             <div class="presentation-shell w-full">
                 <div class="presentation-stage">
-                    @include('Students.partials.gun-parts-presentation-shell')
+                    @include('Students.partials.lesson-presentation-shell')
                 </div>
             </div>
         </div>

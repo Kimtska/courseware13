@@ -35,19 +35,88 @@ class InstructorStudentManagementController extends Controller
             ? ManagedStudent::withArchived()->archived()->latest()->take(10)->get()
             : collect();
 
+        $sections = $this->availableSections($user);
+        $totalStudents = $this->totalActiveStudents($user);
+
         return view('Instructor.manage-students', [
             'students' => $students,
             'archivedStudents' => $archivedStudents,
             'showArchivedStudents' => $user->role === 'department_head',
             'filters' => [
                 'q' => $request->string('q')->toString(),
-                'course' => $request->string('course')->toString(),
-                'year_level' => $request->string('year_level')->toString(),
+                'section' => $request->string('section')->toString(),
                 'enrollment_status' => $request->string('enrollment_status')->toString(),
                 'activity_status' => $request->string('activity_status')->toString(),
             ],
+            'sections' => $sections,
+            'totalStudents' => $totalStudents,
             'summary' => session('student_import_summary'),
             'importBatch' => session('student_import_batch'),
+        ]);
+    }
+
+    private function availableSections($user)
+    {
+        if (!Schema::hasTable('students')) {
+            return [];
+        }
+
+        $query = ManagedStudent::query()
+            ->whereNotNull('section')
+            ->where('section', '!=', '');
+
+        if ($user->role === 'instructor') {
+            $query->where('instructor_user_id', $user->id);
+        }
+
+        return $query
+            ->select('section')
+            ->distinct()
+            ->orderBy('section')
+            ->pluck('section')
+            ->all();
+    }
+
+    private function totalActiveStudents($user)
+    {
+        if (!Schema::hasTable('students')) {
+            return 0;
+        }
+
+        $query = ManagedStudent::query()->active();
+
+        if ($user->role === 'instructor') {
+            $query->where('instructor_user_id', $user->id);
+        }
+
+        return $query->count();
+    }
+
+    public function manageMarksmanship(Request $request)
+    {
+        $user = $this->currentUser();
+
+        if (Schema::hasTable('students')) {
+            $students = ManagedStudent::query()
+                ->whereHas('trainingSessions', function ($query) {
+                    $query->where('module_key', 'module-1')
+                        ->where('status', 'completed');
+                })
+                ->when($user->role === 'instructor', fn ($query) => $query->where('instructor_user_id', $user->id))
+                ->latest('updated_at')
+                ->paginate(12)
+                ->withQueryString();
+        } else {
+            $students = StudentProfile::query()
+                ->where('verification_status', 'verified')
+                ->when($user->role === 'instructor', fn ($query) => $query->where('instructor_id', $user->id))
+                ->latest('created_at')
+                ->paginate(12)
+                ->withQueryString();
+        }
+
+        return view('Instructor.manage-marksmanship', [
+            'students' => $students,
         ]);
     }
 
@@ -257,8 +326,7 @@ class InstructorStudentManagementController extends Controller
     private function queryStudents($user, Request $request)
     {
         $search = trim($request->string('q')->toString());
-        $course = trim($request->string('course')->toString());
-        $yearLevel = trim($request->string('year_level')->toString());
+        $section = trim($request->string('section')->toString());
         $enrollmentStatus = trim($request->string('enrollment_status')->toString());
         $activityStatus = trim($request->string('activity_status')->toString());
 
@@ -270,8 +338,7 @@ class InstructorStudentManagementController extends Controller
                     $nested->where('student_id_number', 'like', '%' . $search . '%')
                         ->orWhere('full_name', 'like', '%' . $search . '%');
                 }))
-                ->when($course, fn ($query) => $query->where('course', $course))
-                ->when($yearLevel, fn ($query) => $query->where('year_level', $yearLevel))
+                ->when($section, fn ($query) => $query->where('section', $section))
                 ->when($enrollmentStatus, fn ($query) => $query->where('enrollment_status', $enrollmentStatus))
                 ->when($activityStatus, fn ($query) => $query->where('current_activity_status', $activityStatus))
                 ->latest();
