@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 
 class DepartmentHeadController extends Controller
@@ -64,7 +65,7 @@ class DepartmentHeadController extends Controller
     /**
      * Show student performance for the department head.
      */
-    public function manageStudents()
+    public function manageStudents(Request $request)
     {
         $user = Auth::user();
 
@@ -72,21 +73,84 @@ class DepartmentHeadController extends Controller
             return redirect('/')->with('error', 'Unauthorized access');
         }
 
-        $students = Schema::hasTable('student_profiles')
-            ? StudentProfile::with(['scores', 'attendanceRecords'])->latest()->get()
-            : collect();
+        $search = trim($request->input('q', ''));
+        $section = trim($request->input('section', ''));
+        $enrollmentStatus = trim($request->input('enrollment_status', ''));
+        $activityStatus = trim($request->input('activity_status', ''));
 
-        return view('department-head.manage-students', [
+        if (Schema::hasTable('students')) {
+            $students = ManagedStudent::query()
+                ->active()
+                ->when($search, fn ($query) => $query->where(function ($nested) use ($search) {
+                    $nested->where('student_id_number', 'like', '%' . $search . '%')
+                        ->orWhere('full_name', 'like', '%' . $search . '%');
+                }))
+                ->when($section, fn ($query) => $query->where('section', $section))
+                ->when($enrollmentStatus, fn ($query) => $query->where('enrollment_status', $enrollmentStatus))
+                ->when($activityStatus, fn ($query) => $query->where('current_activity_status', $activityStatus))
+                ->latest()
+                ->paginate(6)
+                ->withQueryString();
+
+            $archivedStudents = ManagedStudent::withArchived()->archived()->latest()->take(10)->get();
+            $sections = ManagedStudent::query()
+                ->whereNotNull('section')
+                ->where('section', '!=', '')
+                ->select('section')
+                ->distinct()
+                ->orderBy('section')
+                ->pluck('section')
+                ->all();
+            $totalStudents = ManagedStudent::query()->active()->count();
+        } elseif (Schema::hasTable('student_profiles')) {
+            $students = StudentProfile::query()
+                ->when($search, fn ($query) => $query->where(function ($nested) use ($search) {
+                    $nested->where('student_number', 'like', '%' . $search . '%')
+                        ->orWhere('first_name', 'like', '%' . $search . '%')
+                        ->orWhere('last_name', 'like', '%' . $search . '%');
+                }))
+                ->latest()
+                ->paginate(6)
+                ->withQueryString();
+
+            $archivedStudents = collect();
+            $sections = StudentProfile::query()
+                ->whereNotNull('section')
+                ->where('section', '!=', '')
+                ->select('section')
+                ->distinct()
+                ->orderBy('section')
+                ->pluck('section')
+                ->all();
+            $totalStudents = StudentProfile::count();
+        } else {
+            $students = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 6);
+            $archivedStudents = collect();
+            $sections = [];
+            $totalStudents = 0;
+        }
+
+        return view('department-head.list-of-student', [
             'name' => $user->name,
             'email' => $user->email,
             'students' => $students,
+            'archivedStudents' => $archivedStudents,
+            'showArchivedStudents' => true,
+            'filters' => [
+                'q' => $request->input('q', ''),
+                'section' => $request->input('section', ''),
+                'enrollment_status' => $request->input('enrollment_status', ''),
+                'activity_status' => $request->input('activity_status', ''),
+            ],
+            'sections' => $sections,
+            'totalStudents' => $totalStudents,
         ]);
     }
 
     /**
      * Show faculty accounts and allow creating instructor accounts.
      */
-    public function manageInstructors()
+    public function manageInstructors(Request $request)
     {
         $user = Auth::user();
 
@@ -94,12 +158,32 @@ class DepartmentHeadController extends Controller
             return redirect('/')->with('error', 'Unauthorized access');
         }
 
-        $instructors = User::where('role', 'instructor')->latest()->get();
+        $search = trim($request->input('q', ''));
+        $status = trim($request->input('status', ''));
+        $dateRange = trim($request->input('date_range', ''));
+
+        $instructors = User::withTrashed()->where('role', 'instructor')
+            ->when($search, fn ($query) => $query->where(function ($nested) use ($search) {
+                $nested->where('name', 'like', '%' . $search . '%')
+                    ->orWhere('email', 'like', '%' . $search . '%');
+            }))
+            ->when($status === 'active', fn ($query) => $query->whereNull('deleted_at'))
+            ->when($status === 'inactive', fn ($query) => $query->whereNotNull('deleted_at'))
+            ->when($dateRange === 'today', fn ($query) => $query->whereDate('created_at', today()))
+            ->when($dateRange === 'this_week', fn ($query) => $query->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]))
+            ->when($dateRange === 'this_month', fn ($query) => $query->whereMonth('created_at', now()->month))
+            ->latest()
+            ->get();
 
         return view('department-head.manage-instructors', [
             'name' => $user->name,
             'email' => $user->email,
             'instructors' => $instructors,
+            'filters' => [
+                'q' => $request->input('q', ''),
+                'status' => $request->input('status', ''),
+                'date_range' => $request->input('date_range', ''),
+            ],
         ]);
     }
 
@@ -128,6 +212,30 @@ class DepartmentHeadController extends Controller
         ]);
 
         return redirect()->route('department-head.manage-instructors')->with('success', 'Instructor account created successfully.');
+    }
+
+    /**
+     * Toggle instructor active/inactive status.
+     */
+    public function toggleInstructorStatus($instructorId)
+    {
+        $user = Auth::user();
+
+        if ($user->role !== 'department_head') {
+            return redirect('/')->with('error', 'Unauthorized access');
+        }
+
+        $instructor = User::withTrashed()->where('role', 'instructor')->findOrFail($instructorId);
+
+        if ($instructor->deleted_at) {
+            $instructor->restore();
+            $message = 'Instructor account activated successfully.';
+        } else {
+            $instructor->delete();
+            $message = 'Instructor account deactivated successfully.';
+        }
+
+        return redirect()->route('department-head.manage-instructors')->with('success', $message);
     }
 
     /**
@@ -213,5 +321,65 @@ class DepartmentHeadController extends Controller
             return User::where('role', $role)->get();
         }
         return User::all();
+    }
+
+    /**
+     * Update the authenticated department head's display name.
+     */
+    public function updateProfileName(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        $user = Auth::user();
+        $user->name = $request->name;
+        $user->save();
+
+        return back()->with('success', 'Profile name updated successfully.');
+    }
+
+    /**
+     * Update the authenticated department head's password.
+     */
+    public function updateProfilePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = Auth::user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return back()->withErrors(['current_password' => 'Current password is incorrect.']);
+        }
+
+        $user->password = Hash::make($request->new_password);
+        $user->save();
+
+        return back()->with('success', 'Password changed successfully.');
+    }
+
+    /**
+     * Update the authenticated department head's profile photo.
+     */
+    public function updateProfilePhoto(Request $request)
+    {
+        $request->validate([
+            'photo' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+        ]);
+
+        $user = Auth::user();
+
+        if ($user->profile_photo_path) {
+            Storage::disk('public')->delete($user->profile_photo_path);
+        }
+
+        $path = $request->file('photo')->store('profile-photos', 'public');
+        $user->profile_photo_path = $path;
+        $user->save();
+
+        return back()->with('success', 'Profile photo updated successfully.');
     }
 }

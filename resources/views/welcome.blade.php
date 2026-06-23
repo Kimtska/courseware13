@@ -25,7 +25,7 @@
                 <a href="#assembly" class="text-xs font-medium tracking-widest uppercase text-gray-500 hover:text-violet-700 transition-colors">Assembly</a>
                 <a href="#firing" class="text-xs font-medium tracking-widest uppercase text-gray-500 hover:text-violet-700 transition-colors">Firing Range</a>
                 <a href="#about" class="text-xs font-medium tracking-widest uppercase text-gray-500 hover:text-violet-700 transition-colors">About</a>
-                <a href="/login" class="btn-shine px-6 py-2.5 bg-violet-700 hover:bg-violet-800 text-white text-xs font-bold tracking-wider uppercase rounded transition-all duration-300 hover:shadow-[0_4px_20px_rgba(91,33,182,.35)] flex items-center gap-2"><i class="fas fa-user-plus text-[10px]"></i> Get Started</a>
+                <a href="/login" class="btn-shine px-6 py-2.5 bg-violet-700 hover:bg-violet-800 text-white text-xs font-bold tracking-wider uppercase rounded transition-all duration-300 hover:shadow-[0_4px_20px_rgba(91,33,182,.35)] flex items-center gap-2"><i class="fas fa-user-plus text-[10px]"></i> Sign In</a>
             </div>
             <button id="menuToggle" class="md:hidden w-10 h-10 flex flex-col items-center justify-center gap-1.5 z-60">
                 <span class="menu-line w-6 h-0.5 bg-black transition-all duration-300"></span>

@@ -23,7 +23,7 @@
         .assembly-simulator .as-tray-lbl{font-size:10px;color:#7c3aed;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;font-weight:700}
         .assembly-simulator .as-tray{min-height:320px;border:1.5px dashed #ddd6fe;border-radius:7px;padding:6px;display:flex;flex-direction:row;flex-wrap:wrap;gap:8px;align-content:flex-start;transition:border-color .15s;background:rgba(248,245,255,0.7);overflow-y:hidden}
         .assembly-simulator .as-tray.over{border-color:#7c3aed;background:#f5f3ff}
-        .assembly-simulator .as-pcard{cursor:grab;border:1px solid #e5e7eb;border-radius:7px;background:#fff;padding:6px;display:flex;flex-direction:column;align-items:center;gap:4px;width:calc(50% - 4px);min-width:140px;transition:border-color .15s,transform .1s;user-select:none}
+        .assembly-simulator .as-pcard{cursor:grab;border:1px solid #e5e7eb;border-radius:7px;background:#fff;padding:6px;display:flex;flex-direction:column;align-items:center;gap:4px;width:calc(25% - 6px);min-width:0;transition:border-color .15s,transform .1s;user-select:none}
         .assembly-simulator .as-pcard:active{cursor:grabbing;transform:scale(1.03)}
         .assembly-simulator .as-pcard.ghost{opacity:.25}
         .assembly-simulator .as-pcard img{width:140px;height:auto;display:block;border-radius:4px;object-fit:contain}
@@ -48,39 +48,9 @@
         .assembly-simulator .as-toast.show{opacity:1}
         .assembly-simulator .as-toast.ok{background:#7c3aed;color:#fff}
         .assembly-simulator .as-toast.err{background:#ef4444;color:#fff}
-        .assembly-simulator .as-timer-widget{position:fixed;right:16px;top:80px;z-index:55;width:220px;background:rgba(255,255,255,0.96);backdrop-filter:blur(8px);border:1px solid #e9d5ff;border-radius:20px;box-shadow:0 18px 40px -16px rgba(30,5,82,0.2)}
-        .assembly-simulator .as-timer-widget.hidden{display:none}
-        .assembly-simulator .as-count-in-overlay{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .2s ease, visibility .2s ease}
-        .assembly-simulator .as-count-in-overlay.active{opacity:1;visibility:visible}
-        .assembly-simulator .as-count-in-card{min-width:220px;padding:24px 28px;border-radius:28px;background:rgba(255,255,255,0.92);backdrop-filter:blur(10px);border:1px solid #e9d5ff;box-shadow:0 20px 50px -16px rgba(30,5,82,0.24);text-align:center}
-        .assembly-simulator .as-count-in-number{font-family:'Space Grotesk',sans-serif;font-size:72px;line-height:1;font-weight:800;color:#5B21B6;letter-spacing:-0.04em}
-        .assembly-simulator .as-count-in-label{margin-top:8px;font-size:11px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:#7c3aed}
-        @media (max-width:900px){.assembly-simulator .as-layout{grid-template-columns:1fr}.assembly-simulator .as-tray{min-height:auto;flex-direction:row;flex-wrap:wrap}.assembly-simulator .as-pcard{width:min(100%,170px)}.assembly-simulator .as-rbtn{margin-left:0}}
+
+        @media (max-width:900px){.assembly-simulator .as-layout{grid-template-columns:1fr}.assembly-simulator .as-tray{min-height:auto}.assembly-simulator .as-pcard{width:calc(50% - 4px);min-width:0}.assembly-simulator .as-rbtn{margin-left:0}}
     </style>
-
-    <div class="as-header">
-        <h1>Glock 9mm - Assembly Trainer</h1>
-        <span class="badge" id="as-badge">ASSEMBLY MODE</span>
-    </div>
-
-    <div class="as-session-strip">
-        <div class="as-session-pill" id="as-session-time-pill">Time: 30s</div>
-        <div class="as-session-pill" id="as-session-firearm-pill">Firearm: 9mm Pistol</div>
-    </div>
-
-    <div class="as-mode-row">
-        <button class="as-mbtn on" id="as-btn-asm" type="button">▲ Assemble</button>
-        <button class="as-mbtn" id="as-btn-dis" type="button">▼ Disassemble</button>
-        <button class="as-rbtn" id="as-btn-reset" type="button">↺ Reset</button>
-    </div>
-
-    <div class="as-prow">
-        <div class="as-pbar"><div class="as-pfill" id="as-pfill" style="width:0%"></div></div>
-        <span class="as-ptxt" id="as-ptxt">0 / 4</span>
-    </div>
-
-    <div class="as-info" id="as-info">Drag each part from the tray onto the pistol to assemble it layer by layer.</div>
-
     <div class="as-layout">
         <div class="as-tray-wrap">
             <div class="as-tray-lbl">Parts Tray</div>
@@ -95,34 +65,24 @@
         </div>
     </div>
 
+    <div class="as-mode-row" style="margin-top:14px">
+        <button class="as-mbtn on" id="as-btn-asm" type="button">▲ Assemble</button>
+        <button class="as-mbtn" id="as-btn-dis" type="button">▼ Disassemble</button>
+        <button class="as-rbtn" id="as-btn-reset" type="button">↺ Reset</button>
+    </div>
+
+    <div class="as-prow">
+        <div class="as-pbar"><div class="as-pfill" id="as-pfill" style="width:0%"></div></div>
+        <span class="as-ptxt" id="as-ptxt">0 / 4</span>
+    </div>
+
+    <div class="as-info" id="as-info">Drag each part from the tray onto the pistol to assemble it layer by layer.</div>
+
     <div class="as-toast" id="as-toast"></div>
 
-    <div id="as-page-timer-widget" class="as-timer-widget hidden">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 4px">
-            <div>
-                <p style="font-size:10px;letter-spacing:.22em;text-transform:uppercase;font-weight:800;color:#7c3aed;margin:0">Timer</p>
-                <p style="font-size:11px;color:#6b7280;margin:0">Countdown control</p>
-            </div>
-            <div style="width:36px;height:36px;border-radius:50%;background:#f3e8ff;color:#7c3aed;display:flex;align-items:center;justify-content:center">
-                <i class="fas fa-stopwatch"></i>
-            </div>
-        </div>
-        <div style="border-radius:16px;background:#f5f3ff;border:1px solid #ede9fe;padding:12px 16px;text-align:center;margin-bottom:12px">
-            <div id="as-page-timer-display" style="font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:28px;color:#5B21B6">30</div>
-            <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;font-weight:800;color:#7c3aed;margin-top:4px">Seconds</div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-            <button type="button" onclick="asStartPageTimer()" style="border-radius:12px;background:#7c3aed;padding:8px 12px;font-size:11px;font-weight:800;color:#fff;border:none;cursor:pointer">Start Timer</button>
-            <button type="button" onclick="asResetPageTimer()" style="border-radius:12px;background:#f3f4f6;padding:8px 12px;font-size:11px;font-weight:800;color:#374151;border:none;cursor:pointer">Reset Timer</button>
-        </div>
-    </div>
 
-    <div id="as-count-in-overlay" class="as-count-in-overlay" aria-live="polite" aria-atomic="true">
-        <div class="as-count-in-card">
-            <div id="as-count-in-number" class="as-count-in-number">3</div>
-            <div class="as-count-in-label">Simulation Starts</div>
-        </div>
-    </div>
+
+
 </div>
 
 <script>
@@ -168,53 +128,7 @@
         const st = $('as-session-time-pill'); if (st) st.textContent = 'Time: ' + timeText;
         const sf = $('as-session-firearm-pill'); if (sf) sf.textContent = 'Firearm: ' + firearmText;
     }
-    function showPageTimerWidget(){ const w = $('as-page-timer-widget'); if (w) w.classList.remove('hidden'); }
-    function hidePageTimerWidget(){ const w = $('as-page-timer-widget'); if (w) w.classList.add('hidden'); }
-    function showCountInOverlay(text){ const o = $('as-count-in-overlay'); const n = $('as-count-in-number'); if (n) n.innerText = text; if (o) o.classList.add('active'); }
-    function hideCountInOverlay(){ const o = $('as-count-in-overlay'); if (o) o.classList.remove('active'); }
 
-    let pageTimerInterval = null;
-    let pageCountInInterval = null;
-    let pageTimerRemaining = selectedTimeLimit;
-    function stopPageTimer(){ if (pageTimerInterval) { clearInterval(pageTimerInterval); pageTimerInterval = null; } }
-    function updatePageTimerDisplay(){ const pd = $('as-page-timer-display'); if (pd) pd.innerText = pageTimerRemaining; }
-
-    function asStartPageTimer(){
-        stopPageTimer();
-        if (pageCountInInterval) { clearInterval(pageCountInInterval); pageCountInInterval = null; }
-        pageTimerRemaining = selectedTimeLimit;
-        updatePageTimerDisplay();
-        hidePageTimerWidget();
-        const steps = ['3','2','1','Start!'];
-        let stepIndex = 0;
-        showCountInOverlay(steps[stepIndex]);
-        pageCountInInterval = setInterval(() => {
-            stepIndex++;
-            if (stepIndex < steps.length) { showCountInOverlay(steps[stepIndex]); return; }
-            clearInterval(pageCountInInterval);
-            pageCountInInterval = null;
-            hideCountInOverlay();
-            pageTimerInterval = setInterval(() => {
-                pageTimerRemaining--;
-                updatePageTimerDisplay();
-                if (pageTimerRemaining <= 0) {
-                    pageTimerRemaining = 0;
-                    updatePageTimerDisplay();
-                    stopPageTimer();
-                    asToast("Time's up!", 'err');
-                    return;
-                }
-            }, 1000);
-        }, 1000);
-    }
-    function asResetPageTimer(){
-        stopPageTimer();
-        if (pageCountInInterval) { clearInterval(pageCountInInterval); pageCountInInterval = null; }
-        pageTimerRemaining = selectedTimeLimit;
-        updatePageTimerDisplay();
-        showPageTimerWidget();
-        hideCountInOverlay();
-    }
 
     function getNextPart(){ return PARTS.find(part => !placed[part.id]) || null; }
     function pulseStage(){ const stage = $('as-stage'); if (!stage) return; stage.classList.add('snap-glow'); clearTimeout(stage._snapTimer); stage._snapTimer = setTimeout(() => stage.classList.remove('snap-glow'), 850); }
@@ -370,8 +284,6 @@
             dragId = null;
         }
     };
-    window.asStartPageTimer = asStartPageTimer;
-    window.asResetPageTimer = asResetPageTimer;
     function checkDone(){
         if (Object.keys(placed).length === PARTS.length) {
             const stage = $('as-stage'); if (stage) stage.classList.add('done');
@@ -394,9 +306,6 @@
         tray.addEventListener('drop', window.asDropTray);
     }
     updateMenuSummary();
-    pageTimerRemaining = selectedTimeLimit;
-    updatePageTimerDisplay();
-    showPageTimerWidget();
     render();
     prog();
 })();

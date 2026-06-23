@@ -75,25 +75,27 @@ class AuthenticatedSessionController extends Controller
 
             // Log successful login for debugging
             $user = $authenticatedGuard === 'student' ? Auth::guard('student')->user() : Auth::user();
+            $role = $authenticatedGuard === 'student' ? 'student' : $user->role;
             Log::info('User logged in', [
                 'id' => $user->id,
                 'email' => $authenticatedGuard === 'student' ? $user->student_id_number : $user->email,
-                'role' => $authenticatedGuard === 'student' ? 'student' : $user->role,
+                'role' => $role,
             ]);
 
-            if ($authenticatedGuard === 'student') {
-                return redirect()->intended(route('student.dashboard'));
+            // Pull the intended URL (if any) and validate it belongs to a route
+            // the authenticated role is allowed to access. If not — or if no
+            // intended URL is stored — fall back to the role-specific dashboard.
+            $intended = $request->session()->pull('url.intended');
+            if (is_string($intended) && $this->isIntendedUrlAllowedForRole($intended, $role)) {
+                return redirect()->to($intended);
             }
 
-            // Redirect based on user role, prefer intended URL when present
-            if ($user->role === 'instructor') {
-                return redirect()->intended(route('instructor.dashboard'));
-            } elseif ($user->role === 'department_head') {
-                return redirect()->intended(route('department-head.dashboard'));
+            $dashboardRoute = $this->dashboardRouteForRole($role);
+            if ($dashboardRoute === '/') {
+                return redirect('/');
             }
 
-            // Fallback: go to home
-            return redirect()->intended('/');
+            return redirect()->route($dashboardRoute);
         }
 
         return back()->withErrors([
@@ -112,7 +114,62 @@ class AuthenticatedSessionController extends Controller
         $request->session()->invalidate();
 
         $request->session()->regenerateToken();
+        $request->session()->forget('url.intended');
 
         return redirect('/login');
+    }
+
+    /**
+     * Resolve the role-specific dashboard route for a given role.
+     */
+    private function dashboardRouteForRole(string $role): string
+    {
+        return match ($role) {
+            'student' => 'student.dashboard',
+            'instructor' => 'instructor.dashboard',
+            'department_head' => 'department-head.dashboard',
+            default => '/',
+        };
+    }
+
+    /**
+     * Determine whether the stored intended URL is safe to redirect to
+     * for the given role. Rejects empty, external, or cross-role URLs so
+     * a stale session key can never bounce the user to the wrong panel
+     * (or to the landing page).
+     */
+    private function isIntendedUrlAllowedForRole(?string $url, string $role): bool
+    {
+        if (! is_string($url) || $url === '') {
+            return false;
+        }
+
+        // Reject anything that isn't a same-origin relative path
+        if (preg_match('#^(?:[a-z][a-z0-9+\-.]*:)?//#i', $url) === 1) {
+            return false;
+        }
+        if (str_starts_with($url, '//')) {
+            return false;
+        }
+
+        $path = parse_url($url, PHP_URL_PATH);
+        if (! is_string($path) || $path === '') {
+            return false;
+        }
+
+        $allowedPrefixes = match ($role) {
+            'student' => ['/student', '/api/lesson/heartbeat', '/api/lesson/leave', '/api/lesson/active-students'],
+            'instructor' => ['/instructor', '/api/lesson/active-students'],
+            'department_head' => ['/department-head', '/instructor', '/api/lesson/active-students'],
+            default => [],
+        };
+
+        foreach ($allowedPrefixes as $prefix) {
+            if ($path === $prefix || str_starts_with($path, $prefix . '/') || str_starts_with($path, $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

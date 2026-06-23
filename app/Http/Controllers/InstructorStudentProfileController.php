@@ -42,17 +42,67 @@ class InstructorStudentProfileController extends Controller
 
     public function portal(Request $request)
     {
-        $this->currentUser();
+        $user = $this->currentUser();
 
-        return view('Instructor.manage-lessons', [
+        $students = StudentProfile::where('instructor_id', $user->id)
+            ->with(['scores'])
+            ->get();
+
+        $studentReports = $students->map(function ($student) {
+            $scores = $student->scores->keyBy('module_key');
+
+            $module1Score = $scores->get('module-1');
+            $module2Score = $scores->get('module-2');
+            $module3Score = $scores->get('module-3');
+            $marksmanshipScore = $scores->get('module-4');
+
+            return [
+                'student' => $student,
+                'module_1' => $module1Score ? [
+                    'score' => $module1Score->score,
+                    'max_score' => $module1Score->max_score,
+                    'percentage' => $module1Score->max_score > 0 ? round(($module1Score->score / $module1Score->max_score) * 100) : 0,
+                ] : null,
+                'module_2' => $module2Score ? [
+                    'score' => $module2Score->score,
+                    'max_score' => $module2Score->max_score,
+                    'percentage' => $module2Score->max_score > 0 ? round(($module2Score->score / $module2Score->max_score) * 100) : 0,
+                ] : null,
+                'module_3' => $module3Score ? [
+                    'score' => $module3Score->score,
+                    'max_score' => $module3Score->max_score,
+                    'percentage' => $module3Score->max_score > 0 ? round(($module3Score->score / $module3Score->max_score) * 100) : 0,
+                ] : null,
+                'marksmanship' => $marksmanshipScore ? [
+                    'score' => $marksmanshipScore->score,
+                    'max_score' => $marksmanshipScore->max_score,
+                    'percentage' => $marksmanshipScore->max_score > 0 ? round(($marksmanshipScore->score / $marksmanshipScore->max_score) * 100) : 0,
+                ] : null,
+            ];
+        });
+
+        $leaderboard = $studentReports
+            ->filter(fn($r) => $r['module_1'] !== null && $r['module_2'] !== null && $r['module_3'] !== null && $r['marksmanship'] !== null)
+            ->map(function ($r) {
+                $avg = round(($r['module_1']['percentage'] + $r['module_2']['percentage'] + $r['module_3']['percentage'] + $r['marksmanship']['percentage']) / 4);
+                return array_merge($r, ['average' => $avg]);
+            })
+            ->sortByDesc('average')
+            ->take(10)
+            ->values();
+
+        return view('Instructor.manage-module', [
             'modules' => [
                 [
                     'key' => 'module-1',
                     'title' => 'Courseware',
                     'description' => 'Instruction of guns and gun parts with descriptions.',
-                    'route' => route('instructor.manage-lessons.module-1'),
+                    'route' => route('instructor.manage-module.module-1'),
                 ],
             ],
+            'studentReports' => $studentReports,
+            'leaderboard' => $leaderboard,
+            'students' => $students,
         ]);
     }
 

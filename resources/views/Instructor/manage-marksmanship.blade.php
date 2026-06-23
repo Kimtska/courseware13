@@ -9,7 +9,7 @@
 @section('content')
     <div class="grid gap-6">
 
- <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3">
+ <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3 relative">
                     <div class="flex items-start gap-3">
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
                             <i class="fas fa-triangle-exclamation text-sm"></i>
@@ -20,15 +20,41 @@
                             <p class="text-xs text-amber-800 mt-0.5">Configure the timer, firearm, and target type before sending any student to the firing range. Changes apply to all Proceed links below.</p>
                         </div>
                     </div>
-                    <button type="button" onclick="openMarksmanshipSettings()" id="marksmanship-settings-btn" class="ms-setup-btn inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-violet-900/30 transition-all whitespace-nowrap">
-                        <span class="flex h-7 w-7 items-center justify-center rounded-xl bg-white/20 text-white">
-                            <i class="fas fa-sliders text-xs"></i>
-                        </span>
-                        <span>Marksmanship Setup</span>
-                        <span class="hidden md:inline text-[10px] font-semibold uppercase tracking-wider text-violet-100">Timer &middot; Firearm &middot; Target</span>
-                        <i class="fas fa-chevron-right text-[10px] text-violet-200"></i>
-                    </button>
+                    <div class="relative flex items-center">
+                        <div class="glow-arrow hidden sm:block"></div>
+                        <button type="button" onclick="openMarksmanshipSettings()" id="marksmanship-settings-btn" class="ms-setup-btn inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-violet-900/30 transition-all whitespace-nowrap relative z-10">
+                            <span class="flex h-7 w-7 items-center justify-center rounded-xl bg-white/20 text-white">
+                                <i class="fas fa-sliders text-xs"></i>
+                            </span>
+                            <span>Marksmanship Setup</span>
+                            <span class="hidden md:inline text-[10px] font-semibold uppercase tracking-wider text-violet-100">Timer &middot; Firearm &middot; Target</span>
+                            <i class="fas fa-chevron-right text-[10px] text-violet-200"></i>
+                        </button>
+                    </div>
                 </div>
+
+        <section class="glass-card rounded-3xl p-5 sm:p-6 mb-6">
+            <form id="mm-filter-form" class="grid grid-cols-1 md:grid-cols-3 gap-4" onsubmit="return false;">
+                <div class="relative">
+                    <label class="block text-[10px] font-bold uppercase tracking-[0.28em] text-gray-500 mb-2">Live Search</label>
+                    <input type="text" name="q" id="mm-search" placeholder="Search student ID or full name" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
+                    <i class="fas fa-magnifying-glass absolute right-4 top-10 text-gray-400"></i>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-[0.28em] text-gray-500 mb-2">Section</label>
+                    <select name="section" id="mm-filter-section" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
+                        <option value="">All Sections</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-[0.28em] text-gray-500 mb-2">Course</label>
+                    <select name="course" id="mm-filter-course" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
+                        <option value="">All Courses</option>
+                    </select>
+                </div>
+            </form>
+        </section>
+
         <section class="glass-card rounded-3xl overflow-hidden bg-white border border-gray-200">
             <div class="px-5 sm:px-6 py-4 border-b border-gray-100 flex flex-col gap-3">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -64,7 +90,7 @@
                                 $yearLevel = $student->year_level ?? '—';
                                 $section = $student->section ?? '—';
                             @endphp
-                            <tr class="hover:bg-violet-50/50 transition-colors">
+                            <tr class="hover:bg-violet-50/50 transition-colors" data-search="{{ strtolower($studentId . ' ' . $fullName) }}" data-section="{{ $section }}" data-course="{{ $course }}">
                                 <td class="px-5 sm:px-6 py-4 font-semibold text-gray-900">{{ $studentId }}</td>
                                 <td class="px-5 sm:px-6 py-4">
                                     <div class="font-medium text-gray-900">{{ $fullName }}</div>
@@ -73,14 +99,14 @@
                                 <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $course }} / {{ $yearLevel }} / {{ $section }}</td>
                                 <td class="px-5 sm:px-6 py-4"><span class="status-pill bg-emerald-100 text-emerald-700">Completed Gun Parts</span></td>
                                 <td class="px-5 sm:px-6 py-4 text-right">
-                                    <a href="{{ route('instructor.manage-lessons.module-4') }}?weapon=9mm&time=60&mode=steady&student_id={{ urlencode($studentId) }}" target="_blank" rel="noopener" data-proceed-link data-student-id="{{ $studentId }}" class="proceed-btn inline-flex items-center justify-center gap-2 rounded-lg bg-violet-700 px-4 py-2 text-xs font-bold text-white hover:bg-violet-800 transition-colors">
+                                    <a href="{{ route('instructor.manage-module.module-4') }}?weapon=9mm&time=60&mode=steady&student_id={{ urlencode($studentId) }}" target="_blank" rel="noopener" data-proceed-link data-student-id="{{ $studentId }}" class="proceed-btn inline-flex items-center justify-center gap-2 rounded-lg bg-violet-700 px-4 py-2 text-xs font-bold text-white hover:bg-violet-800 transition-colors">
                                         <i class="fas fa-arrow-right"></i>
                                         Proceed
                                     </a>
                                 </td>
                             </tr>
                         @empty
-                            <tr class="hover:bg-violet-50/50 transition-colors">
+                            <tr class="hover:bg-violet-50/50 transition-colors" data-search="20260001 juan dela cruz" data-section="A" data-course="BSCRIM">
                                 <td class="px-5 sm:px-6 py-4 font-semibold text-gray-900">20260001</td>
                                 <td class="px-5 sm:px-6 py-4">
                                     <div class="font-medium text-gray-900">Juan Dela Cruz</div>
@@ -89,7 +115,7 @@
                                 <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">BSCRIM / 2 / A</td>
                                 <td class="px-5 sm:px-6 py-4"><span class="status-pill bg-emerald-100 text-emerald-700">Completed Gun Parts</span></td>
                                 <td class="px-5 sm:px-6 py-4 text-right">
-                                    <a href="{{ route('instructor.manage-lessons.module-4') }}?weapon=9mm&time=60&mode=steady&student_id=20260001" target="_blank" rel="noopener" data-proceed-link data-student-id="20260001" class="proceed-btn inline-flex items-center justify-center gap-2 rounded-lg bg-violet-700 px-4 py-2 text-xs font-bold text-white hover:bg-violet-800 transition-colors">
+                                    <a href="{{ route('instructor.manage-module.module-4') }}?weapon=9mm&time=60&mode=steady&student_id=20260001" target="_blank" rel="noopener" data-proceed-link data-student-id="20260001" class="proceed-btn inline-flex items-center justify-center gap-2 rounded-lg bg-violet-700 px-4 py-2 text-xs font-bold text-white hover:bg-violet-800 transition-colors">
                                         <i class="fas fa-arrow-right"></i>
                                         Proceed
                                     </a>
@@ -109,15 +135,15 @@
             </div>
 
             <div class="px-5 sm:px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div class="text-sm text-gray-500">{{ $students->isEmpty() ? 'Showing a sample student who has completed the lessons.' : sprintf('Showing %s - %s of %s completed students.', $students->firstItem() ?? 0, $students->lastItem() ?? 0, $students->total()) }}</div>
-                <div>{{ $students->links() }}</div>
+                <div class="text-sm text-gray-500" id="mm-summary-text">{{ $students->isEmpty() ? 'Showing a sample student who has completed the lessons.' : sprintf('Showing %s - %s of %s completed students.', $students->firstItem() ?? 0, $students->lastItem() ?? 0, $students->total()) }}</div>
+                <div>{{ $students->links('vendor.pagination.violet') }}</div>
             </div>
         </section>
     </div>
 
     <!-- ==================== MARKSMANSHIP SETTINGS MODAL ==================== -->
     <div id="marksmanship-settings-overlay" class="ms-overlay" role="dialog" aria-modal="true" aria-labelledby="ms-title" onclick="if (event.target === this) closeMarksmanshipSettings()">
-        <div class="ms-modal w-full max-w-5xl mx-4">
+        <div class="ms-modal w-full mx-4" style="max-width:800px">
             <div class="menu-hero px-6 sm:px-8 py-5 text-left flex items-start justify-between gap-4">
                 <div>
                     <p class="text-[10px] uppercase tracking-[0.28em] text-violet-200 font-bold">Marksmanship Place</p>
@@ -130,50 +156,77 @@
             </div>
 
             <div class="p-5 sm:p-6 text-left">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 gap-6">
                     <!-- Time Limit -->
                     <div>
-                        <h3 class="text-[11px] text-violet-700 uppercase tracking-widest font-bold mb-2.5 flex items-center gap-2"><i class="fas fa-clock text-violet-500"></i> Time Limit</h3>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div class="ms-card" data-time="30" onclick="selectMarksmanshipTime(30, this)"><p class="text-center font-bold text-gray-900 text-sm">30s</p></div>
-                            <div class="ms-card" data-time="60" onclick="selectMarksmanshipTime(60, this)"><p class="text-center font-bold text-gray-900 text-sm">60s</p></div>
-                            <div class="ms-card" data-time="90" onclick="selectMarksmanshipTime(90, this)"><p class="text-center font-bold text-gray-900 text-sm">90s</p></div>
-                            <div class="ms-card" data-time="120" onclick="selectMarksmanshipTime(120, this)"><p class="text-center font-bold text-gray-900 text-sm">120s</p></div>
+                        <h3 class="text-[11px] text-violet-700 uppercase tracking-widest font-bold mb-2 flex items-center gap-2"><i class="fas fa-clock text-violet-500"></i> Time Limit</h3>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="ms-card" data-time="30" onclick="selectMarksmanshipTime(30, this)">
+                                <div class="flex flex-col items-center gap-1 text-center">
+                                    <div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700"><i class="fas fa-clock text-xs"></i></div>
+                                    <p class="font-bold text-gray-900 text-sm">30s</p>
+                                </div>
+                            </div>
+                            <div class="ms-card" data-time="60" onclick="selectMarksmanshipTime(60, this)">
+                                <div class="flex flex-col items-center gap-1 text-center">
+                                    <div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700"><i class="fas fa-clock text-xs"></i></div>
+                                    <p class="font-bold text-gray-900 text-sm">60s</p>
+                                </div>
+                            </div>
+                            <div class="ms-card" data-time="90" onclick="selectMarksmanshipTime(90, this)">
+                                <div class="flex flex-col items-center gap-1 text-center">
+                                    <div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700"><i class="fas fa-clock text-xs"></i></div>
+                                    <p class="font-bold text-gray-900 text-sm">90s</p>
+                                </div>
+                            </div>
+                            <div class="ms-card" data-time="120" onclick="selectMarksmanshipTime(120, this)">
+                                <div class="flex flex-col items-center gap-1 text-center">
+                                    <div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700"><i class="fas fa-clock text-xs"></i></div>
+                                    <p class="font-bold text-gray-900 text-sm">120s</p>
+                                </div>
+                            </div>
+                            <div class="ms-card" data-time="custom" onclick="focusMarksmanshipCustomTime(this)">
+                                <div class="flex flex-col items-center gap-1 text-center">
+                                    <div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700"><i class="fas fa-pen text-xs"></i></div>
+                                    <p class="font-bold text-gray-900 text-sm">Custom</p>
+                                </div>
+                            </div>
                         </div>
-                        <div class="ms-card mt-2" data-time="custom" onclick="focusMarksmanshipCustomTime(this)">
+                        <div id="ms-custom-input-wrap" class="hidden mt-2">
                             <div class="flex items-center gap-2">
-                                <p class="font-bold text-gray-900 text-xs uppercase tracking-wider whitespace-nowrap">Custom</p>
-                                <input id="marksmanship-custom-time" type="number" min="5" max="999" placeholder="sec" class="w-full rounded-lg border border-violet-200 bg-white px-2 py-1.5 text-center text-xs font-bold text-gray-900 outline-none focus:border-violet-400">
+                                <p class="text-xs text-gray-500 font-semibold">Custom time:</p>
+                                <input id="marksmanship-custom-time" type="number" min="5" max="999" placeholder="seconds" class="w-24 rounded-lg border border-violet-200 bg-white px-2 py-1.5 text-center text-xs font-bold text-gray-900 outline-none focus:border-violet-400">
+                                <span class="text-xs text-gray-400">sec</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Firearm Selection -->
                     <div>
-                        <h3 class="text-[11px] text-violet-700 uppercase tracking-widest font-bold mb-2.5 flex items-center gap-2"><i class="fas fa-gun text-violet-500"></i> Firearm</h3>
-                        <div class="space-y-2">
+                        <h3 class="text-[11px] text-violet-700 uppercase tracking-widest font-bold mb-2 flex items-center gap-2"><i class="fas fa-gun text-violet-500"></i> Firearm</h3>
+                        <div class="grid grid-cols-3 gap-2">
                             <div class="ms-card" data-weapon="9mm" onclick="selectMarksmanshipWeapon('9mm', this)">
-                                <div class="flex items-center gap-2.5">
-                                    <div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700 flex-shrink-0"><i class="fas fa-gun text-xs"></i></div>
-                                    <div class="min-w-0">
+                                <div class="flex flex-col items-center gap-1 text-center">
+                                    <div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700"><i class="fas fa-gun text-xs"></i></div>
+                                    <div>
                                         <h4 class="font-display font-bold text-gray-900 text-sm leading-tight">9mm Pistol</h4>
                                         <p class="text-[10px] text-gray-500 leading-tight">Mag 15 &middot; Reserve 45</p>
                                     </div>
                                 </div>
                             </div>
                             <div class="ms-card" data-weapon=".45" onclick="selectMarksmanshipWeapon('.45', this)">
-                                <div class="flex items-center gap-2.5">
-                                    <div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700 flex-shrink-0"><i class="fas fa-gun text-xs"></i></div>
-                                    <div class="min-w-0">
+                                <div class="flex flex-col items-center gap-1 text-center">
+                                    <div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700"><i class="fas fa-gun text-xs"></i></div>
+                                    <div>
                                         <h4 class="font-display font-bold text-gray-900 text-sm leading-tight">.45 Caliber</h4>
                                         <p class="text-[10px] text-gray-500 leading-tight">Mag 7 &middot; Reserve 28</p>
                                     </div>
                                 </div>
                             </div>
                             <div class="ms-card" data-weapon="all" onclick="selectMarksmanshipWeapon('all', this)">
-                                <div class="flex items-center gap-2.5">
-                                    <div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700 flex-shrink-0"><i class="fas fa-layer-group text-xs"></i></div>
-                                    <div class="min-w-0">
+                                <div class="flex flex-col items-center gap-1 text-center">
+                                    <div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700"><i class="fas fa-layer-group text-xs"></i></div>
+                                    <div>
                                         <h4 class="font-display font-bold text-gray-900 text-sm leading-tight">All</h4>
                                         <p class="text-[10px] text-gray-500 leading-tight">9mm &rarr; .45 (cycle)</p>
                                     </div>
@@ -184,30 +237,30 @@
 
                     <!-- Target Type -->
                     <div>
-                        <h3 class="text-[11px] text-violet-700 uppercase tracking-widest font-bold mb-2.5 flex items-center gap-2"><i class="fas fa-bullseye text-violet-500"></i> Target Type</h3>
-                        <div class="space-y-2">
+                        <h3 class="text-[11px] text-violet-700 uppercase tracking-widest font-bold mb-2 flex items-center gap-2"><i class="fas fa-bullseye text-violet-500"></i> Target Type</h3>
+                        <div class="grid grid-cols-3 gap-2">
                             <div class="ms-card" data-mode="steady" onclick="selectMarksmanshipMode('steady', this)">
-                                <div class="flex items-center gap-2.5">
-                                    <div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700 flex-shrink-0"><i class="fas fa-bullseye text-xs"></i></div>
-                                    <div class="min-w-0">
+                                <div class="flex flex-col items-center gap-1 text-center">
+                                    <div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700"><i class="fas fa-bullseye text-xs"></i></div>
+                                    <div>
                                         <h4 class="font-display font-bold text-gray-900 text-sm leading-tight">Steady</h4>
                                         <p class="text-[10px] text-gray-500 leading-tight">Center target. Pure accuracy.</p>
                                     </div>
                                 </div>
                             </div>
                             <div class="ms-card" data-mode="sideways" onclick="selectMarksmanshipMode('sideways', this)">
-                                <div class="flex items-center gap-2.5">
-                                    <div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700 flex-shrink-0"><i class="fas fa-arrows-alt-h text-xs"></i></div>
-                                    <div class="min-w-0">
+                                <div class="flex flex-col items-center gap-1 text-center">
+                                    <div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700"><i class="fas fa-arrows-alt-h text-xs"></i></div>
+                                    <div>
                                         <h4 class="font-display font-bold text-gray-900 text-sm leading-tight">Sideways</h4>
                                         <p class="text-[10px] text-gray-500 leading-tight">Horizontal tracking.</p>
                                     </div>
                                 </div>
                             </div>
                             <div class="ms-card" data-mode="all" onclick="selectMarksmanshipMode('all', this)">
-                                <div class="flex items-center gap-2.5">
-                                    <div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700 flex-shrink-0"><i class="fas fa-layer-group text-xs"></i></div>
-                                    <div class="min-w-0">
+                                <div class="flex flex-col items-center gap-1 text-center">
+                                    <div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700"><i class="fas fa-layer-group text-xs"></i></div>
+                                    <div>
                                         <h4 class="font-display font-bold text-gray-900 text-sm leading-tight">All</h4>
                                         <p class="text-[10px] text-gray-500 leading-tight">Steady &rarr; Sideways (cycle)</p>
                                     </div>
@@ -274,7 +327,10 @@
         .ms-toast-detail{font-size:11px;color:#64748b;margin:2px 0 0;line-height:1.4}
         .ms-toast-close{flex-shrink:0;background:transparent;border:none;color:#94a3b8;cursor:pointer;padding:4px;border-radius:6px;transition:color .15s,background .15s}
         .ms-toast-close:hover{color:#475569;background:#f1f5f9}
-        @media(prefers-reduced-motion:reduce){.ms-modal,.ms-overlay,.ms-toast{transition:none !important}}
+        .glow-arrow{position:absolute;right:100%;top:50%;transform:translateY(-50%);margin-right:8px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;pointer-events:none}
+        .glow-arrow::before{content:'\f178';font-family:'Font Awesome 6 Free';font-weight:900;font-size:22px;color:#7C3AED;text-shadow:0 0 8px rgba(124,58,237,.6),0 0 20px rgba(124,58,237,.4),0 0 40px rgba(124,58,237,.2);animation:glowPulse 1.2s ease-in-out infinite}
+        @keyframes glowPulse{0%,100%{opacity:.7;transform:translateX(0);text-shadow:0 0 8px rgba(124,58,237,.6),0 0 20px rgba(124,58,237,.4),0 0 40px rgba(124,58,237,.2)}50%{opacity:1;transform:translateX(4px);text-shadow:0 0 12px rgba(124,58,237,.9),0 0 30px rgba(124,58,237,.6),0 0 60px rgba(124,58,237,.3)}}
+        @media(prefers-reduced-motion:reduce){.ms-modal,.ms-overlay,.ms-toast{transition:none !important}.glow-arrow::before{animation:none}}
     </style>
 
     <script>
@@ -345,12 +401,14 @@
             msState.time = time;
             const ci = document.getElementById('marksmanship-custom-time');
             if (ci) ci.value = '';
+            document.getElementById('ms-custom-input-wrap')?.classList.add('hidden');
             updateMarksmanshipSummary();
             document.querySelectorAll('#marksmanship-settings-overlay [data-time]').forEach(el => el.classList.remove('active'));
             element.classList.add('active');
         }
 
         function focusMarksmanshipCustomTime(element) {
+            document.getElementById('ms-custom-input-wrap')?.classList.remove('hidden');
             const ci = document.getElementById('marksmanship-custom-time');
             if (ci) { ci.focus(); ci.select(); }
             document.querySelectorAll('#marksmanship-settings-overlay [data-time]').forEach(el => el.classList.remove('active'));
@@ -377,7 +435,9 @@
             document.querySelectorAll('#marksmanship-settings-overlay [data-mode]').forEach(el => el.classList.remove('active'));
 
             const ci = document.getElementById('marksmanship-custom-time');
+            const cw = document.getElementById('ms-custom-input-wrap');
             if (ci) ci.value = '';
+            if (cw) cw.classList.add('hidden');
 
             if (MS_ALLOWED_TIMES.includes(msState.time)) {
                 const el = document.querySelector('#marksmanship-settings-overlay [data-time="' + msState.time + '"]');
@@ -386,6 +446,7 @@
                 const el = document.querySelector('#marksmanship-settings-overlay [data-time="custom"]');
                 if (el) el.classList.add('active');
                 if (ci) ci.value = msState.time;
+                if (cw) cw.classList.remove('hidden');
             }
 
             const wEl = document.querySelector('#marksmanship-settings-overlay [data-weapon="' + msState.weapon + '"]');
@@ -423,7 +484,7 @@
 
         function saveMarksmanshipSettings() {
             const ci = document.getElementById('marksmanship-custom-time');
-            if (ci && ci.value !== '') {
+            if (ci && ci.value !== '' && !document.getElementById('ms-custom-input-wrap')?.classList.contains('hidden')) {
                 const v = Math.max(5, Math.min(999, parseInt(ci.value, 10) || MS_DEFAULTS.time));
                 msState.time = v;
                 if (ci) ci.value = v;
@@ -445,7 +506,7 @@
         }
 
         function updateProceedLinks() {
-            const baseUrl = @json(route('instructor.manage-lessons.module-4'));
+            const baseUrl = @json(route('instructor.manage-module.module-4'));
             const weaponValue = msState.weapon === 'all' ? MS_WEAPON_CYCLE.all.join(',') : msState.weapon;
             const modeValue = msState.mode === 'all' ? MS_MODE_CYCLE.all.join(',') : msState.mode;
             document.querySelectorAll('a.proceed-btn').forEach(a => {
@@ -472,11 +533,6 @@
                         updateMarksmanshipSummary();
                     }
                 });
-                ci.addEventListener('focus', function () {
-                    document.querySelectorAll('#marksmanship-settings-overlay [data-time]').forEach(el => el.classList.remove('active'));
-                    const el = document.querySelector('#marksmanship-settings-overlay [data-time="custom"]');
-                    if (el) el.classList.add('active');
-                });
             }
 
             document.addEventListener('keydown', function (e) {
@@ -485,5 +541,90 @@
                 }
             });
         });
+    </script>
+
+    <script>
+        (function () {
+            function initMarksmanshipFilters() {
+                const tbody = document.querySelector('section.glass-card.rounded-3xl.overflow-hidden table tbody');
+                const summaryEl = document.getElementById('mm-summary-text');
+                const searchInput = document.getElementById('mm-search');
+                const filterSection = document.getElementById('mm-filter-section');
+                const filterCourse = document.getElementById('mm-filter-course');
+                if (!tbody || !searchInput || !filterSection || !filterCourse) return;
+
+                const dataRows = Array.from(tbody.querySelectorAll('tr[data-search]'));
+                const totalRows = dataRows.length;
+                const sectionOptions = new Set();
+                const courseOptions = new Set();
+                const defaultSummary = summaryEl ? summaryEl.textContent : '';
+
+                dataRows.forEach(r => {
+                    const sec = r.getAttribute('data-section');
+                    const course = r.getAttribute('data-course');
+                    if (sec && sec !== '—') sectionOptions.add(sec);
+                    if (course && course !== '—') courseOptions.add(course);
+                });
+
+                Array.from(sectionOptions).sort().forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s;
+                    opt.textContent = s;
+                    filterSection.appendChild(opt);
+                });
+
+                Array.from(courseOptions).sort().forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c;
+                    opt.textContent = c;
+                    filterCourse.appendChild(opt);
+                });
+
+                function matchesFilters(row) {
+                    const q = (searchInput.value || '').trim().toLowerCase();
+                    const section = filterSection.value || '';
+                    const course = filterCourse.value || '';
+
+                    if (q) {
+                        const hay = (row.getAttribute('data-search') || '').toLowerCase();
+                        if (hay.indexOf(q) === -1) return false;
+                    }
+                    if (section && (row.getAttribute('data-section') || '') !== section) return false;
+                    if (course && (row.getAttribute('data-course') || '') !== course) return false;
+                    return true;
+                }
+
+                function render() {
+                    let visibleCount = 0;
+                    dataRows.forEach(r => {
+                        if (matchesFilters(r)) {
+                            r.style.display = '';
+                            visibleCount++;
+                        } else {
+                            r.style.display = 'none';
+                        }
+                    });
+
+                    if (summaryEl) {
+                        const isFiltering = !!(searchInput.value || filterSection.value || filterCourse.value);
+                        if (isFiltering) {
+                            summaryEl.textContent = 'Showing ' + visibleCount + ' of ' + totalRows + ' completed student' + (totalRows === 1 ? '' : 's');
+                        } else if (defaultSummary) {
+                            summaryEl.textContent = defaultSummary;
+                        }
+                    }
+                }
+
+                searchInput.addEventListener('input', render);
+                filterSection.addEventListener('change', render);
+                filterCourse.addEventListener('change', render);
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initMarksmanshipFilters);
+            } else {
+                initMarksmanshipFilters();
+            }
+        })();
     </script>
 @endsection

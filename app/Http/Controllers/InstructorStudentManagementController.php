@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\EnrollmentImportBatch;
 use App\Models\ManagedStudent;
+use App\Models\OldStudent;
 use App\Models\StudentProfile;
 use App\Models\StudentActivityLog;
 use App\Models\StudentTrainingSession;
@@ -30,12 +31,53 @@ class InstructorStudentManagementController extends Controller
     public function index(Request $request)
     {
         $user = $this->currentUser();
-        $students = $this->queryStudents($user, $request)->paginate(12)->withQueryString();
         $archivedStudents = $user->role === 'department_head' && Schema::hasTable('students')
             ? ManagedStudent::withArchived()->archived()->latest()->take(10)->get()
             : collect();
 
         $sections = $this->availableSections($user);
+
+        if (Schema::hasTable('students') && Schema::hasTable('old_students')) {
+            $toTransfer = ManagedStudent::query()
+                ->active()
+                ->when($user->role === 'instructor', fn ($q) => $q->where('instructor_user_id', $user->id))
+                ->where('created_at', '<', now()->subMonths(5))
+                ->get();
+
+            foreach ($toTransfer as $student) {
+                DB::transaction(function () use ($student) {
+                    OldStudent::create([
+                        'instructor_user_id' => $student->instructor_user_id,
+                        'student_id_number' => $student->student_id_number,
+                        'password' => $student->password,
+                        'status' => $student->status,
+                        'full_name' => $student->full_name,
+                        'course' => $student->course,
+                        'year_level' => $student->year_level,
+                        'section' => $student->section,
+                        'enrollment_status' => $student->enrollment_status,
+                        'module_access_status' => $student->module_access_status,
+                        'current_activity_status' => $student->current_activity_status,
+                        'archived_at' => $student->archived_at,
+                        'verified_at' => $student->verified_at,
+                        'metadata' => $student->metadata,
+                    ]);
+                    $student->delete();
+                });
+            }
+        }
+
+        $fiveMonthOld = Schema::hasTable('old_students')
+            ? OldStudent::query()
+                ->when($user->role === 'instructor', fn ($q) => $q->where('instructor_user_id', $user->id))
+                ->latest('moved_at')
+                ->get()
+            : collect();
+
+        $students = $this->queryStudents($user, $request)
+            ->paginate(6)
+            ->withQueryString();
+
         $totalStudents = $this->totalActiveStudents($user);
 
         return view('Instructor.manage-students', [
@@ -50,6 +92,7 @@ class InstructorStudentManagementController extends Controller
             ],
             'sections' => $sections,
             'totalStudents' => $totalStudents,
+            'fiveMonthOld' => $fiveMonthOld,
             'summary' => session('student_import_summary'),
             'importBatch' => session('student_import_batch'),
         ]);
@@ -130,6 +173,9 @@ class InstructorStudentManagementController extends Controller
             'last_name' => ['required', 'string', 'max:80'],
             'student_id_number' => ['required', 'string', 'max:60', 'unique:students,student_id_number'],
             'password' => ['nullable', 'string', 'min:8', 'max:255'],
+            'section' => ['nullable', 'string', 'max:50'],
+            'course' => ['nullable', 'string', 'max:120'],
+            'year_level' => ['nullable', 'string', 'max:20'],
         ]);
 
         $fullName = trim(implode(' ', array_filter([
@@ -147,9 +193,9 @@ class InstructorStudentManagementController extends Controller
                 'password' => Hash::make($plainPassword),
                 'status' => 'active',
                 'full_name' => $fullName,
-                'course' => null,
-                'year_level' => null,
-                'section' => null,
+                'course' => $data['course'] ?? 'BSCRIM',
+                'year_level' => $data['year_level'] ?? '2nd',
+                'section' => $data['section'] ?? null,
                 'enrollment_status' => 'verified_enrolled',
                 'module_access_status' => 'ready_for_training',
                 'current_activity_status' => 'inactive',
@@ -296,12 +342,19 @@ class InstructorStudentManagementController extends Controller
             'enrollment_status' => ['required', 'in:verified_enrolled,pending,rejected,archived'],
             'module_access_status' => ['required', 'in:ready_for_training,locked,active_in_firing_range,completed_session,archived'],
             'current_activity_status' => ['required', 'in:inactive,active_in_firing_range,active_in_assembly,completed_session,archived'],
+            'password' => ['nullable', 'string', 'min:8', 'max:255'],
         ]);
 
-        $student->update($data + [
+        $updateData = $data + [
             'status' => $data['enrollment_status'] === 'archived' ? 'archived' : 'active',
             'archived_at' => $data['enrollment_status'] === 'archived' ? now() : null,
-        ]);
+        ];
+
+        if (filled($data['password'])) {
+            $updateData['password'] = Hash::make($data['password']);
+        }
+
+        $student->update($updateData);
 
         return back()->with('status', 'Student record updated.');
     }
@@ -321,6 +374,35 @@ class InstructorStudentManagementController extends Controller
         ]);
 
         return back()->with('status', 'Student archived.');
+    }
+
+    public function toggleStatus(int $studentId)
+    {
+        $user = $this->currentUser();
+        abort_unless(Schema::hasTable('students'), 422, 'Student management table required.');
+        $student = $this->findStudent($studentId, $user);
+
+        $isActive = ($student->status ?? 'active') === 'active';
+
+        if ($isActive) {
+            $student->update([
+                'status' => 'archived',
+                'enrollment_status' => 'archived',
+                'module_access_status' => 'archived',
+                'current_activity_status' => 'archived',
+                'archived_at' => now(),
+            ]);
+        } else {
+            $student->update([
+                'status' => 'active',
+                'enrollment_status' => 'verified_enrolled',
+                'module_access_status' => 'ready_for_training',
+                'current_activity_status' => 'inactive',
+                'archived_at' => null,
+            ]);
+        }
+
+        return back()->with('status', 'Student status updated.');
     }
 
     private function queryStudents($user, Request $request)

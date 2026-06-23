@@ -5,7 +5,7 @@
 @section('pageSubtitle', 'Instructor module view with assembly content')
 
 @section('headerActions')
-    <a href="{{ route('instructor.manage-lessons') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-colors">
+    <a href="{{ route('instructor.manage-module') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-colors">
         <i class="fas fa-arrow-left"></i> Back to Lessons
     </a>
 @endsection

@@ -6,7 +6,7 @@
 
 @section('headerActions')
     <div class="flex items-center gap-3">
-        <a href="{{ route('instructor.manage-lessons') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-colors">
+        <a href="{{ route('instructor.manage-module') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-colors">
             <i class="fas fa-arrow-left"></i> Back to Lessons
         </a>
         <button type="button" id="la-refresh-btn" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-700 hover:bg-violet-800 text-white text-xs font-bold transition-colors">

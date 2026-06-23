@@ -2,7 +2,6 @@
     $moduleStates = \App\Models\ModuleAccessControl::whereIn('module_key', ['module-1','module-2','module-3','module-4'])->get()->keyBy('module_key');
     $m1Unlocked = ($moduleStates->get('module-1') && $moduleStates->get('module-1')->is_unlocked);
     $m2Unlocked = ($moduleStates->get('module-2') && $moduleStates->get('module-2')->is_unlocked);
-    $m3Unlocked = ($moduleStates->get('module-3') && $moduleStates->get('module-3')->is_unlocked);
     $m4Unlocked = ($moduleStates->get('module-4') && $moduleStates->get('module-4')->is_unlocked);
 @endphp
 
@@ -13,17 +12,13 @@
                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 9.5L12 3l9 6.5V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V9.5z"/></svg>
                     Dashboard
                 </a>
-                <a href="{{ route('student.gun-parts') }}" class="nav-link module-link {{ $activeNav === 'gun-parts' ? 'active' : '' }} inline-flex items-center gap-1" data-module-key="module-1" data-unlocked="{{ $m1Unlocked ? '1' : '0' }}">
+                <a href="{{ route('student.gun-parts') }}" class="nav-link module-link {{ $activeNav === 'module-checkpoint-node' ? 'active' : '' }} inline-flex items-center gap-1" data-module-key="module-1" data-unlocked="{{ $m1Unlocked ? '1' : '0' }}">
                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 3h12v2H6V3zm0 4h12v12H6V7zm2 2v8h8V9H8z"/></svg>
-                    Lessons
-                </a>
-                <a href="{{ route('student.assembly') }}" class="nav-link module-link {{ $activeNav === 'assembly' ? 'active' : '' }} inline-flex items-center gap-1" data-module-key="module-3" data-unlocked="{{ $m3Unlocked ? '1' : '0' }}">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 13.5v5.5a1 1 0 0 1-1 1h-5.5l-6-6V8.5A3.5 3.5 0 0 1 13 5h2.5L21 9.5V13.5zM3 21v-2.5l8.5-8.5 2.5 2.5L5.5 21H3z"/></svg>
-                    Assembly
+                    Module
                 </a>
                 <a href="{{ route('student.reports') }}" class="nav-link {{ $activeNav === 'reports' ? 'active' : '' }} inline-flex items-center gap-1">
                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 2h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zm7 1.5V8h4.5L13 3.5zM8 12h8v2H8v-2zm0 4h5v2H8v-2z"/></svg>
-                    Reports
+                    Assessment Reports
                 </a>
             </nav>
 @elseif ($type === 'mobile')
@@ -36,16 +31,10 @@
                             <span>Dashboard</span>
                         </span>
                     </a>
-                    <a href="{{ route('student.gun-parts') }}" class="block px-4 py-2.5 rounded-lg module-link {{ $activeNav === 'gun-parts' ? 'text-white bg-violet-800/50 font-medium' : 'text-violet-200 hover:bg-violet-800/30' }} text-sm" data-module-key="module-1" data-unlocked="{{ $m1Unlocked ? '1' : '0' }}">
+                    <a href="{{ route('student.gun-parts') }}" class="block px-4 py-2.5 rounded-lg module-link {{ $activeNav === 'module-checkpoint-node' ? 'text-white bg-violet-800/50 font-medium' : 'text-violet-200 hover:bg-violet-800/30' }} text-sm" data-module-key="module-1" data-unlocked="{{ $m1Unlocked ? '1' : '0' }}">
                         <span class="flex items-center gap-2">
                             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 3h12v2H6V3zm0 4h12v12H6V7zm2 2v8h8V9H8z"/></svg>
-                            <span>Lessons</span>
-                        </span>
-                    </a>
-                    <a href="{{ route('student.assembly') }}" class="block px-4 py-2.5 rounded-lg module-link {{ $activeNav === 'assembly' ? 'text-white bg-violet-800/50 font-medium' : 'text-violet-200 hover:bg-violet-800/30' }} text-sm" data-module-key="module-3" data-unlocked="{{ $m3Unlocked ? '1' : '0' }}">
-                        <span class="flex items-center gap-2">
-                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 13.5v5.5a1 1 0 0 1-1 1h-5.5l-6-6V8.5A3.5 3.5 0 0 1 13 5h2.5L21 9.5V13.5zM3 21v-2.5l8.5-8.5 2.5 2.5L5.5 21H3z"/></svg>
-                            <span>Assembly</span>
+                            <span>Module</span>
                         </span>
                     </a>
                     <a href="{{ route('student.reports') }}" class="block px-4 py-2.5 rounded-lg {{ $activeNav === 'reports' ? 'text-white bg-violet-800/50 font-medium' : 'text-violet-200 hover:bg-violet-800/30' }} text-sm">
@@ -60,12 +49,16 @@
                         <div class="w-8 h-8 rounded-full bg-violet-700 flex items-center justify-center text-xs font-bold">{{ strtoupper(substr($firstName ?: ($name ?? 'S'), 0, 1)) }}{{ strtoupper(substr($lastName ?: ($name ?? 'T'), 0, 1)) }}</div>
                         <div>
                             <div class="text-sm font-medium">{{ $name ?? 'Student' }}</div>
-                            <div class="text-xs text-violet-300">Student</div>
                         </div>
                     </div>
-                    <button onclick="showLogoutAlert()" class="px-3 py-1.5 text-red-300 hover:text-white hover:bg-red-800/30 rounded-lg text-xs font-medium">
-                        <i class="fas fa-sign-out-alt text-sm mr-1"></i> Logout
-                    </button>
+                    <div class="flex items-center gap-1">
+                        <button type="button" class="student-settings-btn px-3 py-1.5 text-violet-300 hover:text-white hover:bg-violet-800/30 rounded-lg text-xs font-medium" title="Settings">
+                            <i class="fas fa-cog text-sm"></i>
+                        </button>
+                        <button onclick="showLogoutAlert()" class="px-3 py-1.5 text-red-300 hover:text-white hover:bg-red-800/30 rounded-lg text-xs font-medium">
+                            <i class="fas fa-sign-out-alt text-sm mr-1"></i> Logout
+                        </button>
+                    </div>
                 </div>
             </div>
 @endif
@@ -79,6 +72,73 @@
         <p id="locked-module-desc" class="text-sm text-gray-600 mb-4">This module is currently locked. Please contact your instructor to request access.</p>
         <div class="flex gap-3 justify-center">
             <button id="locked-module-close" class="px-4 py-2 rounded-lg bg-gray-100 text-gray-700">OK</button>
+        </div>
+    </div>
+</div>
+
+<div id="student-settings-modal" class="fixed inset-0 z-[99999] hidden opacity-0 pointer-events-none items-center justify-center p-4 modal-backdrop transition-opacity duration-200 ease-out backdrop-blur-sm bg-slate-950/35">
+    <div class="modal-panel w-full max-w-lg rounded-3xl bg-white shadow-2xl overflow-hidden transform scale-95 translate-y-3 opacity-0 transition-all duration-200 ease-out">
+        <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between gap-4">
+            <div>
+                <h3 class="font-display font-bold text-xl text-gray-900">Profile Settings</h3>
+                <p class="text-sm text-gray-500">Your student account details.</p>
+            </div>
+            <button type="button" class="close-student-settings w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"><i class="fas fa-xmark"></i></button>
+        </div>
+        <div class="p-6">
+            <div class="flex items-center gap-4 mb-6 pb-6 border-b border-gray-100">
+                <div class="w-14 h-14 rounded-full bg-violet-100 flex items-center justify-center text-xl font-bold text-violet-700 flex-shrink-0">
+                    {{ strtoupper(substr($firstName ?: ($name ?? 'S'), 0, 1)) }}{{ strtoupper(substr($lastName ?: ($name ?? 'T'), 0, 1)) }}
+                </div>
+                <div>
+                    <div class="font-display font-bold text-base text-gray-900">{{ $name ?? 'Student' }}</div>
+                    <div class="text-sm text-gray-500">{{ $__studentIdNumber ?? '' }}</div>
+                    <div class="text-xs text-violet-600 font-medium">{{ $__yearLevel ?? '' }} &middot; {{ $__section ?? 'Student Portal' }}</div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 gap-6">
+                <div>
+                    <h4 class="font-display font-bold text-base text-gray-900 mb-4 flex items-center gap-2">
+                        <i class="fas fa-user-edit text-violet-600"></i> Edit Name
+                    </h4>
+                    <form id="student-name-form" onsubmit="return false;">
+                        <div class="flex items-center gap-3">
+                            <div class="flex-1">
+                                <input type="text" id="student-name-input" value="{{ $name ?? '' }}" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" placeholder="Full name">
+                            </div>
+                            <button type="submit" class="px-5 py-3 rounded-xl bg-violet-700 text-white text-sm font-bold hover:bg-violet-800 transition-colors whitespace-nowrap">
+                                <i class="fas fa-check"></i> Save
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="pt-6 border-t border-gray-100">
+                    <h4 class="font-display font-bold text-base text-gray-900 mb-4 flex items-center gap-2">
+                        <i class="fas fa-lock text-violet-600"></i> Change Password
+                    </h4>
+                    <form id="student-password-form" onsubmit="return false;">
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Current Password</label>
+                                <input type="password" name="current_password" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" placeholder="Enter current password">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">New Password</label>
+                                <input type="password" name="new_password" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" placeholder="Min. 8 characters" minlength="8">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Confirm New Password</label>
+                                <input type="password" name="new_password_confirmation" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" placeholder="Re-enter new password" minlength="8">
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <button type="submit" class="px-5 py-3 rounded-xl bg-violet-700 text-white text-sm font-bold hover:bg-violet-800 transition-colors">
+                                <i class="fas fa-check"></i> Update Password
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -177,7 +237,51 @@
             setInterval(() => { if (!document.hidden) pollStates(); }, 15000);
         }
 
-        document.addEventListener('turbo:load', initModuleNav);
-        document.addEventListener('DOMContentLoaded', initModuleNav);
+        // --- Student Settings Modal ---
+        function initSettingsModal() {
+            const modal = document.getElementById('student-settings-modal');
+            const settingsBtns = document.querySelectorAll('.student-settings-btn');
+            const closeBtns = document.querySelectorAll('.close-student-settings');
+            if (!modal) return;
+            if (window.__settingsNav && window.__settingsNav.initialized) return;
+            window.__settingsNav = { initialized: true };
+
+            function openModal() {
+                const panel = modal.querySelector('.modal-panel');
+                modal.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
+                modal.classList.add('flex');
+                requestAnimationFrame(() => {
+                    modal.classList.add('opacity-100');
+                    if (panel) {
+                        panel.classList.remove('scale-95', 'translate-y-3', 'opacity-0');
+                        panel.classList.add('scale-100', 'translate-y-0', 'opacity-100');
+                    }
+                });
+            }
+
+            function closeModal() {
+                const panel = modal.querySelector('.modal-panel');
+                modal.classList.remove('opacity-100');
+                modal.classList.add('opacity-0', 'pointer-events-none');
+                if (panel) {
+                    panel.classList.remove('scale-100', 'translate-y-0', 'opacity-100');
+                    panel.classList.add('scale-95', 'translate-y-3', 'opacity-0');
+                }
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }, 200);
+            }
+
+            settingsBtns.forEach(btn => btn.addEventListener('click', openModal));
+            closeBtns.forEach(btn => btn.addEventListener('click', closeModal));
+            modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
+            });
+        }
+
+        document.addEventListener('turbo:load', () => { initModuleNav(); initSettingsModal(); });
+        document.addEventListener('DOMContentLoaded', () => { initModuleNav(); initSettingsModal(); });
     })();
 </script>

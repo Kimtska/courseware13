@@ -21,10 +21,31 @@ class RedirectIfAuthenticated
 
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
-                return redirect(RouteServiceProvider::HOME);
+                return redirect($this->redirectPathFor($guard));
             }
         }
 
         return $next($request);
+    }
+
+    /**
+     * Resolve where to send an already-authenticated user based on the
+     * guard they are signed in with. Falls back to RouteServiceProvider::HOME
+     * (the landing page) when the role cannot be determined.
+     */
+    protected function redirectPathFor(?string $guard): string
+    {
+        if ($guard === 'student') {
+            return route('student.dashboard');
+        }
+
+        $user = Auth::guard($guard)->user();
+        $role = $user?->role;
+
+        return match ($role) {
+            'instructor' => route('instructor.dashboard'),
+            'department_head' => route('department-head.dashboard'),
+            default => RouteServiceProvider::HOME,
+        };
     }
 }

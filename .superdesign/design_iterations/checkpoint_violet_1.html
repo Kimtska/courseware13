@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkpoint Design — Light Violet Course Sidebar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="checkpoint_violet_1.css">
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:var(--font-sans);background:var(--background);color:var(--foreground);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:40px 24px}
+    .demo-wrapper{max-width:1280px;width:100%}
+
+    .cp-sidebar{position:relative;display:flex;flex-direction:column;gap:0;padding:28px 0 28px 44px}
+    .cp-track{position:absolute;top:56px;bottom:56px;left:21px;width:2.5px;border-radius:4px;background:#e9d5ff;overflow:hidden;z-index:0}
+    .cp-track-fill{position:absolute;top:0;left:0;width:100%;height:0%;background:linear-gradient(180deg,#a78bfa,#7c3aed);border-radius:4px;transition:height .6s cubic-bezier(.4,0,.2,1)}
+
+    .cp-module{position:relative;z-index:1;display:flex;align-items:flex-start;gap:16px;margin-bottom:-1px}
+    .cp-node{width:38px;height:38px;min-width:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;font-family:var(--font-display);border:2.5px solid;position:relative;z-index:2;background:#fff;transition:all .35s cubic-bezier(.4,0,.2,1);flex-shrink:0}
+
+    .cp-node.completed{background:#7c3aed;border-color:#7c3aed;color:#fff;box-shadow:0 0 0 4px rgba(124,58,237,.12),0 4px 18px -6px rgba(124,58,237,.45)}
+    .cp-node.completed .cp-node-check{width:16px;height:16px}
+    .cp-node.completed .cp-node-glow{position:absolute;inset:-6px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.25) 0%,transparent 70%);animation:cpGlowPulse 2.5s ease-in-out infinite;pointer-events:none}
+    .cp-node.in-progress{background:#fff;border-color:#7c3aed;color:#7c3aed;box-shadow:0 0 0 4px rgba(124,58,237,.10),0 4px 16px -6px rgba(124,58,237,.35)}
+    .cp-node.in-progress .cp-node-pulse{position:absolute;inset:-8px;border-radius:50%;border:2px solid rgba(124,58,237,.2);animation:cpPulseRing 2s ease-in-out infinite;pointer-events:none}
+    .cp-node.locked{background:#f1f0f5;border-color:#d4d0db;color:#aca7b8}
+    .cp-module.locked{cursor:default}
+
+    .cp-card{flex:1;background:#fff;border:1px solid #e9e3f5;border-radius:16px;overflow:hidden;box-shadow:0 2px 10px -4px rgba(90,30,150,.08);transition:box-shadow .25s}
+    .cp-card:hover{box-shadow:0 6px 22px -8px rgba(90,30,150,.12)}
+    .cp-card-header{display:flex;align-items:center;gap:14px;padding:16px 18px;cursor:pointer;user-select:none;transition:background .2s;position:relative}
+    .cp-card-header:hover{background:#faf9ff}
+    .cp-icon-box{width:40px;height:40px;min-width:40px;border-radius:12px;background:linear-gradient(135deg,#f5f0ff,#ede5ff);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:17px}
+    .cp-module.completed .cp-icon-box{background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff}
+    .cp-card-info{flex:1;min-width:0}
+    .cp-card-title{font-family:var(--font-display);font-size:17px;font-weight:700;color:#2d1b69;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .cp-module.locked .cp-card-title{color:#aca7b8}
+    .cp-card-meta{display:flex;align-items:center;gap:6px;font-size:12px;color:#a78bfa;margin-top:2px}
+    .cp-module.locked .cp-card-meta{color:#c8c3d3}
+    .cp-meta-dot{color:#d8b4fe}
+    .cp-progress-track{width:60px;min-width:60px;height:3px;border-radius:4px;background:#ede9f7;overflow:hidden}
+    .cp-progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#a78bfa,#7c3aed);transition:width .6s cubic-bezier(.4,0,.2,1)}
+    .cp-module.locked .cp-progress-fill{background:#d4d0db}
+    .cp-chevron{width:28px;height:28px;border:none;background:transparent;color:#c4b5fd;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:8px;transition:all .3s ease;font-size:14px;flex-shrink:0}
+    .cp-chevron:hover{background:#f5f0ff;color:#7c3aed}
+    .cp-chevron.rotated{transform:rotate(180deg)}
+
+    .cp-card-body{max-height:0;overflow:hidden;transition:max-height .3s cubic-bezier(.16,1,.3,1),opacity .25s;opacity:0;border-top:0 solid;border-color:#e9e3f5}
+    .cp-card-body.open{max-height:400px;opacity:1;border-top-width:1px;border-style:solid}
+
+    .cp-lesson{display:flex;align-items:center;gap:10px;padding:12px 18px;transition:background .2s;border-left:3px solid transparent;cursor:pointer}
+    .cp-lesson:hover{background:#faf9ff}
+    .cp-lesson.active{border-left-color:#7c3aed;background:linear-gradient(90deg,rgba(124,58,237,.05),transparent)}
+    .cp-lesson-icon{width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;color:#9188a5}
+    .cp-lesson.completed .cp-lesson-icon{color:#22c55e}
+    .cp-lesson.active .cp-lesson-icon{color:#7c3aed}
+    .cp-lesson.locked .cp-lesson-icon{color:#d4d0db}
+    .cp-lesson-title{flex:1;font-size:13px;font-weight:500;color:#3d2a6b;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .cp-lesson.locked .cp-lesson-title{color:#aca7b8}
+    .cp-badge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.02em;text-transform:uppercase;flex-shrink:0;line-height:1.4}
+    .cp-badge-lavender{background:#ede5ff;color:#7c3aed}
+    .cp-badge-yellow{background:#fef7e6;color:#d97706}
+    .cp-badge-cyan{background:#e6f9fe;color:#0891b2}
+
+    .cp-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);background:#2d1b69;color:#fff;padding:14px 24px;border-radius:14px;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;box-shadow:0 8px 32px -8px rgba(45,27,105,.35);z-index:9999;opacity:0;transition:all .35s cubic-bezier(.16,1,.3,1);pointer-events:none}
+    .cp-toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+    .cp-toast i{color:#c4b5fd;font-size:16px}
+
+    @keyframes cpGlowPulse{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.15)}}
+    @keyframes cpPulseRing{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.25);opacity:0}}
+
+    @media(max-width:767px){
+      .cp-sidebar{padding:20px 0 20px 36px}
+      .cp-track{left:17px;top:44px;bottom:44px}
+      .cp-node{width:30px;height:30px;min-width:30px;font-size:12px}
+      .cp-card-header{padding:12px 14px;gap:10px;flex-wrap:wrap}
+      .cp-icon-box{width:34px;height:34px;min-width:34px;font-size:14px}
+      .cp-card-title{font-size:15px}
+      .cp-progress-track{width:40px;min-width:40px}
+      .cp-card-body.open{max-height:600px}
+      .cp-lesson{padding:10px 14px}
+    }
+  </style>
+</head>
+<body>
+<div class="demo-wrapper">
+  <h1 style="font-family:var(--font-display);font-size:28px;color:#2d1b69;margin-bottom:8px">Course Checkpoints</h1>
+  <p style="font-size:14px;color:#a78bfa;margin-bottom:32px">Light violet · Full-width cards · Three node states</p>
+
+  <div style="background:#fff;border:1px solid #e9e3f5;border-radius:24px;box-shadow:0 12px 40px -16px rgba(90,30,150,.12);overflow:hidden">
+    <div style="display:flex;flex-wrap:wrap;border-bottom:1px solid #f0ecf9">
+      <div class="cp-sidebar" style="flex:1;min-width:380px">
+        <div class="cp-track"><div class="cp-track-fill" id="track-fill" style="height:48%"></div></div>
+
+        <!-- Module 1 — Completed -->
+        <div class="cp-module completed" data-cp="0">
+          <div class="cp-node completed">
+            <svg class="cp-node-check" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 4.5L6 12l-3.5-3.5"/></svg>
+            <div class="cp-node-glow"></div>
+          </div>
+          <div class="cp-card">
+            <div class="cp-card-header" data-toggle="cp-body-0">
+              <div class="cp-icon-box"><i class="fa-solid fa-book-open"></i></div>
+              <div class="cp-card-info">
+                <div class="cp-card-title">Module 1: Gun Parts</div>
+                <div class="cp-card-meta"><i class="fa-regular fa-clock"></i> 12 mins <span class="cp-meta-dot">·</span> 4 lessons</div>
+              </div>
+              <div class="cp-progress-track"><div class="cp-progress-fill" style="width:100%"></div></div>
+              <button class="cp-chevron"><i class="fa-solid fa-chevron-down"></i></button>
+            </div>
+            <div class="cp-card-body" id="cp-body-0">
+              <div class="cp-lesson completed"><span class="cp-lesson-icon"><i class="fa-solid fa-circle-check"></i></span><span class="cp-lesson-title">Introduction to Gun Parts</span><span class="cp-badge cp-badge-lavender">Lesson</span></div>
+              <div class="cp-lesson completed"><span class="cp-lesson-icon"><i class="fa-solid fa-circle-check"></i></span><span class="cp-lesson-title">Frame &amp; Receiver Assembly</span><span class="cp-badge cp-badge-cyan">Video</span></div>
+              <div class="cp-lesson completed"><span class="cp-lesson-icon"><i class="fa-solid fa-circle-check"></i></span><span class="cp-lesson-title">Barrel &amp; Slide Mechanics</span><span class="cp-badge cp-badge-lavender">Lesson</span></div>
+              <div class="cp-lesson completed"><span class="cp-lesson-icon"><i class="fa-solid fa-circle-check"></i></span><span class="cp-lesson-title">Module Quiz</span><span class="cp-badge cp-badge-yellow">Assessment</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Module 2 — In-progress -->
+        <div class="cp-module active" data-cp="1">
+          <div class="cp-node in-progress"><span>2</span><div class="cp-node-pulse"></div></div>
+          <div class="cp-card" style="border-color:#c4b5fd;box-shadow:0 4px 18px -6px rgba(124,58,237,.15)">
+            <div class="cp-card-header" data-toggle="cp-body-1">
+              <div class="cp-icon-box"><i class="fa-solid fa-wrench"></i></div>
+              <div class="cp-card-info">
+                <div class="cp-card-title">Module 2: Assembly</div>
+                <div class="cp-card-meta"><i class="fa-regular fa-clock"></i> 20 mins <span class="cp-meta-dot">·</span> 3 lessons</div>
+              </div>
+              <div class="cp-progress-track"><div class="cp-progress-fill" style="width:35%"></div></div>
+              <button class="cp-chevron rotated"><i class="fa-solid fa-chevron-down"></i></button>
+            </div>
+            <div class="cp-card-body open" id="cp-body-1">
+              <div class="cp-lesson completed"><span class="cp-lesson-icon"><i class="fa-solid fa-circle-check"></i></span><span class="cp-lesson-title">Getting Started with Assembly</span><span class="cp-badge cp-badge-lavender">Lesson</span></div>
+              <div class="cp-lesson active"><span class="cp-lesson-icon"><i class="fa-solid fa-circle-play"></i></span><span class="cp-lesson-title">Advanced Techniques Demo</span><span class="cp-badge cp-badge-cyan">Video</span></div>
+              <div class="cp-lesson locked"><span class="cp-lesson-icon"><i class="fa-solid fa-lock"></i></span><span class="cp-lesson-title">Quiz Preparation</span><span class="cp-badge cp-badge-yellow">Assessment</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Module 3 — Locked -->
+        <div class="cp-module locked" data-cp="2">
+          <div class="cp-node locked"><span>3</span></div>
+          <div class="cp-card" style="opacity:.65">
+            <div class="cp-card-header" data-toggle="lock">
+              <div class="cp-icon-box" style="color:#aca7b8"><i class="fa-solid fa-lock"></i></div>
+              <div class="cp-card-info">
+                <div class="cp-card-title">Module 3: Advanced</div>
+                <div class="cp-card-meta"><i class="fa-regular fa-clock"></i> 15 mins <span class="cp-meta-dot">·</span> 5 lessons</div>
+              </div>
+              <div class="cp-progress-track"><div class="cp-progress-fill" style="width:0%"></div></div>
+              <button class="cp-chevron"><i class="fa-solid fa-chevron-down"></i></button>
+            </div>
+            <div class="cp-card-body" id="cp-body-2">
+              <div class="cp-lesson locked"><span class="cp-lesson-icon"><i class="fa-solid fa-lock"></i></span><span class="cp-lesson-title">Advanced Topic 1</span><span class="cp-badge cp-badge-lavender">Lesson</span></div>
+              <div class="cp-lesson locked"><span class="cp-lesson-icon"><i class="fa-solid fa-lock"></i></span><span class="cp-lesson-title">Practical Exercise</span><span class="cp-badge cp-badge-cyan">Video</span></div>
+              <div class="cp-lesson locked"><span class="cp-lesson-icon"><i class="fa-solid fa-lock"></i></span><span class="cp-lesson-title">Final Assessment</span><span class="cp-badge cp-badge-yellow">Assessment</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex:2;min-width:300px;padding:40px;background:linear-gradient(180deg,#f8fafc,#f5f0ff)">
+        <div style="font-size:11px;letter-spacing:.28em;text-transform:uppercase;font-weight:800;color:#7c3aed;margin-bottom:4px">Lesson Area</div>
+        <h2 style="font-family:var(--font-display);font-size:32px;color:#2d1b69;margin-bottom:8px">Advanced Techniques Demo</h2>
+        <p style="color:#6d5a9a;line-height:1.7;max-width:520px">Violet light sidebar with full-width expandable cards, progress bars, and stateful nodes on a 2.5px gradient track.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="cp-toast" id="locked-toast"><i class="fa-solid fa-lock"></i> <span>Complete the previous module first</span></div>
+
+<script>
+  document.querySelectorAll('[data-toggle]').forEach(h => {
+    h.addEventListener('click', function() {
+      const target = this.dataset.toggle;
+      if (target === 'lock') {
+        document.getElementById('locked-toast').classList.add('show');
+        setTimeout(() => document.getElementById('locked-toast').classList.remove('show'), 3000);
+        const card = this.closest('.cp-card');
+        card.style.animation = 'none';
+        card.offsetHeight;
+        card.style.animation = 'shake .35s ease';
+        return;
+      }
+      const body = document.getElementById(target);
+      const chevron = this.querySelector('.cp-chevron');
+      if (!body) return;
+      const isOpen = body.classList.toggle('open');
+      chevron.classList.toggle('rotated', isOpen);
+    });
+  });
+
+  const style = document.createElement('style');
+  style.textContent = `@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}`;
+  document.head.appendChild(style);
+</script>
+</body>
+</html>

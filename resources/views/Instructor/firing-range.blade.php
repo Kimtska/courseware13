@@ -32,14 +32,7 @@
                     <p style="font-size:10px;color:#a78bfa;text-transform:uppercase;letter-spacing:0.05em;font-weight:700">Time</p>
                     <p id="hud-timer" style="font-size:30px;font-weight:700;color:#fff;font-family:'Space Grotesk',sans-serif">60</p>
                 </div>
-                <div id="timer-controls" style="display:flex;align-items:center;gap:6px;background:rgba(3,3,7,0.8);backdrop-filter:blur(4px);border:1px solid rgba(124,58,237,0.5);border-radius:999px;padding:6px;pointer-events:auto;transition:opacity 0.25s ease, transform 0.25s ease">
-                    <button id="btn-start" onclick="startFiringRangeFromControl()" title="Start Simulation" style="width:34px;height:34px;border-radius:50%;border:none;background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:transform 0.15s, box-shadow 0.15s, opacity 0.15s;box-shadow:0 4px 10px -3px rgba(34,197,94,0.55)">
-                        <i class="fas fa-play" style="font-size:12px;margin-left:2px"></i>
-                    </button>
-                    <button id="btn-reset" onclick="resetFiringRange()" title="Reset" style="width:34px;height:34px;border-radius:50%;border:none;background:linear-gradient(135deg,#475569,#64748b);color:#fff;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:transform 0.15s, box-shadow 0.15s, opacity 0.15s;box-shadow:0 4px 10px -3px rgba(71,85,105,0.45)">
-                        <i class="fas fa-rotate-left" style="font-size:12px"></i>
-                    </button>
-                </div>
+                <div id="timer-controls" style="display:flex;align-items:center;gap:6px;background:rgba(3,3,7,0.8);backdrop-filter:blur(4px);border:1px solid rgba(124,58,237,0.5);border-radius:999px;padding:6px;pointer-events:auto;transition:opacity 0.25s ease, transform 0.25s ease"></div>
             </div>
             <div style="background:rgba(3,3,7,0.8);backdrop-filter:blur(4px);border:1px solid rgba(124,58,237,0.5);border-radius:12px;padding:10px 16px;text-align:right">
                 <p style="font-size:10px;color:#a78bfa;text-transform:uppercase;letter-spacing:0.05em;font-weight:700">Accuracy</p>
@@ -111,6 +104,38 @@
                 </div>
             </div>
         </div>
+        <!-- ==================== START SIMULATION MODAL ==================== -->
+        <div id="start-modal-overlay" class="start-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="start-modal-title">
+            <div class="start-modal">
+                <svg class="start-bg-shape" style="top:-20px;right:-20px;width:120px;height:120px" viewBox="0 0 120 120"><circle cx="60" cy="60" r="60" fill="#7C3AED"></circle></svg>
+                <svg class="start-bg-shape" style="bottom:-30px;left:-30px;width:150px;height:150px" viewBox="0 0 150 150"><circle cx="75" cy="75" r="75" fill="#7C3AED"></circle></svg>
+                <div class="pt-8 pb-2">
+                    <div class="start-icon-wrap">
+                        <div class="start-icon-ring"><i class="fas fa-crosshairs"></i></div>
+                        <span class="start-dot"></span><span class="start-dot"></span><span class="start-dot"></span><span class="start-dot"></span>
+                    </div>
+                </div>
+                <div class="px-8 pt-4 pb-3 text-center">
+                    <h3 id="start-modal-title" class="start-title">Firing Range Ready</h3>
+                    <p class="start-text mt-2">You are about to begin the marksmanship simulation. Make sure you are focused and ready to fire.</p>
+                </div>
+                <div class="mx-8 mb-5 p-3 bg-violet-50/70 rounded-xl border border-violet-100/80">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-full bg-violet-200/60 flex items-center justify-center"><i class="fas fa-gun text-violet-600 text-xs"></i></div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-semibold text-violet-900 truncate" id="start-modal-weapon">9mm Pistol</p>
+                            <p class="text-[10px] text-violet-500" id="start-modal-time">60s &middot; Steady</p>
+                        </div>
+                        <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse flex-shrink-0"></div>
+                    </div>
+                </div>
+                <div class="px-8 pb-8 flex items-center gap-3">
+                    <button id="start-modal-cancel" class="start-btn start-btn-cancel flex-1" type="button" onclick="cancelStartModal()"><i class="fas fa-times text-xs"></i> Cancel</button>
+                    <button id="start-modal-reset" class="start-btn start-btn-reset flex-1" type="button" onclick="confirmReset()"><i class="fas fa-rotate-left text-xs"></i> Reset</button>
+                    <button id="start-modal-confirm" class="start-btn start-btn-start flex-1" type="button" onclick="confirmStart()"><i class="fas fa-play text-xs"></i> Start Simulation</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <style>
@@ -119,21 +144,30 @@
         @keyframes hitMarkerAnim{0%{opacity:1;transform:translate(-50%,-50%) scale(0.5)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.5)}}
         .target-container{position:absolute;transition:transform 0.2s ease-out, opacity 0.2s}
         .target-container.hit{animation:targetHit 0.4s ease-out forwards}
-        .target{width:150px;height:210px;position:relative;cursor:none;filter:drop-shadow(0 12px 18px rgba(0,0,0,0.35));transform-origin:center bottom}
-        .target-board{position:absolute;inset:0;border-radius:18px;background:linear-gradient(180deg, rgba(245,240,228,0.98), rgba(228,218,198,0.98));border:2px solid #c8b89a;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.6)}
-        .target-board::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg, rgba(255,255,255,0.12) 0 2px, transparent 2px 20px), repeating-linear-gradient(0deg, rgba(143,116,82,0.06) 0 1px, transparent 1px 14px);opacity:0.8}
-        .target-board::after{content:'';position:absolute;inset:12px;border-radius:14px;border:1px solid rgba(120,94,61,0.16)}
-        .target-stand{position:absolute;bottom:-22px;width:6px;height:28px;background:linear-gradient(180deg,#8a5a2b,#5d3a1a);border-radius:3px}
-        .target-stand.left{left:34px;transform:rotate(-5deg)}
-        .target-stand.right{right:34px;transform:rotate(5deg)}
-        .target-center{position:absolute;left:50%;top:46%;width:82px;height:118px;transform:translate(-50%,-50%)}
-        .target-silhouette{position:absolute;left:50%;top:50%;width:64px;height:96px;transform:translate(-50%,-50%);background:linear-gradient(180deg, rgba(19,24,39,0.98), rgba(35,41,57,0.98));clip-path:path('M 32 0 C 42 0 50 8 50 18 C 50 24 47 29 42 33 L 42 39 C 50 46 56 57 57 71 L 57 78 C 57 82 54 85 50 85 L 44 85 L 44 96 L 20 96 L 20 85 L 14 85 C 10 85 7 82 7 78 L 7 71 C 8 57 14 46 22 39 L 22 33 C 17 29 14 24 14 18 C 14 8 22 0 32 0 Z');opacity:0.92}
+        .target{width:160px;height:160px;position:relative;cursor:none;filter:drop-shadow(0 12px 24px rgba(0,0,0,0.4));transform-origin:center center}
+        .target-board{position:absolute;inset:0;border-radius:50%;background:#1a1a1a;border:3px solid #000;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.05), inset 0 -4px 20px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.4)}
+        .target-board::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 40% 40%, rgba(255,255,255,0.04) 0%, transparent 50%);opacity:0.5}
+        .target-board::after{content:'';position:absolute;inset:8px;border-radius:50%;border:1px solid rgba(255,255,255,0.03);box-shadow:inset 0 2px 8px rgba(255,255,255,0.01)}
+        .target-rings{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:100%;pointer-events:none}
         .target-ring{position:absolute;left:50%;top:50%;border-radius:50%;transform:translate(-50%,-50%)}
-        .target-ring.outer{width:104px;height:104px;border:3px solid rgba(104,81,48,0.75)}
-        .target-ring.middle{width:74px;height:74px;border:3px solid rgba(185,28,28,0.7)}
-        .target-ring.inner{width:42px;height:42px;border:3px solid rgba(104,81,48,0.85)}
-        .target-bullseye{position:absolute;left:50%;top:50%;width:14px;height:14px;transform:translate(-50%,-50%);border-radius:50%;background:#b91c1c;box-shadow:0 0 12px rgba(185,28,28,0.6)}
-        .target-head-zone{position:absolute;left:50%;top:18px;width:34px;height:34px;transform:translateX(-50%);border:2px solid rgba(185,28,28,0.62);border-radius:50%}
+        .target-ring.delta{width:140px;height:140px;background:#000;border:2px solid #111}
+        .target-ring.charlie{width:106px;height:106px;background:#000;border:2px solid #111}
+        .target-ring.bravo{width:72px;height:72px;background:#fff;border:2px solid #ddd}
+        .target-ring.alpha{width:38px;height:38px;background:#dc2626;border:2px solid #b91c1c}
+        .target-bullseye{position:absolute;left:50%;top:50%;width:16px;height:16px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 35% 35%, #fff1 0%, #dc2626 40%, #7f1d1d 100%);box-shadow:0 0 16px rgba(220,38,38,0.9), inset 0 -2px 4px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.2);border:2px solid #b91c1c}
+        .target-bullseye::before{content:'';position:absolute;inset:-3px;border-radius:50%;background:conic-gradient(from 0deg, transparent, rgba(220,38,38,0.3), transparent);animation:bullseyePulse 2s ease-in-out infinite}
+        @keyframes bullseyePulse{0%,100%{opacity:0.3;transform:scale(1)}50%{opacity:0.6;transform:scale(1.15)}}
+        .target-zone-label{position:absolute;left:50%;transform:translateX(-50%);font-family:'Space Grotesk',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#555;text-shadow:0 1px 2px rgba(0,0,0,0.9);pointer-events:none;white-space:nowrap;text-align:center}
+        .target-zone-label.delta{top:74px;color:#444}
+        .target-zone-label.charlie{top:56px;color:#444}
+        .target-zone-label.bravo{top:39px;color:#888}
+        .target-zone-label.alpha{top:24px;color:#b91c1c}
+        .target-crosshair-lines{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:150px;height:150px;pointer-events:none;opacity:0.15}
+        .target-crosshair-lines::before,.target-crosshair-lines::after{content:'';position:absolute;background:#fff;opacity:0.3}
+        .target-crosshair-lines::before{width:1px;height:100%;left:50%;top:0;transform:translateX(-50%)}
+        .target-crosshair-lines::after{width:100%;height:1px;left:0;top:50%;transform:translateY(-50%)}
+        .target-indicator{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:100%;pointer-events:none}
+        .target-indicator::before{content:'';position:absolute;left:50%;top:50%;width:154px;height:154px;border:1px dashed rgba(255,255,255,0.06);border-radius:50%;transform:translate(-50%,-50%)}
         .bullet-hole{position:fixed;width:8px;height:8px;background:radial-gradient(circle, #111 0%, #333 60%, transparent 100%);border-radius:50%;pointer-events:none;z-index:5;box-shadow:0 0 2px rgba(0,0,0,0.8)}
         #game-area.cursor-hidden{cursor:none}
         #hit-marker.show{animation:hitMarkerAnim 0.2s ease-out forwards}
@@ -141,6 +175,37 @@
         .reload-fill{transition:width 1.5s linear}
         #timer-controls button:not(:disabled):hover{transform:translateY(-1px) scale(1.06)}
         #timer-controls button:not(:disabled):active{transform:translateY(0) scale(0.96)}
+
+        .start-modal-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(3,3,7,0.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:0;visibility:hidden;transition:opacity .3s ease, visibility .3s ease}
+        .start-modal-overlay.active{opacity:1;visibility:visible}
+        .start-modal-overlay.closing{opacity:0;visibility:visible;transition:opacity .25s ease, visibility .25s ease}
+        .start-modal{background:#fff;border-radius:20px;width:92%;max-width:420px;padding:0;overflow:hidden;box-shadow:0 25px 60px -12px rgba(30,5,82,0.35), 0 0 0 1px rgba(124,58,237,0.08);transform:scale(0.85) translateY(20px);opacity:0;transition:transform .35s cubic-bezier(0.34,1.56,0.64,1), opacity .3s ease}
+        .start-modal-overlay.active .start-modal{transform:scale(1) translateY(0);opacity:1}
+        .start-modal-overlay.closing .start-modal{transform:scale(0.9) translateY(10px);opacity:0;transition:transform .25s ease, opacity .25s ease}
+        .start-icon-wrap{position:relative;width:80px;height:80px;margin:0 auto}
+        .start-icon-ring{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#EDE9FE,#DDD6FE);display:flex;align-items:center;justify-content:center;position:relative}
+        .start-icon-ring::before{content:'';position:absolute;inset:-4px;border-radius:50%;background:conic-gradient(from 0deg, #7C3AED, #A78BFA, #C4B5FD, #7C3AED);z-index:-1;animation:startRingRotate 4s linear infinite}
+        @keyframes startRingRotate{to{transform:rotate(360deg)}}
+        .start-icon-ring i{font-size:32px;background:linear-gradient(135deg,#5B21B6,#7C3AED);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .start-dot{position:absolute;width:5px;height:5px;border-radius:50%;background:#A78BFA;animation:startDotPulse 2s ease-in-out infinite}
+        .start-dot:nth-child(2){top:-8px;left:50%;transform:translateX(-50%);animation-delay:0s}
+        .start-dot:nth-child(3){top:50%;right:-8px;transform:translateY(-50%);animation-delay:0.5s}
+        .start-dot:nth-child(4){bottom:-8px;left:50%;transform:translateX(-50%);animation-delay:1s}
+        .start-dot:nth-child(5){top:50%;left:-8px;transform:translateY(-50%);animation-delay:1.5s}
+        @keyframes startDotPulse{0%,100%{opacity:.3;transform:scale(1)}50%{opacity:1;transform:scale(1.4)}}
+        .start-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;color:#0f172a;margin:0}
+        .start-text{font-size:14px;color:#64748b;line-height:1.6;margin:0}
+        .start-btn{border:none;cursor:pointer;font-family:'Inter',sans-serif;font-weight:700;font-size:13px;padding:12px 18px;border-radius:12px;transition:all .2s ease;display:inline-flex;align-items:center;justify-content:center;gap:6px;letter-spacing:0.02em}
+        .start-btn:active{transform:scale(0.96)}
+        .start-btn-cancel{background:#f1f5f9;color:#475569}
+        .start-btn-cancel:hover{background:#e2e8f0;color:#334155}
+        .start-btn-reset{background:#f1f5f9;color:#475569}
+        .start-btn-reset:hover{background:#e2e8f0;color:#334155}
+        .start-btn-start{background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;box-shadow:0 4px 14px -3px rgba(34,197,94,0.4)}
+        .start-btn-start:hover{background:linear-gradient(135deg,#15803d,#16a34a);box-shadow:0 6px 20px -3px rgba(34,197,94,0.5);transform:translateY(-1px)}
+        .start-btn-start:active{transform:translateY(0) scale(0.96)}
+        .start-bg-shape{position:absolute;pointer-events:none;opacity:0.04}
+        @media(prefers-reduced-motion:reduce){.start-modal,.start-modal-overlay{transition:none !important}.start-icon-ring::before,.start-dot{animation:none !important}}
     </style>
 
     <script>
@@ -194,8 +259,6 @@
         const btnReload = document.getElementById('btn-reload');
         const reloadUI = document.getElementById('reload-ui');
         const reloadFill = document.getElementById('reload-fill');
-        const btnStart = document.getElementById('btn-start');
-        const btnReset = document.getElementById('btn-reset');
         const timerControls = document.getElementById('timer-controls');
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -231,7 +294,6 @@
             crosshair.style.display = 'block';
             updateHUD();
             setTimerControlsVisible(false);
-            updateControlButtons();
 
             gameTimer = setInterval(() => {
                 state.timeLeft--;
@@ -294,7 +356,6 @@
             crosshair.style.display = 'none';
             updateHUD();
             setTimerControlsVisible(true);
-            updateControlButtons();
         }
 
         function setTimerControlsVisible(visible) {
@@ -310,10 +371,42 @@
             }
         }
 
-        function updateControlButtons() {
-            if (!btnStart || !btnReset) return;
-            btnStart.style.display = 'inline-flex';
-            btnReset.style.display = 'inline-flex';
+        let startModalOpen = false;
+
+        function openStartModal() {
+            if (state.hasStarted) return;
+            if (startModalOpen) return;
+            const overlay = document.getElementById('start-modal-overlay');
+            const weaponEl = document.getElementById('start-modal-weapon');
+            const timeEl = document.getElementById('start-modal-time');
+            if (weaponEl) weaponEl.innerText = weaponStats[state.selectedWeapon]?.name || '9mm Pistol';
+            if (timeEl) timeEl.innerText = state.selectedTime + 's &middot; ' + (state.targetMode.charAt(0).toUpperCase() + state.targetMode.slice(1));
+            overlay.classList.remove('closing');
+            overlay.classList.add('active');
+            startModalOpen = true;
+        }
+
+        function closeStartModal() {
+            if (!startModalOpen) return;
+            const overlay = document.getElementById('start-modal-overlay');
+            overlay.classList.add('closing');
+            overlay.classList.remove('active');
+            startModalOpen = false;
+            setTimeout(() => overlay.classList.remove('closing'), 280);
+        }
+
+        function confirmStart() {
+            closeStartModal();
+            startFiringRangeFromControl();
+        }
+
+        function confirmReset() {
+            resetFiringRange();
+            openStartModal();
+        }
+
+        function cancelStartModal() {
+            window.location.href = @json(route('instructor.manage-marksmanship'));
         }
 
         function hideEndOverlay() {
@@ -332,7 +425,6 @@
             gameArea.classList.remove('cursor-hidden');
             crosshair.style.display = 'none';
             setTimerControlsVisible(true);
-            updateControlButtons();
 
             document.getElementById('res-reason').innerText = reason || 'Simulation ended';
             document.getElementById('res-score').innerText = state.score;
@@ -400,22 +492,25 @@
             targetEl.innerHTML = `
                 <div class="target" data-points="2">
                     <div class="target-board"></div>
-                    <div class="target-stand left"></div>
-                    <div class="target-stand right"></div>
-                    <div class="target-center">
-                        <div class="target-ring outer"></div>
-                        <div class="target-ring middle"></div>
-                        <div class="target-ring inner"></div>
-                        <div class="target-head-zone"></div>
-                        <div class="target-silhouette"></div>
-                        <div class="target-bullseye"></div>
+                    <div class="target-indicator"></div>
+                    <div class="target-crosshair-lines"></div>
+                    <div class="target-rings">
+                        <div class="target-ring delta" data-zone="delta" data-points="1"></div>
+                        <div class="target-zone-label delta">Delta</div>
+                        <div class="target-ring charlie" data-zone="charlie" data-points="3"></div>
+                        <div class="target-zone-label charlie">Charlie</div>
+                        <div class="target-ring bravo" data-zone="bravo" data-points="5"></div>
+                        <div class="target-zone-label bravo">Bravo</div>
+                        <div class="target-ring alpha" data-zone="alpha" data-points="10"></div>
+                        <div class="target-zone-label alpha">Alpha</div>
+                        <div class="target-bullseye" data-zone="bullseye" data-points="20"></div>
                     </div>
                 </div>
             `;
 
             const bounds = gameArea.getBoundingClientRect();
-            const targetWidth = 150;
-            const targetHeight = 210;
+            const targetWidth = 160;
+            const targetHeight = 160;
 
             if (state.targetMode === 'steady') {
                 const x = (bounds.width / 2) - (targetWidth / 2);
@@ -450,8 +545,8 @@
 
             if (activeTarget && state.targetMode !== 'steady') {
                 const bounds = gameArea.getBoundingClientRect();
-                const targetWidth = 150;
-                const targetHeight = 210;
+                const targetWidth = 160;
+                const targetHeight = 160;
                 const bufferBottom = 120;
 
                 let vx = parseFloat(activeTarget.dataset.vx);
@@ -504,16 +599,26 @@
             muzzleFlash.classList.add('active');
             setTimeout(() => muzzleFlash.classList.remove('active'), 80);
 
-            gameArea.style.transform = 'translateY(' + weaponStats[state.selectedWeapon].recoil + 'px)';
-            setTimeout(() => gameArea.style.transform = 'translateY(0)', 100);
-
             const targetCheck = e.target.closest('.target');
             if (targetCheck) {
                 state.hits++;
                 let points = 2;
-                if (e.target.classList.contains('target-bullseye')) { points = 20; state.bullseyes++; }
-                else if (e.target.classList.contains('target-ring') && e.target.classList.contains('inner')) points = 10;
-                else if (e.target.classList.contains('target-ring') && e.target.classList.contains('middle')) points = 5;
+                let zoneName = 'body';
+                const hitElement = e.target.closest('[data-zone]');
+                if (hitElement) {
+                    points = parseInt(hitElement.dataset.points || '2', 10);
+                    zoneName = hitElement.dataset.zone || 'body';
+                    if (zoneName === 'bullseye') state.bullseyes++;
+                } else if (e.target.classList.contains('target-bullseye')) {
+                    points = 20; state.bullseyes++; zoneName = 'bullseye';
+                } else if (e.target.classList.contains('target-ring')) {
+                    if (e.target.classList.contains('alpha')) { points = 10; zoneName = 'alpha'; }
+                    else if (e.target.classList.contains('bravo')) { points = 5; zoneName = 'bravo'; }
+                    else if (e.target.classList.contains('charlie')) { points = 3; zoneName = 'charlie'; }
+                    else if (e.target.classList.contains('delta')) { points = 1; zoneName = 'delta'; }
+                } else if (e.target.classList.contains('target-head-zone')) {
+                    points = 15; zoneName = 'head';
+                }
 
                 state.score += points; playHitSound();
                 hitMarker.classList.remove('show'); void hitMarker.offsetWidth; hitMarker.classList.add('show');
@@ -560,6 +665,7 @@
         gameArea.addEventListener('mousedown', handleShot);
         document.addEventListener('keydown', (e) => {
             if (e.key === 'r' || e.key === 'R') initiateReload();
+            if (e.key === 'Escape' && startModalOpen) cancelStartModal();
         });
         gameArea.addEventListener('contextmenu', e => e.preventDefault());
 
@@ -575,7 +681,7 @@
             timerControls.style.transform = 'scale(1)';
         }
         updateHUD();
-        updateControlButtons();
+        openStartModal();
     </script>
 
 </body>

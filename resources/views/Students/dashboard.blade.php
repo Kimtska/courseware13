@@ -20,6 +20,30 @@
     </style>
 </head>
 <body>
+    @php
+        $__studentUser = Auth::guard('student')->user() ?? (Auth::guard('web')->user() && Auth::guard('web')->user()->role === 'student' ? Auth::guard('web')->user() : null);
+        if (!isset($name) || $name === null || $name === '') {
+            $name = $__studentUser->full_name ?? $__studentUser->name ?? 'Student';
+        }
+        if (!isset($firstName) || $firstName === null || $firstName === '') {
+            $firstName = $__studentUser->first_name ?? (preg_split('/\s+/', trim($name))[0] ?? $name);
+        }
+        if (!isset($lastName) || $lastName === null) {
+            $lastName = $__studentUser->last_name ?? (preg_split('/\s+/', trim($name))[1] ?? '');
+        }
+        $__studentIdNumber = $__studentUser->student_id_number ?? $__studentUser->email ?? '';
+        $__yearLevel = $__studentUser->year_level ?? 'N/A';
+        $__section = $__studentUser->section ?? 'Student Portal';
+        $selectedStudent = $selectedStudent ?? [
+            'full_name' => $name,
+            'student_id_number' => $__studentIdNumber,
+            'year_level' => $__yearLevel,
+            'section' => $__section,
+        ];
+        $name = $name ?? 'Student';
+        $firstName = $firstName ?? $name;
+        $lastName = $lastName ?? '';
+    @endphp
     <header id="main-header" data-turbo-permanent class="bg-violet-950 text-white sticky top-0 z-50 shadow-lg shadow-violet-950/30">
         <div class="max-w-7xl mx-auto px-4 sm:px-6">
             <div class="flex items-center justify-between h-16">
@@ -31,11 +55,13 @@
                     @include('Students.partials.nav-links', ['type' => 'desktop', 'activeNav' => 'dashboard'])
                 </div>
                 <div class="flex items-center gap-3">
-                    <span class="hidden lg:inline-flex items-center px-3 py-1 bg-violet-800/50 text-violet-200 text-[10px] font-bold rounded-full border border-violet-700/50">Student</span>
                     <div class="hidden sm:flex items-center gap-2 pl-3 border-l border-violet-800/50">
-                        <div class="w-8 h-8 rounded-full bg-violet-700 flex items-center justify-center text-xs font-bold">{{ strtoupper(substr($firstName ?: ($name ?? 'S'), 0, 1)) }}{{ strtoupper(substr($lastName ?: ($name ?? 'T'), 0, 1)) }}</div>
-                        <span class="text-sm font-medium">{{ $name ?? 'Student' }}</span>
+                        <div class="w-8 h-8 rounded-full bg-violet-700 flex items-center justify-center text-xs font-bold">{{ strtoupper(substr($firstName ?: $name, 0, 1)) }}{{ strtoupper(substr($lastName ?: $name, 0, 1)) }}</div>
+                        <span class="text-sm font-medium">{{ $name }}</span>
                     </div>
+                    <button type="button" class="student-settings-btn p-2 rounded-lg hover:bg-violet-800/50 transition-colors text-violet-300 hover:text-white" title="Settings" aria-label="Settings">
+                        <i class="fas fa-cog text-sm"></i>
+                    </button>
                     <button onclick="showLogoutAlert()" class="p-2 rounded-lg hover:bg-violet-800/50 transition-colors text-violet-300 hover:text-white" title="Logout" aria-label="Logout">
                         <i class="fas fa-sign-out-alt text-sm"></i>
                     </button>
@@ -96,20 +122,10 @@
                     </div>
                 </div>
             </div>
-            <div class="card p-6">
-                <h3 class="font-display font-bold text-xl text-gray-900 mb-4">Profile & Access</h3>
-                <div class="space-y-2 text-sm text-gray-600">
-                    <div><span class="font-semibold text-gray-900">Student ID:</span> {{ $selectedStudent['student_id_number'] ?? '' }}</div>
-                    <div><span class="font-semibold text-gray-900">Name:</span> {{ $selectedStudent['full_name'] ?? $name }}</div>
-                    <div><span class="font-semibold text-gray-900">Enrollment:</span> Verified Enrolled</div>
-                    <div><span class="font-semibold text-gray-900">Module Access:</span> Ready for Training</div>
-                    <div><span class="font-semibold text-gray-900">Portal Mode:</span> Instructor-Supervised Session</div>
-                </div>
-            </div>
         </div>
     </main>
 
-    @include('shared.sweet-alerts.logout', ['logoutLabel' => 'Student — ' . ($name ?? 'Student'), 'logoutSubtext' => 'Student Dashboard', 'logoutDescription' => 'You are about to end your session.', 'redirectUrl' => url('/')])
+    @include('shared.sweet-alerts.logout', ['logoutLabel' => 'Student — ' . $name, 'logoutSubtext' => 'Student Dashboard', 'logoutDescription' => 'You are about to end your session.', 'redirectUrl' => url('/')])
 
     <script>
         const mobileToggle = document.getElementById('mobile-toggle');

@@ -46,7 +46,7 @@ class StudentController extends Controller
 
         $lessonPages = $lesson?->pages ?? collect();
 
-        return view('Students.gun-parts', array_merge($this->studentViewData(), [
+        return view('Students.module-checkpoint-node', array_merge($this->studentViewData(), [
             'lesson' => $lesson,
             'lessonPages' => $lessonPages,
         ]));
@@ -88,7 +88,7 @@ class StudentController extends Controller
             $scores = \App\Models\StudentScore::where('student_profile_id', $profile->id)->orderBy('recorded_at', 'desc')->get();
         }
 
-        return view('Students.reports', array_merge($data, [
+        return view('Students.Assessment-report', array_merge($data, [
             'profile' => $profile,
             'scores' => $scores,
         ]));

@@ -88,14 +88,7 @@ body.simulation-locked{overflow:hidden}
 .toast.show{opacity:1}
 .ok{background:#7c3aed;color:#fff}
 .err{background:#ef4444;color:#fff}
-/* Timer widget + count-in overlay (copied/adapted from firing-range) */
-.timer-widget{position:fixed;right:16px;top:80px;z-index:55;width:220px;background:rgba(255,255,255,0.96);backdrop-filter:blur(8px);border:1px solid #e9d5ff;border-radius:20px;box-shadow:0 18px 40px -16px rgba(30,5,82,0.2)}
-.timer-widget.hidden{display:none}
-.count-in-overlay{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .2s ease, visibility .2s ease}
-.count-in-overlay.active{opacity:1;visibility:visible}
-.count-in-card{min-width:220px;padding:24px 28px;border-radius:28px;background:rgba(255,255,255,0.92);backdrop-filter:blur(10px);border:1px solid #e9d5ff;box-shadow:0 20px 50px -16px rgba(30,5,82,0.24);text-align:center}
-.count-in-number{font-family:'Space Grotesk',sans-serif;font-size:72px;line-height:1;font-weight:800;color:#5B21B6;letter-spacing:-0.04em}
-.count-in-label{margin-top:8px;font-size:11px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:#7c3aed}
+
 *{scrollbar-width:thin;scrollbar-color:#7c3aed #ddd6fe}
 *::-webkit-scrollbar{width:10px;height:10px}
 *::-webkit-scrollbar-track{background:#ddd6fe;border-radius:9999px}
@@ -108,6 +101,19 @@ body.simulation-locked{overflow:hidden}
 @php
   $assetBase = asset('images/assemble');
   $embedded = request()->boolean('embedded');
+  $__studentUser = Auth::guard('student')->user() ?? (Auth::guard('web')->user() && Auth::guard('web')->user()->role === 'student' ? Auth::guard('web')->user() : null);
+  if (!isset($name) || $name === null || $name === '') {
+      $name = $__studentUser->full_name ?? $__studentUser->name ?? 'Student';
+  }
+  if (!isset($firstName) || $firstName === null || $firstName === '') {
+      $firstName = $__studentUser->first_name ?? (preg_split('/\s+/', trim($name))[0] ?? $name);
+  }
+  if (!isset($lastName) || $lastName === null) {
+      $lastName = $__studentUser->last_name ?? (preg_split('/\s+/', trim($name))[1] ?? '');
+  }
+  $name = $name ?? 'Student';
+  $firstName = $firstName ?? $name;
+  $lastName = $lastName ?? '';
 @endphp
 @unless ($embedded)
 <header id="main-header" data-turbo-permanent class="bg-violet-950 text-white sticky top-0 z-50 shadow-lg shadow-violet-950/30 main-header">
@@ -124,11 +130,13 @@ body.simulation-locked{overflow:hidden}
         <i class="fas fa-arrow-left text-xs"></i> Exit
       </div>
       <div class="hide-play flex items-center gap-3">
-        <span class="hidden lg:inline-flex items-center px-3 py-1 bg-violet-800/50 text-violet-200 text-[10px] font-bold rounded-full border border-violet-700/50">Student</span>
-        <div class="hidden sm:flex items-center gap-2 pl-3 border-l border-violet-800/50">
-          <div class="w-8 h-8 rounded-full bg-violet-700 flex items-center justify-center text-xs font-bold">{{ strtoupper(substr($firstName ?: ($name ?? 'S'), 0, 1)) }}{{ strtoupper(substr($lastName ?: ($name ?? 'T'), 0, 1)) }}</div>
-          <span class="text-sm font-medium">{{ $name ?? 'Student' }}</span>
+                    <div class="hidden sm:flex items-center gap-2 pl-3 border-l border-violet-800/50">
+          <div class="w-8 h-8 rounded-full bg-violet-700 flex items-center justify-center text-xs font-bold">{{ strtoupper(substr($firstName ?: $name, 0, 1)) }}{{ strtoupper(substr($lastName ?: $name, 0, 1)) }}</div>
+          <span class="text-sm font-medium">{{ $name }}</span>
         </div>
+        <button type="button" class="student-settings-btn p-2 rounded-lg hover:bg-violet-800/50 transition-colors text-violet-300 hover:text-white" title="Settings" aria-label="Settings">
+          <i class="fas fa-cog text-sm"></i>
+        </button>
         <button onclick="showLogoutAlert()" type="button" class="p-2 rounded-lg hover:bg-violet-800/50 transition-colors text-violet-300 hover:text-white" title="Logout" aria-label="Logout">
           <i class="fas fa-sign-out-alt text-sm"></i>
         </button>
@@ -182,34 +190,6 @@ body.simulation-locked{overflow:hidden}
 </div>
 
 <div class="toast" id="toast"></div>
-
-<!-- Page Timer Widget (firing-range style) -->
-<div id="page-timer-widget" class="timer-widget hidden p-4">
-  <div class="flex items-center justify-between mb-3">
-    <div>
-      <p class="text-[10px] uppercase tracking-[0.22em] text-violet-500 font-bold">Timer</p>
-      <p class="text-xs text-gray-500">Countdown control</p>
-    </div>
-    <div class="w-10 h-10 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center">
-      <i class="fas fa-stopwatch"></i>
-    </div>
-  </div>
-  <div class="rounded-2xl bg-violet-50 border border-violet-100 px-4 py-3 text-center mb-3">
-    <div id="page-timer-display" class="font-display font-bold text-3xl text-violet-700">30</div>
-    <div class="text-[10px] uppercase tracking-widest text-violet-500 font-bold mt-1">Seconds</div>
-  </div>
-  <div class="grid grid-cols-2 gap-2">
-    <button type="button" onclick="startPageTimer()" class="rounded-xl bg-violet-700 px-3 py-2 text-xs font-bold text-white hover:bg-violet-600 transition-colors">Start Timer</button>
-    <button type="button" onclick="resetPageTimer()" class="rounded-xl bg-gray-100 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-200 transition-colors">Reset Timer</button>
-  </div>
-</div>
-
-<div id="count-in-overlay" class="count-in-overlay" aria-live="polite" aria-atomic="true">
-  <div class="count-in-card">
-    <div id="count-in-number" class="count-in-number">3</div>
-    <div class="count-in-label">Simulation Starts</div>
-  </div>
-</div>
 
 <script>
 const IMGS = {
@@ -297,108 +277,6 @@ function startSimulation(){
   document.body.classList.remove('simulation-locked');
   setInfo('Drag each part from the tray onto the pistol to assemble it layer by layer.');
   toast('Simulation started: ' + FIREARM_LABELS[selectedFirearm] + ' · ' + selectedTimeLimit + 's', 'ok');
-  // Reveal the firing-range style timer widget (user can Start/Reset the countdown)
-  pageTimerRemaining = selectedTimeLimit;
-  updatePageTimerDisplay();
-  showPageTimerWidget();
-}
-
-// ===== Page timer / count-in (firing-range style) =====
-let pageTimerInterval = null;
-let pageCountInInterval = null;
-let pageTimerRemaining = selectedTimeLimit;
-const pageTimerDisplay = () => document.getElementById('page-timer-display');
-
-function showPageTimerWidget(){
-  const w = document.getElementById('page-timer-widget');
-  if(w) w.classList.remove('hidden');
-}
-
-function hidePageTimerWidget(){
-  const w = document.getElementById('page-timer-widget');
-  if(w) w.classList.add('hidden');
-}
-
-function showCountInOverlay(text){
-  const o = document.getElementById('count-in-overlay');
-  const n = document.getElementById('count-in-number');
-  if(n) n.innerText = text;
-  if(o) o.classList.add('active');
-}
-
-function hideCountInOverlay(){
-  const o = document.getElementById('count-in-overlay');
-  if(o) o.classList.remove('active');
-}
-
-function stopPageTimer(){
-  if(pageTimerInterval){ clearInterval(pageTimerInterval); pageTimerInterval = null; }
-}
-
-function updatePageTimerDisplay(){
-  const pd = pageTimerDisplay();
-  if(pd) pd.innerText = pageTimerRemaining;
-}
-
-function runPageCountdown(onComplete){
-  const steps = ['3','2','1','Start!'];
-  let stepIndex = 0;
-  if(pageTimerDisplay()) pageTimerDisplay().innerText = steps[stepIndex];
-  const countIn = setInterval(() => {
-    stepIndex++;
-    if(stepIndex < steps.length){
-      if(pageTimerDisplay()) pageTimerDisplay().innerText = steps[stepIndex];
-      return;
-    }
-    clearInterval(countIn);
-    if(typeof onComplete === 'function') onComplete();
-  }, 1000);
-}
-
-function startPageTimer(){
-  stopPageTimer();
-  if(pageCountInInterval){ clearInterval(pageCountInInterval); pageCountInInterval = null; }
-
-  pageTimerRemaining = selectedTimeLimit;
-  updatePageTimerDisplay();
-  hidePageTimerWidget();
-
-  const steps = ['3','2','1','Start!'];
-  let stepIndex = 0;
-  showCountInOverlay(steps[stepIndex]);
-
-  pageCountInInterval = setInterval(() => {
-    stepIndex++;
-    if(stepIndex < steps.length){
-      showCountInOverlay(steps[stepIndex]);
-      return;
-    }
-    clearInterval(pageCountInInterval);
-    pageCountInInterval = null;
-    hideCountInOverlay();
-
-    // start the assembly countdown
-    pageTimerInterval = setInterval(() => {
-      pageTimerRemaining--;
-      updatePageTimerDisplay();
-      if(pageTimerRemaining <= 0){
-        pageTimerRemaining = 0;
-        updatePageTimerDisplay();
-        stopPageTimer();
-        toast("Time's up!", 'err');
-        return;
-      }
-    }, 1000);
-  }, 1000);
-}
-
-function resetPageTimer(){
-  stopPageTimer();
-  if(pageCountInInterval){ clearInterval(pageCountInInterval); pageCountInInterval = null; }
-  pageTimerRemaining = selectedTimeLimit;
-  updatePageTimerDisplay();
-  showPageTimerWidget();
-  hideCountInOverlay();
 }
 
 function getNextPart(){
@@ -628,7 +506,7 @@ render();
 prog();
 </script>
 
-@include('shared.sweet-alerts.logout', ['logoutLabel' => 'Student — ' . ($name ?? 'Student'), 'logoutSubtext' => 'VirtualArm Assembly Trainer', 'logoutDescription' => 'You are about to end your session. Make sure your progress is saved before logging out.', 'redirectUrl' => url('/')])
+@include('shared.sweet-alerts.logout', ['logoutLabel' => 'Student — ' . $name, 'logoutSubtext' => 'VirtualArm Assembly Trainer', 'logoutDescription' => 'You are about to end your session. Make sure your progress is saved before logging out.', 'redirectUrl' => url('/')])
 </main>
 </body>
 </html>

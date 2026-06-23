@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Students - VirtualArm</title>
+    <link rel="icon" type="image/png" href="/images/assets/logo.png">
+    <link rel="preload" as="style" href="/build/assets/app-eKQiJXeM.css" /><link rel="preload" as="style" href="/build/assets/app-esKe8z-O.css" /><link rel="modulepreload" href="/build/assets/app-Ding9NUV.js" /><link rel="stylesheet" href="/build/assets/app-eKQiJXeM.css" /><link rel="stylesheet" href="/build/assets/app-esKe8z-O.css" /><script type="module" src="/build/assets/app-Ding9NUV.js"></script>    <style>
+        body{font-family:'Inter',sans-serif;margin:0;background:#f8fafc;overflow:hidden;height:100vh}
+        .sidebar-link{display:flex;align-items:center;gap:12px;padding:10px 16px;border-radius:8px;color:rgba(255,255,255,0.6);transition:all .2s;font-size:14px;border-left:4px solid transparent;margin-bottom:2px;white-space:nowrap}
+        .sidebar-link:hover{background:rgba(255,255,255,0.1);color:#fff;border-left-color:#8B5CF6}
+        .sidebar-link.active{background:rgba(255,255,255,0.15);color:#fff;border-left-color:#A78BFA;font-weight:600}
+        .dash-card{background:#fff;border:1px solid #f1f5f9;border-radius:12px;transition:all .3s}.dash-card:hover{box-shadow:0 10px 25px -5px rgba(0,0,0,.05);transform:translateY(-2px)}
+        #sidebar { width: 256px; transition: width 0.3s; }
+        #sidebar.collapsed { width: 80px; }
+        #sidebar.collapsed .sidebar-text { display: none; }
+        #sidebar.collapsed .sidebar-header-text { display: none; }
+        #sidebar.collapsed .sidebar-profile-text { display: none; }
+        #sidebar.collapsed .sidebar-link { justify-content: center; padding-left: 0; padding-right: 0; border-left: none; }
+    </style>
+</head>
+<body class="flex h-screen">
+        <aside id="sidebar" class="bg-violet-950 text-white flex flex-col border-r border-violet-800/30 flex-shrink-0 h-full overflow-hidden">
+        <div class="p-6 border-b border-violet-800/30 flex items-center gap-3">
+        <img src="/images/assets/logo.png" alt="SPC" class="h-10 w-auto flex-shrink-0">
+        <div class="sidebar-header-text whitespace-nowrap overflow-hidden"><span class="font-display font-bold text-sm">VirtualArm</span><span class="block text-[9px] text-violet-300 uppercase tracking-widest">Instructor Panel</span></div>
+    </div>
+    <nav class="flex-1 p-4 space-y-1 overflow-y-auto overflow-x-hidden">
+        <a href="http://localhost/instructor/dashboard" class="sidebar-link "><i class="fas fa-home w-5 text-center flex-shrink-0"></i> <span class="sidebar-text">Dashboard</span></a>
+        <a href="http://localhost/instructor/manage-students" class="sidebar-link "><i class="fas fa-user-graduate w-5 text-center flex-shrink-0"></i> <span class="sidebar-text">Manage Students</span></a>
+        <a href="http://localhost/instructor/manage-lessons" class="sidebar-link "><i class="fas fa-door-open w-5 text-center flex-shrink-0"></i> <span class="sidebar-text">Manage Lessons</span></a>
+        <a href="http://localhost/instructor/manage-marksmanship" class="sidebar-link "><i class="fas fa-bullseye w-5 text-center flex-shrink-0"></i> <span class="sidebar-text">Manage Marksmanship</span></a>
+        <a href="http://localhost/instructor/reports" class="sidebar-link "><i class="fas fa-chart-simple w-5 text-center flex-shrink-0"></i> <span class="sidebar-text">Reports</span></a>
+    </nav>
+    <div class="p-4 border-t border-violet-800/30">
+        <div class="sidebar-profile flex items-center gap-3 mb-4">
+            <div class="w-9 h-9 rounded-full bg-violet-700 flex items-center justify-center text-sm font-bold flex-shrink-0" id="userAvatar">
+                                    KD
+                            </div>
+            <div class="sidebar-profile-text">
+                <div class="text-sm font-medium" id="userName">Kinny Decierdo</div>
+                <div class="text-xs text-violet-300">Instructor</div>
+            </div>
+        </div>
+        <button type="button" onclick="showLogoutAlert()" class="w-full text-left sidebar-link text-red-300 hover:text-red-200 hover:bg-red-900/30 hover:border-red-400"><i class="fas fa-sign-out-alt text-sm"></i> <span class="sidebar-text">Logout</span></button>
+    </div>
+</aside>
+
+    <main class="flex-1 overflow-y-auto bg-gray-50">
+        <header class="bg-white border-b border-gray-100 px-6 py-3 flex justify-between items-center sticky top-0 z-10">
+            <div class="flex items-center gap-4">
+                <button id="sidebar-toggle" class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-500 focus:outline-none">
+                    <i class="fas fa-bars text-lg"></i>
+                </button>
+                <div><h1 class="font-display font-bold text-xl text-white">Manage Students</h1><p class="text-xs text-gray-400">Import and manage verified student records</p></div>
+            </div>
+                <div class="ml-auto flex items-center gap-3">
+        <button type="button" id="open-add-student" class="inline-flex items-center gap-2 px-4 py-2 bg-violet-700 text-white text-xs font-bold uppercase rounded-lg hover:bg-violet-800 transition-all">
+            <i class="fas fa-user-plus"></i> Add Student
+        </button>
+        <button type="button" id="open-bulk-upload" class="inline-flex items-center gap-2 px-4 py-2 bg-violet-700 text-white text-xs font-bold uppercase rounded-lg hover:bg-violet-800 transition-all">
+            <i class="fas fa-upload"></i> Bulk Add Students
+        </button>
+    </div>
+        </header>
+
+        <div class="px-4 py-4 sm:px-2 sm:py-2">
+                <style>
+        .portal-card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 4px 14px -8px rgba(30,5,82,.1)}
+    </style>
+        
+        
+        
+        <section class="portal-card p-4 mb-6 max-w-md">
+            <div class="flex items-center gap-3">
+                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+                    <i class="fas fa-users text-sm"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">Student Total</p>
+                    <p class="text-xl font-display font-bold text-gray-900 leading-tight">4</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="glass-card rounded-3xl p-5 sm:p-6 mb-6">
+            <form method="GET" action="http://localhost/instructor/manage-students" id="filter-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="relative">
+                    <label class="block text-[10px] font-bold uppercase tracking-[0.28em] text-gray-500 mb-2">Live Search</label>
+                    <input type="text" name="q" value="" id="search-input" placeholder="Search student ID or full name" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
+                    <i class="fas fa-magnifying-glass absolute right-4 top-10 text-gray-400"></i>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-[0.28em] text-gray-500 mb-2">Section</label>
+                    <select name="section" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
+                        <option value="">All Sections</option>
+                                                    <option value="A" >A</option>
+                                                    <option value="B" >B</option>
+                                            </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-[0.28em] text-gray-500 mb-2">Enrollment Status</label>
+                    <select name="enrollment_status" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
+                        <option value="">All Statuses</option>
+                        <option value="verified_enrolled" >Verified Enrolled</option>
+                        <option value="ready_for_training" >Ready for Training</option>
+                        <option value="pending" >Pending</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-[0.28em] text-gray-500 mb-2">Session Activity</label>
+                    <select name="activity_status" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
+                        <option value="">All Activity</option>
+                        <option value="inactive" >Inactive</option>
+                        <option value="active_in_firing_range" >Active in Firing Range</option>
+                        <option value="active_in_assembly" >Active in Assembly</option>
+                        <option value="completed_session" >Completed Session</option>
+                    </select>
+                </div>
+            </form>
+        </section>
+
+        <section class="glass-card rounded-3xl overflow-hidden">
+            <div class="px-5 sm:px-6 py-4 border-b border-gray-100 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div class="flex items-center gap-6">
+                    <div>
+                        <h2 class="font-display font-bold text-xl text-gray-900">Student Management Table</h2>
+                        <p class="text-sm text-gray-500">Manage verified enrolled SPC students and their training access.</p>
+                    </div>
+                    <div class="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+                        <button type="button" class="tab-btn px-4 py-2 text-xs font-bold rounded-lg transition-all bg-white text-violet-700 shadow-sm" data-tab="all">Recent</button>
+                        <button type="button" class="tab-btn px-4 py-2 text-xs font-bold rounded-lg transition-all text-gray-600 hover:text-violet-700" data-tab="aging">
+                            5 Months Old
+                                                    </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-all" class="tab-content">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left min-w-[950px]">
+                        <thead class="bg-violet-950 text-xs text-violet-100 uppercase tracking-wider">
+                            <tr>
+                                <th class="px-5 sm:px-6 py-4 font-semibold">Student ID</th>
+                                <th class="px-5 sm:px-6 py-4 font-semibold">Full Name</th>
+                                <th class="px-5 sm:px-6 py-4 font-semibold">Course/Year/Section</th>
+                                <th class="px-5 sm:px-6 py-4 font-semibold">Module Access Status</th>
+                                <th class="px-5 sm:px-6 py-4 font-semibold">Current Activity Status</th>
+                                <th class="px-5 sm:px-6 py-4 font-semibold">Date Added</th>
+                                <th class="px-5 sm:px-6 py-4 text-right font-semibold">Action Buttons</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 bg-white">
+                                                                                            <tr class="even:bg-gray-50/60 hover:bg-violet-50/50 transition-colors">
+                                    <td class="px-5 sm:px-6 py-4 font-semibold text-gray-900">20260021</td>
+                                    <td class="px-5 sm:px-6 py-4">
+                                        <div class="font-medium text-gray-900">Kim G. Decierdo</div>
+                                        <div class="text-xs text-gray-500">BSCRIM</div>
+                                    </td>
+                                    <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">BSCRIM / 2nd / B</td>
+                                    <td class="px-5 sm:px-6 py-4"><span class="status-pill bg-violet-100 text-violet-700">ready for training</span></td>
+                                    <td class="px-5 sm:px-6 py-4"><span class="status-pill bg-slate-100 text-slate-700">inactive</span></td>
+                                    <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">Jun 08, 2026</td>
+                                    <td class="px-5 sm:px-6 py-4">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <button type="button" class="view-student inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors" data-student='{"id":15,"student_id_number":"20260021","full_name":"Kim G. Decierdo","course":"BSCRIM","year_level":"2nd","section":"B","status":"Active","enrollment_status":"verified_enrolled","module_access_status":"ready_for_training","current_activity_status":"inactive","date_added":"2026-06-08 08:17"}'>
+                                                <i class="fas fa-eye"></i> View
+                                            </button>
+                                            <button type="button" class="edit-student inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-violet-100 text-violet-700 text-xs font-bold hover:bg-violet-200 transition-colors" data-student='{"id":15,"student_id_number":"20260021","full_name":"Kim G. Decierdo","course":"BSCRIM","year_level":"2nd","section":"B","status":"Active","enrollment_status":"verified_enrolled","module_access_status":"ready_for_training","current_activity_status":"inactive","date_added":"2026-06-08 08:17"}'>
+                                                <i class="fas fa-pen-to-square"></i> Edit
+                                            </button>
+                                            <form method="POST" action="http://localhost/instructor/manage-students/15/toggle-status" class="inline toggle-status-form" data-student-name="Kim G. Decierdo" data-action="deactivate">
+                                                <input type="hidden" name="_token" value="" autocomplete="off">                                                <input type="hidden" name="_method" value="PATCH">                                                <button type="button" class="toggle-status-btn inline-flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase rounded-lg transition-all bg-amber-100 text-amber-700 hover:bg-slate-200">
+                                                    <i class="fas fa-ban"></i>
+                                                    Deactivate
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                                                                            <tr class="even:bg-gray-50/60 hover:bg-violet-50/50 transition-colors">
+                                    <td class="px-5 sm:px-6 py-4 font-semibold text-gray-900">20252028</td>
+                                    <td class="px-5 sm:px-6 py-4">
+                                        <div class="font-medium text-gray-900">Vincent Micutuan</div>
+                                        <div class="text-xs text-gray-500">BSCRIM</div>
+                                    </td>
+                                    <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">BSCRIM / 2nd / A</td>
+                                    <td class="px-5 sm:px-6 py-4"><span class="status-pill bg-violet-100 text-violet-700">ready for training</span></td>
+                                    <td class="px-5 sm:px-6 py-4"><span class="status-pill bg-slate-100 text-slate-700">inactive</span></td>
+                                    <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">Jun 08, 2026</td>
+                                    <td class="px-5 sm:px-6 py-4">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <button type="button" class="view-student inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors" data-student='{"id":14,"student_id_number":"20252028","full_name":"Vincent Micutuan","course":"BSCRIM","year_level":"2nd","section":"A","status":"Active","enrollment_status":"verified_enrolled","module_access_status":"ready_for_training","current_activity_status":"inactive","date_added":"2026-06-08 08:15"}'>
+                                                <i class="fas fa-eye"></i> View
+                                            </button>
+                                            <button type="button" class="edit-student inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-violet-100 text-violet-700 text-xs font-bold hover:bg-violet-200 transition-colors" data-student='{"id":14,"student_id_number":"20252028","full_name":"Vincent Micutuan","course":"BSCRIM","year_level":"2nd","section":"A","status":"Active","enrollment_status":"verified_enrolled","module_access_status":"ready_for_training","current_activity_status":"inactive","date_added":"2026-06-08 08:15"}'>
+                                                <i class="fas fa-pen-to-square"></i> Edit
+                                            </button>
+                                            <form method="POST" action="http://localhost/instructor/manage-students/14/toggle-status" class="inline toggle-status-form" data-student-name="Vincent Micutuan" data-action="deactivate">
+                                                <input type="hidden" name="_token" value="" autocomplete="off">                                                <input type="hidden" name="_method" value="PATCH">                                                <button type="button" class="toggle-status-btn inline-flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase rounded-lg transition-all bg-amber-100 text-amber-700 hover:bg-slate-200">
+                                                    <i class="fas fa-ban"></i>
+                                                    Deactivate
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                                                                            <tr class="even:bg-gray-50/60 hover:bg-violet-50/50 transition-colors">
+                                    <td class="px-5 sm:px-6 py-4 font-semibold text-gray-900">2002159</td>
+                                    <td class="px-5 sm:px-6 py-4">
+                                        <div class="font-medium text-gray-900">Kinny Decierdo</div>
+                                        <div class="text-xs text-gray-500">BSCRIM</div>
+                                    </td>
+                                    <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">BSCRIM / 2nd / A</td>
+                                    <td class="px-5 sm:px-6 py-4"><span class="status-pill bg-violet-100 text-violet-700">ready for training</span></td>
+                                    <td class="px-5 sm:px-6 py-4"><span class="status-pill bg-slate-100 text-slate-700">inactive</span></td>
+                                    <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">Jun 08, 2026</td>
+                                    <td class="px-5 sm:px-6 py-4">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <button type="button" class="view-student inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors" data-student='{"id":13,"student_id_number":"2002159","full_name":"Kinny Decierdo","course":"BSCRIM","year_level":"2nd","section":"A","status":"Active","enrollment_status":"verified_enrolled","module_access_status":"ready_for_training","current_activity_status":"inactive","date_added":"2026-06-08 08:09"}'>
+                                                <i class="fas fa-eye"></i> View
+                                            </button>
+                                            <button type="button" class="edit-student inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-violet-100 text-violet-700 text-xs font-bold hover:bg-violet-200 transition-colors" data-student='{"id":13,"student_id_number":"2002159","full_name":"Kinny Decierdo","course":"BSCRIM","year_level":"2nd","section":"A","status":"Active","enrollment_status":"verified_enrolled","module_access_status":"ready_for_training","current_activity_status":"inactive","date_added":"2026-06-08 08:09"}'>
+                                                <i class="fas fa-pen-to-square"></i> Edit
+                                            </button>
+                                            <form method="POST" action="http://localhost/instructor/manage-students/13/toggle-status" class="inline toggle-status-form" data-student-name="Kinny Decierdo" data-action="deactivate">
+                                                <input type="hidden" name="_token" value="" autocomplete="off">                                                <input type="hidden" name="_method" value="PATCH">                                                <button type="button" class="toggle-status-btn inline-flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase rounded-lg transition-all bg-amber-100 text-amber-700 hover:bg-slate-200">
+                                                    <i class="fas fa-ban"></i>
+                                                    Deactivate
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                                                                            <tr class="even:bg-gray-50/60 hover:bg-violet-50/50 transition-colors">
+                                    <td class="px-5 sm:px-6 py-4 font-semibold text-gray-900">20252026</td>
+                                    <td class="px-5 sm:px-6 py-4">
+                                        <div class="font-medium text-gray-900">kimma G. decierdo</div>
+                                        <div class="text-xs text-gray-500">BSCRIM</div>
+                                    </td>
+                                    <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">BSCRIM / 2nd / A</td>
+                                    <td class="px-5 sm:px-6 py-4"><span class="status-pill bg-violet-100 text-violet-700">ready for training</span></td>
+                                    <td class="px-5 sm:px-6 py-4"><span class="status-pill bg-slate-100 text-slate-700">inactive</span></td>
+                                    <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">Jun 08, 2026</td>
+                                    <td class="px-5 sm:px-6 py-4">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <button type="button" class="view-student inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors" data-student='{"id":11,"student_id_number":"20252026","full_name":"kimma G. decierdo","course":"BSCRIM","year_level":"2nd","section":"A","status":"Active","enrollment_status":"verified_enrolled","module_access_status":"ready_for_training","current_activity_status":"inactive","date_added":"2026-06-08 08:05"}'>
+                                                <i class="fas fa-eye"></i> View
+                                            </button>
+                                            <button type="button" class="edit-student inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-violet-100 text-violet-700 text-xs font-bold hover:bg-violet-200 transition-colors" data-student='{"id":11,"student_id_number":"20252026","full_name":"kimma G. decierdo","course":"BSCRIM","year_level":"2nd","section":"A","status":"Active","enrollment_status":"verified_enrolled","module_access_status":"ready_for_training","current_activity_status":"inactive","date_added":"2026-06-08 08:05"}'>
+                                                <i class="fas fa-pen-to-square"></i> Edit
+                                            </button>
+                                            <form method="POST" action="http://localhost/instructor/manage-students/11/toggle-status" class="inline toggle-status-form" data-student-name="kimma G. decierdo" data-action="deactivate">
+                                                <input type="hidden" name="_token" value="" autocomplete="off">                                                <input type="hidden" name="_method" value="PATCH">                                                <button type="button" class="toggle-status-btn inline-flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase rounded-lg transition-all bg-amber-100 text-amber-700 hover:bg-slate-200">
+                                                    <i class="fas fa-ban"></i>
+                                                    Deactivate
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                                    </tbody>
+                    </table>
+                </div>
+
+                <div class="px-5 sm:px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div class="text-sm text-gray-500">Showing 1 - 4 of 4 records</div>
+                    <div></div>
+                </div>
+            </div>
+
+            <div id="tab-aging" class="tab-content hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left min-w-[950px]">
+                        <thead class="bg-amber-900 text-xs text-amber-100 uppercase tracking-wider">
+                            <tr>
+                                <th class="px-5 sm:px-6 py-4 font-semibold">Student ID</th>
+                                <th class="px-5 sm:px-6 py-4 font-semibold">Full Name</th>
+                                <th class="px-5 sm:px-6 py-4 font-semibold">Course/Year/Section</th>
+                                <th class="px-5 sm:px-6 py-4 font-semibold">Account Age</th>
+                                <th class="px-5 sm:px-6 py-4 font-semibold">Date Added</th>
+                                <th class="px-5 sm:px-6 py-4 text-right font-semibold">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 bg-white">
+                                                            <tr>
+                                    <td colspan="6" class="px-6 py-16 text-center text-gray-500">
+                                        <div class="max-w-md mx-auto">
+                                            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-2xl">
+                                                <i class="fas fa-clock"></i>
+                                            </div>
+                                            <p class="font-semibold text-gray-900 mb-2">No old student records</p>
+                                            <p class="text-sm">Students are automatically moved here once their account reaches 5 months old.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                                    </tbody>
+                    </table>
+                </div>
+                <div class="px-5 sm:px-6 py-4 border-t border-gray-100">
+                    <div class="text-sm text-gray-500">0 student(s) with accounts around the 5-month mark</div>
+                </div>
+            </div>
+        </section>
+
+        
+    <!-- Bulk Upload Modal -->
+    <div id="bulk-modal" class="fixed inset-0 z-50 hidden opacity-0 pointer-events-none items-center justify-center p-4 modal-backdrop transition-opacity duration-200 ease-out backdrop-blur-sm bg-slate-950/35">
+        <div class="modal-panel w-full max-w-2xl rounded-3xl bg-white shadow-2xl overflow-hidden transform scale-95 translate-y-3 opacity-0 transition-all duration-200 ease-out">
+            <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between gap-4">
+                <div>
+                    <h3 class="font-display font-bold text-2xl text-gray-900">Bulk Add Students</h3>
+                    <p class="text-sm text-gray-500">Upload official SPC enrolled student lists in CSV or XLSX format.</p>
+                </div>
+                <button type="button" class="close-modal w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"><i class="fas fa-xmark"></i></button>
+            </div>
+            <form method="POST" action="http://localhost/instructor/manage-students/import" enctype="multipart/form-data" class="p-6 space-y-5">
+                <input type="hidden" name="_token" value="" autocomplete="off">                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Upload file</label>
+                        <input type="file" name="import_file" accept=".csv,.xlsx" class="block w-full text-sm border border-gray-200 rounded-2xl px-4 py-3 bg-white focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400">
+                        <p class="text-xs text-gray-500 mt-2">The system will skip invalid records and duplicate student IDs automatically.</p>
+                    </div>
+                    <div class="md:col-span-1 flex flex-col items-end gap-2">
+                        <a href="http://localhost/instructor/manage-students/template" class="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-white text-gray-700 border border-gray-200 text-sm font-bold hover:border-violet-300 hover:text-violet-700 transition-colors">
+                            <i class="fas fa-download"></i> Download Template
+                        </a>
+                        <p class="text-[10px] text-gray-400 text-right">Download a simplified CSV template. Course is fixed to BSCRIM and year level is fixed to 2nd year, so leave those out.</p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end gap-3">
+                    <button type="button" class="close-modal px-4 py-3 rounded-xl bg-gray-100 text-gray-700 text-sm font-bold hover:bg-gray-200 transition-colors">Cancel</button>
+                    <button type="submit" class="px-5 py-3 rounded-xl bg-violet-700 text-white text-sm font-bold hover:bg-violet-800 transition-colors">Import Students</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Student Modal -->
+    <div id="add-modal" class="fixed inset-0 z-50 hidden opacity-0 pointer-events-none items-center justify-center p-4 modal-backdrop transition-opacity duration-200 ease-out backdrop-blur-sm bg-slate-950/35">
+        <div class="modal-panel w-full max-w-3xl rounded-3xl bg-white shadow-2xl overflow-hidden transform scale-95 translate-y-3 opacity-0 transition-all duration-200 ease-out">
+            <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between gap-4">
+                <div>
+                    <h3 class="font-display font-bold text-2xl text-gray-900">Add Student</h3>
+                    <p class="text-sm text-gray-500">Create a managed student account with a default password.</p>
+                </div>
+                <button type="button" class="close-modal w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"><i class="fas fa-xmark"></i></button>
+            </div>
+            <form method="POST" action="http://localhost/instructor/manage-students" class="p-6 space-y-5">
+                <input type="hidden" name="_token" value="" autocomplete="off">                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">First Name</label>
+                        <input type="text" name="first_name" value="" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Middle Name</label>
+                        <input type="text" name="middle_name" value="" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Last Name</label>
+                        <input type="text" name="last_name" value="" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Student ID</label>
+                        <input type="text" name="student_id_number" value="" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Section</label>
+                        <input type="text" name="section" value="" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" placeholder="e.g. A">
+                    </div>
+                    <div class="md:col-span-2">
+                        <input type="hidden" name="course" value="BSCRIM">
+                        <input type="hidden" name="year_level" value="2nd">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Password</label>
+                        <input type="text" name="password" value="Password123!" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" required>
+                        <p class="text-xs text-gray-500 mt-2">Default password is prefilled, but you can change it before saving.</p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end gap-3">
+                    <button type="button" class="close-modal px-4 py-3 rounded-xl bg-gray-100 text-gray-700 text-sm font-bold hover:bg-gray-200 transition-colors">Cancel</button>
+                    <button type="submit" class="px-5 py-3 rounded-xl bg-violet-700 text-white text-sm font-bold hover:bg-violet-800 transition-colors">Save Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Modal -->
+    <div id="view-modal" class="fixed inset-0 z-50 hidden opacity-0 pointer-events-none items-center justify-center p-4 modal-backdrop transition-opacity duration-200 ease-out backdrop-blur-sm bg-slate-950/35">
+        <div class="modal-panel w-full max-w-xl rounded-3xl bg-white shadow-2xl overflow-hidden transform scale-95 translate-y-3 opacity-0 transition-all duration-200 ease-out">
+            <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between gap-4">
+                <div>
+                    <h3 class="font-display font-bold text-2xl text-gray-900">Student Details</h3>
+                    <p class="text-sm text-gray-500">Managed SPC student record</p>
+                </div>
+                <button type="button" class="close-modal w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="grid sm:grid-cols-2 gap-4">
+                    <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Student ID</p><p id="view-id" class="text-lg font-semibold text-gray-900"></p></div>
+                    <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Full Name</p><p id="view-name" class="text-lg font-semibold text-gray-900"></p></div>
+                    <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Course</p><p id="view-course" class="text-gray-700"></p></div>
+                    <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Year/Section</p><p id="view-year-section" class="text-gray-700"></p></div>
+                    <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Enrollment Status</p><p id="view-enrollment" class="text-gray-700"></p></div>
+                    <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Module Access</p><p id="view-access" class="text-gray-700"></p></div>
+                    <div class="sm:col-span-2"><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Current Activity</p><p id="view-activity" class="text-gray-700"></p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="fixed inset-0 z-50 hidden opacity-0 pointer-events-none items-center justify-center p-4 modal-backdrop transition-opacity duration-200 ease-out backdrop-blur-sm bg-slate-950/35">
+        <div class="modal-panel w-full max-w-2xl rounded-3xl bg-white shadow-2xl overflow-hidden transform scale-95 translate-y-3 opacity-0 transition-all duration-200 ease-out">
+            <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between gap-4">
+                <div>
+                    <h3 class="font-display font-bold text-2xl text-gray-900">Edit Student</h3>
+                    <p class="text-sm text-gray-500">Update the managed student record</p>
+                </div>
+                <button type="button" class="close-modal w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"><i class="fas fa-xmark"></i></button>
+            </div>
+            <form id="edit-form" method="POST" class="p-6 space-y-4">
+                <input type="hidden" name="_token" value="" autocomplete="off">                <input type="hidden" name="_method" value="PATCH">                <input type="hidden" name="student_id" id="edit-id">
+                <div class="grid sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Full Name</label>
+                        <input type="text" name="full_name" id="edit-full-name" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Course</label>
+                        <input type="text" name="course" id="edit-course" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Year Level</label>
+                        <input type="text" name="year_level" id="edit-year-level" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Section</label>
+                        <input type="text" name="section" id="edit-section" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Enrollment Status</label>
+                        <select name="enrollment_status" id="edit-enrollment-status" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
+                            <option value="verified_enrolled">Verified Enrolled</option>
+                            <option value="ready_for_training">Ready for Training</option>
+                            <option value="pending">Pending</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="archived">Archived</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Module Access Status</label>
+                        <select name="module_access_status" id="edit-module-access-status" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
+                            <option value="ready_for_training">Ready for Training</option>
+                            <option value="locked">Locked</option>
+                            <option value="active_in_firing_range">Active in Firing Range</option>
+                            <option value="completed_session">Completed Session</option>
+                            <option value="archived">Archived</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Current Activity Status</label>
+                        <select name="current_activity_status" id="edit-activity-status" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
+                            <option value="inactive">Inactive</option>
+                            <option value="active_in_firing_range">Active in Firing Range</option>
+                            <option value="active_in_assembly">Active in Assembly</option>
+                            <option value="completed_session">Completed Session</option>
+                            <option value="archived">Archived</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end gap-3 pt-2">
+                    <button type="button" class="close-modal px-4 py-3 rounded-xl bg-gray-100 text-gray-700 text-sm font-bold hover:bg-gray-200 transition-colors">Cancel</button>
+                    <button type="submit" class="px-5 py-3 rounded-xl bg-violet-700 text-white text-sm font-bold hover:bg-violet-800 transition-colors">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toggle Status Confirmation -->
+    <div id="toggle-overlay" class="swal-overlay" role="dialog" aria-modal="true">
+        <div class="swal-modal">
+            <svg class="swal-bg-shape" style="top:-20px;right:-20px;width:120px;height:120px" viewBox="0 0 120 120"><circle cx="60" cy="60" r="60" fill="#7C3AED"></circle></svg>
+            <svg class="swal-bg-shape" style="bottom:-30px;left:-30px;width:150px;height:150px" viewBox="0 0 150 150"><circle cx="75" cy="75" r="75" fill="#7C3AED"></circle></svg>
+            <div class="pt-8 pb-2"><div class="swal-icon-wrap"><div class="swal-icon-ring"><i class="fas fa-exchange-alt text-sm"></i></div><span class="swal-dot"></span><span class="swal-dot"></span><span class="swal-dot"></span><span class="swal-dot"></span></div></div>
+            <div class="px-8 pt-4 pb-3 text-center">
+                <h3 id="toggle-title" class="swal-title">Confirm Action</h3>
+                <p id="toggle-desc" class="swal-text mt-2">Are you sure you want to change the status of this student record?</p>
+            </div>
+            <div class="mx-8 mb-5 p-3 bg-violet-50/70 rounded-xl border border-violet-100/80">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full bg-violet-200/60 flex items-center justify-center"><i class="fas fa-user-graduate text-violet-600 text-xs"></i></div>
+                    <div class="flex-1 min-w-0">
+                        <p id="toggle-student-name" class="text-xs font-semibold text-violet-900 truncate">Student</p>
+                        <p id="toggle-action-label" class="text-[10px] text-violet-500">Status change</p>
+                    </div>
+                </div>
+            </div>
+            <div class="px-8 pb-8 flex items-center gap-3">
+                <button id="toggle-cancel" class="swal-btn swal-btn-cancel flex-1" type="button"><i class="fas fa-times text-xs"></i> Cancel</button>
+                <button id="toggle-confirm" class="swal-btn swal-btn-logout btn-shine flex-1" type="button"><span class="swal-btn-text"><i class="fas fa-check text-sm"></i> Confirm</span><span class="swal-spinner"></span></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const openAddStudent = document.getElementById('open-add-student');
+        const addModal = document.getElementById('add-modal');
+        const openBulkUpload = document.getElementById('open-bulk-upload');
+        const bulkModal = document.getElementById('bulk-modal');
+        const viewModal = document.getElementById('view-modal');
+        const editModal = document.getElementById('edit-modal');
+        const searchInput = document.getElementById('search-input');
+        const filterForm = document.getElementById('filter-form');
+        const editForm = document.getElementById('edit-form');
+        const modalAnimationDelay = 200;
+
+        const openModal = (modal) => {
+            const panel = modal.querySelector('.modal-panel');
+            modal.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
+            modal.classList.add('flex');
+            requestAnimationFrame(() => {
+                modal.classList.add('opacity-100');
+                if (panel) {
+                    panel.classList.remove('scale-95', 'translate-y-3', 'opacity-0');
+                    panel.classList.add('scale-100', 'translate-y-0', 'opacity-100');
+                }
+            });
+        };
+
+        const closeModal = (modal) => {
+            const panel = modal.querySelector('.modal-panel');
+            modal.classList.remove('opacity-100');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            if (panel) {
+                panel.classList.remove('scale-100', 'translate-y-0', 'opacity-100');
+                panel.classList.add('scale-95', 'translate-y-3', 'opacity-0');
+            }
+            window.setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, modalAnimationDelay);
+        };
+
+        openAddStudent?.addEventListener('click', () => openModal(addModal));
+        openBulkUpload?.addEventListener('click', () => openModal(bulkModal));
+        document.querySelectorAll('.close-modal').forEach(button => {
+            button.addEventListener('click', () => {
+                closeModal(addModal);
+                closeModal(bulkModal);
+                closeModal(viewModal);
+                closeModal(editModal);
+            });
+        });
+
+        document.querySelectorAll('.view-student').forEach(button => {
+            button.addEventListener('click', () => {
+                const student = JSON.parse(button.dataset.student);
+                document.getElementById('view-id').textContent = student.student_id_number;
+                document.getElementById('view-name').textContent = student.full_name;
+                document.getElementById('view-course').textContent = student.course || '—';
+                document.getElementById('view-year-section').textContent = `${student.year_level || '—'} / ${student.section || '—'}`;
+                document.getElementById('view-enrollment').textContent = student.enrollment_status;
+                document.getElementById('view-access').textContent = student.module_access_status;
+                document.getElementById('view-activity').textContent = student.current_activity_status;
+                openModal(viewModal);
+            });
+        });
+
+        document.querySelectorAll('.edit-student').forEach(button => {
+            button.addEventListener('click', () => {
+                const student = JSON.parse(button.dataset.student);
+                editForm.action = `http://localhost/instructor/manage-students/${student.id}`;
+                document.getElementById('edit-id').value = student.id;
+                document.getElementById('edit-full-name').value = student.full_name;
+                document.getElementById('edit-course').value = student.course || '';
+                document.getElementById('edit-year-level').value = student.year_level || '';
+                document.getElementById('edit-section').value = student.section || '';
+                document.getElementById('edit-enrollment-status').value = student.enrollment_status;
+                document.getElementById('edit-module-access-status').value = student.module_access_status;
+                document.getElementById('edit-activity-status').value = student.current_activity_status;
+                openModal(editModal);
+            });
+        });
+
+        let searchTimer = null;
+        searchInput?.addEventListener('input', () => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => filterForm.submit(), 250);
+        });
+
+        document.querySelectorAll('select[name="enrollment_status"], select[name="activity_status"], select[name="section"]').forEach(select => {
+            select.addEventListener('change', () => filterForm.submit());
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeModal(addModal);
+                closeModal(bulkModal);
+                closeModal(viewModal);
+                closeModal(editModal);
+                closeToggleAlert();
+            }
+        });
+
+        const toggleOverlay = document.getElementById('toggle-overlay');
+        const toggleTitle = document.getElementById('toggle-title');
+        const toggleDesc = document.getElementById('toggle-desc');
+        const toggleName = document.getElementById('toggle-student-name');
+        const toggleActionLabel = document.getElementById('toggle-action-label');
+        const toggleConfirm = document.getElementById('toggle-confirm');
+        const toggleCancel = document.getElementById('toggle-cancel');
+        let activeToggleForm = null;
+
+        function openToggleAlert(form) {
+            activeToggleForm = form;
+            const name = form.dataset.studentName;
+            const action = form.dataset.action;
+            const isActivate = action === 'activate';
+
+            toggleName.textContent = name;
+            toggleTitle.textContent = isActivate ? 'Activate Student' : 'Deactivate Student';
+            toggleDesc.textContent = isActivate
+                ? 'This will restore access for this student account. They will be able to log in and access training modules.'
+                : 'This will disable access for this student account. They will not be able to log in until re-activated.';
+            toggleActionLabel.textContent = isActivate ? 'Will be activated' : 'Will be deactivated';
+            toggleConfirm.querySelector('.swal-btn-text').innerHTML = isActivate
+                ? '<i class="fas fa-check-circle text-sm"></i> Yes, Activate'
+                : '<i class="fas fa-ban text-sm"></i> Yes, Deactivate';
+
+            toggleOverlay.classList.remove('closing');
+            toggleOverlay.classList.add('active');
+            setTimeout(() => toggleCancel.focus(), 350);
+        }
+
+        window.closeToggleAlert = function () {
+            if (!toggleOverlay.classList.contains('active')) return;
+            toggleOverlay.classList.add('closing');
+            toggleOverlay.classList.remove('active');
+            setTimeout(() => {
+                toggleOverlay.classList.remove('closing');
+                activeToggleForm = null;
+                toggleConfirm.classList.remove('loading');
+                toggleConfirm.disabled = false;
+                toggleCancel.disabled = false;
+            }, 280);
+        };
+
+        toggleCancel.addEventListener('click', window.closeToggleAlert);
+        toggleConfirm.addEventListener('click', function () {
+            if (!activeToggleForm) return;
+            toggleConfirm.classList.add('loading');
+            toggleConfirm.disabled = true;
+            toggleCancel.disabled = true;
+            activeToggleForm.submit();
+        });
+        toggleOverlay.addEventListener('click', function (event) {
+            if (event.target === toggleOverlay) window.closeToggleAlert();
+        });
+
+        document.querySelectorAll('.toggle-status-btn').forEach(button => {
+            button.addEventListener('click', function () {
+                const form = this.closest('.toggle-status-form');
+                openToggleAlert(form);
+            });
+        });
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('bg-white', 'text-violet-700', 'shadow-sm');
+                    b.classList.add('text-gray-600');
+                });
+                this.classList.add('bg-white', 'text-violet-700', 'shadow-sm');
+                this.classList.remove('text-gray-600');
+                document.querySelectorAll('.tab-content').forEach(tc => tc.classList.add('hidden'));
+                document.getElementById('tab-' + this.dataset.tab)?.classList.remove('hidden');
+            });
+        });
+    </script>
+        </div>
+    </main>
+
+    <style>
+    .swal-overlay{
+        position:fixed;inset:0;z-index:9999;
+        display:flex;align-items:center;justify-content:center;
+        background:rgba(3,3,7,0.6);
+        backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+        opacity:0;visibility:hidden;
+        transition:opacity .3s ease, visibility .3s ease;
+    }
+    .swal-overlay.active{opacity:1;visibility:visible}
+    .swal-modal{
+        background:#fff;border-radius:20px;width:92%;max-width:420px;padding:0;overflow:hidden;
+        box-shadow:0 25px 60px -12px rgba(30,5,82,0.35), 0 0 0 1px rgba(124,58,237,0.08);
+        transform:scale(0.85) translateY(20px);opacity:0;
+        transition:transform .35s cubic-bezier(0.34,1.56,0.64,1), opacity .3s ease;
+    }
+    .swal-overlay.active .swal-modal{transform:scale(1) translateY(0);opacity:1}
+    .swal-overlay.closing{opacity:0;visibility:visible;transition:opacity .25s ease, visibility .25s ease}
+    .swal-overlay.closing .swal-modal{transform:scale(0.9) translateY(10px);opacity:0;transition:transform .25s ease, opacity .25s ease}
+    .swal-icon-wrap{position:relative;width:80px;height:80px;margin:0 auto}
+    .swal-icon-ring{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#EDE9FE,#DDD6FE);display:flex;align-items:center;justify-content:center;position:relative}
+    .swal-icon-ring::before{content:'';position:absolute;inset:-4px;border-radius:50%;background:conic-gradient(from 0deg, #7C3AED, #A78BFA, #C4B5FD, #7C3AED);z-index:-1;animation:swalRingRotate 4s linear infinite}
+    @keyframes swalRingRotate{to{transform:rotate(360deg)}}
+    .swal-icon-ring i{font-size:32px;background:linear-gradient(135deg,#5B21B6,#7C3AED);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .swal-dot{position:absolute;width:5px;height:5px;border-radius:50%;background:#A78BFA;animation:swalDotPulse 2s ease-in-out infinite}
+    .swal-dot:nth-child(2){top:-8px;left:50%;transform:translateX(-50%);animation-delay:0s}
+    .swal-dot:nth-child(3){top:50%;right:-8px;transform:translateY(-50%);animation-delay:0.5s}
+    .swal-dot:nth-child(4){bottom:-8px;left:50%;transform:translateX(-50%);animation-delay:1s}
+    .swal-dot:nth-child(5){top:50%;left:-8px;transform:translateY(-50%);animation-delay:1.5s}
+    @keyframes swalDotPulse{0%,100%{opacity:.3;transform:scale(1)}50%{opacity:1;transform:scale(1.4)}}
+    .swal-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;color:#0f172a;margin:0}
+    .swal-text{font-size:14px;color:#64748b;line-height:1.6;margin:0}
+    .swal-btn{border:none;cursor:pointer;font-family:'Inter',sans-serif;font-weight:700;font-size:13px;padding:12px 24px;border-radius:12px;transition:all .2s ease;display:inline-flex;align-items:center;justify-content:center;gap:6px;letter-spacing:0.02em}
+    .swal-btn:active{transform:scale(0.96)}
+    .swal-btn-cancel{background:#f1f5f9;color:#475569}
+    .swal-btn-cancel:hover{background:#e2e8f0;color:#334155}
+    .swal-btn-logout{background:linear-gradient(135deg,#5B21B6,#7C3AED);color:#fff;box-shadow:0 4px 14px -3px rgba(91,33,182,0.4)}
+    .swal-btn-logout:hover{background:linear-gradient(135deg,#4c1d95,#6D28D9);box-shadow:0 6px 20px -3px rgba(91,33,182,0.5);transform:translateY(-1px)}
+    .swal-btn-logout:active{transform:translateY(0) scale(0.96)}
+    .swal-spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:swalSpin .6s linear infinite;display:none}
+    .swal-btn-logout.loading .swal-spinner{display:block}
+    .swal-btn-logout.loading .swal-btn-text{display:none}
+    @keyframes swalSpin{to{transform:rotate(360deg)}}
+    .swal-bg-shape{position:absolute;pointer-events:none;opacity:0.04}
+    @media(prefers-reduced-motion:reduce){.swal-modal,.swal-overlay{transition:none !important}.swal-icon-ring::before,.swal-dot{animation:none !important}}
+</style>
+
+<div id="swal-overlay" class="swal-overlay" role="dialog" aria-modal="true" aria-labelledby="swal-title" aria-describedby="swal-desc">
+    <div class="swal-modal">
+        <svg class="swal-bg-shape" style="top:-20px;right:-20px;width:120px;height:120px" viewBox="0 0 120 120"><circle cx="60" cy="60" r="60" fill="#7C3AED"></circle></svg>
+        <svg class="swal-bg-shape" style="bottom:-30px;left:-30px;width:150px;height:150px" viewBox="0 0 150 150"><circle cx="75" cy="75" r="75" fill="#7C3AED"></circle></svg>
+        <div class="pt-8 pb-2"><div class="swal-icon-wrap"><div class="swal-icon-ring"><i class="fas fa-sign-out-alt text-sm"></i></div><span class="swal-dot"></span><span class="swal-dot"></span><span class="swal-dot"></span><span class="swal-dot"></span></div></div>
+        <div class="px-8 pt-4 pb-3 text-center"><h3 id="swal-title" class="swal-title">Ready to Leave?</h3><p id="swal-desc" class="swal-text mt-2">You are about to end your instructor session. Please make sure your class records and assessments are saved before logging out.</p></div>
+        <div class="mx-8 mb-5 p-3 bg-violet-50/70 rounded-xl border border-violet-100/80"><div class="flex items-center gap-3"><div class="w-9 h-9 rounded-full bg-violet-200/60 flex items-center justify-center"><i class="fas fa-user text-violet-600 text-xs"></i></div><div class="flex-1 min-w-0"><p class="text-xs font-semibold text-violet-900 truncate">Kinny Decierdo</p><p class="text-[10px] text-violet-500">Instructor session active</p></div><div class="w-2 h-2 rounded-full bg-green-400 animate-pulse flex-shrink-0"></div></div></div>
+        <div class="px-8 pb-8 flex items-center gap-3"><button id="swal-cancel" class="swal-btn swal-btn-cancel flex-1" type="button"><i class="fas fa-times text-xs"></i> Cancel</button><button id="swal-confirm" class="swal-btn swal-btn-logout btn-shine flex-1" type="button"><span class="swal-btn-text"><i class="fas fa-sign-out-alt text-sm"></i> Logout</span><span class="swal-spinner"></span></button></div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const overlay = document.getElementById('swal-overlay');
+        const cancelButton = document.getElementById('swal-cancel');
+        const confirmButton = document.getElementById('swal-confirm');
+        const logoutUrl = "\/logout";
+        const redirectUrl = "http:\/\/localhost";
+        const csrfToken = null;
+        let isOpen = false;
+
+        function resetButtons() {
+            confirmButton.classList.remove('loading');
+            confirmButton.disabled = false;
+            confirmButton.style.pointerEvents = '';
+            cancelButton.disabled = false;
+            cancelButton.style.opacity = '';
+            cancelButton.style.pointerEvents = '';
+        }
+
+        window.showLogoutAlert = function () {
+            if (isOpen) return;
+            isOpen = true;
+            overlay.classList.remove('closing');
+            overlay.classList.add('active');
+            setTimeout(() => cancelButton.focus(), 350);
+        };
+
+        window.closeLogoutAlert = function () {
+            if (!isOpen) return;
+            overlay.classList.add('closing');
+            overlay.classList.remove('active');
+            setTimeout(() => { overlay.classList.remove('closing'); isOpen = false; resetButtons(); }, 280);
+        };
+
+        window.confirmLogout = function () {
+            confirmButton.classList.add('loading');
+            confirmButton.disabled = true;
+            confirmButton.style.pointerEvents = 'none';
+            cancelButton.disabled = true;
+            cancelButton.style.opacity = '0.5';
+            cancelButton.style.pointerEvents = 'none';
+
+            fetch(logoutUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            }).finally(() => { window.location.href = redirectUrl; });
+        };
+
+        cancelButton.addEventListener('click', window.closeLogoutAlert);
+        confirmButton.addEventListener('click', window.confirmLogout);
+        overlay.addEventListener('click', function (event) { if (event.target === overlay) window.closeLogoutAlert(); });
+        document.addEventListener('keydown', function (event) { if (event.key === 'Escape' && isOpen) window.closeLogoutAlert(); });
+    })();
+</script>
+    <script>
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('sidebar-toggle');
+        toggleBtn.addEventListener('click', () => { sidebar.classList.toggle('collapsed'); });
+
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                const href = this.getAttribute('href');
+                if (href === '#') {
+                    e.preventDefault();
+                    this.closest('nav').querySelectorAll('.sidebar-link').forEach(l=>l.classList.remove('active'));
+                    this.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

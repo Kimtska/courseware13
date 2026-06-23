@@ -20,6 +20,21 @@
     </style>
 </head>
 <body>
+    @php
+        $__studentUser = Auth::guard('student')->user() ?? (Auth::guard('web')->user() && Auth::guard('web')->user()->role === 'student' ? Auth::guard('web')->user() : null);
+        if (!isset($name) || $name === null || $name === '') {
+            $name = $__studentUser->full_name ?? $__studentUser->name ?? 'Student';
+        }
+        if (!isset($firstName) || $firstName === null || $firstName === '') {
+            $firstName = $__studentUser->first_name ?? (preg_split('/\s+/', trim($name))[0] ?? $name);
+        }
+        if (!isset($lastName) || $lastName === null) {
+            $lastName = $__studentUser->last_name ?? (preg_split('/\s+/', trim($name))[1] ?? '');
+        }
+        $name = $name ?? 'Student';
+        $firstName = $firstName ?? $name;
+        $lastName = $lastName ?? '';
+    @endphp
     <header class="bg-violet-950 text-white sticky top-0 z-50 shadow-lg shadow-violet-950/30">
         <div class="max-w-7xl mx-auto px-4 sm:px-6">
             <div class="flex items-center justify-between h-16">
@@ -31,11 +46,13 @@
                     @include('Students.partials.nav-links', ['type' => 'desktop', 'activeNav' => 'reports'])
                 </div>
                 <div class="flex items-center gap-3">
-                    <span class="hidden lg:inline-flex items-center px-3 py-1 bg-violet-800/50 text-violet-200 text-[10px] font-bold rounded-full border border-violet-700/50">Student</span>
                     <div class="hidden sm:flex items-center gap-2 pl-3 border-l border-violet-800/50">
-                        <div class="w-8 h-8 rounded-full bg-violet-700 flex items-center justify-center text-xs font-bold">{{ strtoupper(substr($firstName ?: ($name ?? 'S'), 0, 1)) }}{{ strtoupper(substr($lastName ?: ($name ?? 'T'), 0, 1)) }}</div>
-                        <span class="text-sm font-medium">{{ $name ?? 'Student' }}</span>
+                        <div class="w-8 h-8 rounded-full bg-violet-700 flex items-center justify-center text-xs font-bold">{{ strtoupper(substr($firstName ?: $name, 0, 1)) }}{{ strtoupper(substr($lastName ?: $name, 0, 1)) }}</div>
+                        <span class="text-sm font-medium">{{ $name }}</span>
                     </div>
+                    <button type="button" class="student-settings-btn p-2 rounded-lg hover:bg-violet-800/50 transition-colors text-violet-300 hover:text-white" title="Settings" aria-label="Settings">
+                        <i class="fas fa-cog text-sm"></i>
+                    </button>
                     <button onclick="showLogoutAlert()" class="p-2 rounded-lg hover:bg-violet-800/50 transition-colors text-violet-300 hover:text-white" title="Logout" aria-label="Logout">
                         <i class="fas fa-sign-out-alt text-sm"></i>
                     </button>
@@ -52,6 +69,51 @@
         <div class="card p-6 sm:p-8 mb-6">
             <h1 class="font-display font-bold text-2xl">Assessment Reports</h1>
             <p class="text-sm text-gray-500 mt-1">Summaries of your assessments from course modules.</p>
+        </div>
+
+        @php
+            $moduleScoresTotal = 0;
+            $moduleScoresMax = 0;
+            $marksmanshipTotal = 0;
+            $marksmanshipMax = 0;
+            foreach ($scores as $s) {
+                if (($s->module_key ?? '') === 'module-4') {
+                    $marksmanshipTotal += $s->score;
+                    $marksmanshipMax += $s->max_score;
+                } else {
+                    $moduleScoresTotal += $s->score;
+                    $moduleScoresMax += $s->max_score;
+                }
+            }
+            $modulePercent = $moduleScoresMax > 0 ? round(($moduleScoresTotal / $moduleScoresMax) * 100, 1) : 0;
+            $marksmanshipPercent = $marksmanshipMax > 0 ? round(($marksmanshipTotal / $marksmanshipMax) * 100, 1) : 0;
+        @endphp
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <div class="card p-5">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+                        <i class="fas fa-book-open text-sm"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">Module Score</p>
+                        <p class="text-xl font-display font-bold text-gray-900 leading-tight">{{ $moduleScoresTotal }} / {{ $moduleScoresMax }}</p>
+                        <p class="text-xs text-gray-500">{{ $modulePercent }}% overall</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card p-5">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+                        <i class="fas fa-bullseye text-sm"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">Marksmanship Assessment</p>
+                        <p class="text-xl font-display font-bold text-gray-900 leading-tight">{{ $marksmanshipTotal }} / {{ $marksmanshipMax }}</p>
+                        <p class="text-xs text-gray-500">{{ $marksmanshipPercent }}% accuracy</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 gap-6">
@@ -109,7 +171,7 @@
     </main>
     </main>
 
-        @include('shared.sweet-alerts.logout', ['logoutLabel' => 'Student — ' . ($name ?? 'Student'), 'logoutSubtext' => 'Student Reports', 'logoutDescription' => 'You are about to end your session.', 'redirectUrl' => url('/')])
+        @include('shared.sweet-alerts.logout', ['logoutLabel' => 'Student — ' . $name, 'logoutSubtext' => 'Student Reports', 'logoutDescription' => 'You are about to end your session.', 'redirectUrl' => url('/')])
 
         <script>
             const mobileToggle = document.getElementById('mobile-toggle');
