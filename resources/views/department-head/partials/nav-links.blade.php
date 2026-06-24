@@ -13,7 +13,7 @@
     </a>   
     <a href="{{ route('department-head.manage-students') }}" class="sidebar-link {{ $activeNav === 'students' ? 'active' : '' }}">
         <i class="fas fa-user-graduate w-5 text-center flex-shrink-0"></i>
-        <span class="sidebar-text">View list of Students</span>
+        <span class="sidebar-text">Students</span>
     </a>
 </nav>
 

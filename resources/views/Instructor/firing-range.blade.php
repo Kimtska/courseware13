@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VirtualArm - Firing Range</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/assets/logo.png') }}">
+    <title>IOT-Based Marksmanship - Firing Range</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/assets/Marksmanship innovatech.png') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>

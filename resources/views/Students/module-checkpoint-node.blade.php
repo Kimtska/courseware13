@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VirtualArm - Gun Parts</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/assets/logo.png') }}">
+    <title>IOT-Based Marksmanship - Gun Parts</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/assets/Marksmanship innovatech.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         body{font-family:'Inter',sans-serif;background:linear-gradient(180deg,#f8fafc 0%,#eef2ff 100%);min-height:100vh}
@@ -115,9 +115,9 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center gap-3 flex-shrink-0">
-                    <img src="{{ asset('images/assets/logo.png') }}" alt="SPC" class="h-9 w-auto">
+                    <img src="{{ asset('images/assets/Marksmanship innovatech.png') }}" alt="SPC" class="h-9 w-auto">
                     <div class="hidden sm:block">
-                        <span class="font-display font-bold text-sm">VirtualArm</span>
+                        <span class="font-display font-bold text-sm">IOT-Based Marksmanship</span>
                         <span class="block text-[8px] text-violet-300 uppercase tracking-widest leading-none">Student Portal</span>
                     </div>
                 </div>

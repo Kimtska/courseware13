@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Instructor') - VirtualArm</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/assets/logo.png') }}">
+    <title>@yield('title', 'Instructor') - IOT-Based Marksmanship</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/assets/Marksmanship innovatech.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         body{font-family:'Inter',sans-serif;margin:0;background:#f8fafc;overflow:hidden;height:100vh}

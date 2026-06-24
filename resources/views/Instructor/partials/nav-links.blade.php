@@ -7,8 +7,8 @@
         $profilePhoto = auth()->user()->profile_photo_path ?? null;
     @endphp
     <div class="p-6 border-b border-violet-800/30 flex items-center gap-3">
-        <img src="{{ asset('images/assets/logo.png') }}" alt="SPC" class="h-10 w-auto flex-shrink-0">
-        <div class="sidebar-header-text whitespace-nowrap overflow-hidden"><span class="font-display font-bold text-sm">VirtualArm</span><span class="block text-[9px] text-violet-300 uppercase tracking-widest">Instructor Panel</span></div>
+        <img src="{{ asset('images/assets/Marksmanship innovatech.png') }}" alt="SPC" class="h-10 w-auto flex-shrink-0">
+        <div class="sidebar-header-text whitespace-nowrap overflow-hidden"><span class="font-display font-bold text-sm">IOT-Based Marksmanship</span><span class="block text-[9px] text-violet-300 uppercase tracking-widest">Instructor Panel</span></div>
     </div>
     <nav class="flex-1 p-4 space-y-1 overflow-y-auto overflow-x-hidden">
         <a href="{{ route('instructor.dashboard') }}" class="sidebar-link {{ request()->routeIs('instructor.dashboard') ? 'active' : '' }}"><i class="fas fa-home w-5 text-center flex-shrink-0"></i> <span class="sidebar-text">Dashboard</span></a>

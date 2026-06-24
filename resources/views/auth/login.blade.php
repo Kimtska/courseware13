@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VirtualArm - Login</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/assets/logo.png') }}">
+    <title>IOT-Based Marksmanship - Login</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/assets/Marksmanship innovatech.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-light-50 grid-pattern min-h-screen flex items-center justify-center p-4">
@@ -17,10 +17,10 @@
         <!-- Header -->
         <div class="text-center mb-12">
             <div class="flex items-center justify-center gap-3 mb-6">
-                <img src="{{ asset('images/assets/logo.png') }}" alt="SPC College of Criminology" class="h-12 w-auto">
-                <div class="flex flex-col">
-                    <span class="font-display font-bold text-lg tracking-tight text-black">Virtual<span class="text-violet-700">Arm</span></span>
-                    <span class="text-[9px] text-gray-400 tracking-wider uppercase font-medium">SPC College of Criminology</span>
+<img src="{{ asset('images/assets/Marksmanship innovatech.png') }}" alt="SPC" class="h-12 w-auto">
+                <div class="flex flex-col ml-3">
+                    <span class="font-display font-bold text-lg text-black leading-none tracking-tight">IOT-Based<span class="text-violet-700"> Marksmanship</span></span>
+                    <span class="text-[9px] text-gray-400 tracking-wider uppercase font-medium">SPC Criminology</span>
                 </div>
             </div>
         </div>

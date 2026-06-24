@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\EnrollmentImportBatch;
 use App\Models\ManagedStudent;
-use App\Models\OldStudent;
 use App\Models\StudentProfile;
 use App\Models\StudentActivityLog;
 use App\Models\StudentTrainingSession;
@@ -37,40 +36,22 @@ class InstructorStudentManagementController extends Controller
 
         $sections = $this->availableSections($user);
 
-        if (Schema::hasTable('students') && Schema::hasTable('old_students')) {
-            $toTransfer = ManagedStudent::query()
+        if (Schema::hasTable('students')) {
+            ManagedStudent::query()
                 ->active()
                 ->when($user->role === 'instructor', fn ($q) => $q->where('instructor_user_id', $user->id))
                 ->where('created_at', '<', now()->subMonths(5))
-                ->get();
-
-            foreach ($toTransfer as $student) {
-                DB::transaction(function () use ($student) {
-                    OldStudent::create([
-                        'instructor_user_id' => $student->instructor_user_id,
-                        'student_id_number' => $student->student_id_number,
-                        'password' => $student->password,
-                        'status' => $student->status,
-                        'full_name' => $student->full_name,
-                        'course' => $student->course,
-                        'year_level' => $student->year_level,
-                        'section' => $student->section,
-                        'enrollment_status' => $student->enrollment_status,
-                        'module_access_status' => $student->module_access_status,
-                        'current_activity_status' => $student->current_activity_status,
-                        'archived_at' => $student->archived_at,
-                        'verified_at' => $student->verified_at,
-                        'metadata' => $student->metadata,
-                    ]);
-                    $student->delete();
-                });
-            }
+                ->update([
+                    'status' => 'archived',
+                    'archived_at' => now(),
+                ]);
         }
 
-        $fiveMonthOld = Schema::hasTable('old_students')
-            ? OldStudent::query()
+        $fiveMonthOld = Schema::hasTable('students')
+            ? ManagedStudent::withArchived()
+                ->where('status', 'archived')
                 ->when($user->role === 'instructor', fn ($q) => $q->where('instructor_user_id', $user->id))
-                ->latest('moved_at')
+                ->latest('archived_at')
                 ->get()
             : collect();
 

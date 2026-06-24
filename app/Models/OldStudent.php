@@ -26,13 +26,10 @@ class OldStudent extends Model
         'moved_at',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'archived_at' => 'datetime',
-            'verified_at' => 'datetime',
-            'moved_at' => 'datetime',
-            'metadata' => 'array',
-        ];
-    }
+    protected $casts = [
+        'archived_at' => 'datetime',
+        'verified_at' => 'datetime',
+        'moved_at' => 'datetime',
+        'metadata' => 'array',
+    ];
 }

@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VirtualArm - Admin Dashboard</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/assets/logo.png') }}">
+    <title>IOT-Based Marksmanship - Admin</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/assets/Marksmanship innovatech.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         body{font-family:'Inter',sans-serif;margin:0;background:#f8fafc;overflow:hidden;height:100vh}
@@ -36,8 +36,8 @@
     <!-- Sidebar -->
     <aside id="sidebar" class="bg-violet-950 text-white flex flex-col border-r border-violet-800/30 flex-shrink-0 h-full overflow-hidden">
         <div class="p-6 border-b border-violet-800/30 flex items-center gap-3">
-            <img src="{{ asset('images/assets/logo.png') }}" alt="SPC" class="h-10 w-auto flex-shrink-0">
-            <div class="sidebar-header-text whitespace-nowrap overflow-hidden"><span class="font-display font-bold text-sm">VirtualArm</span><span class="block text-[9px] text-violet-300 uppercase tracking-widest">Admin Panel</span></div>
+            <img src="{{ asset('images/assets/Marksmanship innovatech.png') }}" alt="SPC" class="h-10 w-auto flex-shrink-0">
+            <div class="sidebar-header-text whitespace-nowrap overflow-hidden"><span class="font-display font-bold text-sm">IOT-Based Marksmanship</span><span class="block text-[9px] text-violet-300 uppercase tracking-widest">Admin Panel</span></div>
         </div>
         @include('department-head.partials.nav-links', ['activeNav' => 'dashboard'])
         <div class="p-4 border-t border-violet-800/30">

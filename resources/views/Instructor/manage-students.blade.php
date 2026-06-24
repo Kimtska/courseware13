@@ -227,9 +227,10 @@
                                 <th class="px-5 sm:px-6 py-4 font-semibold">Student ID</th>
                                 <th class="px-5 sm:px-6 py-4 font-semibold">Full Name</th>
                                 <th class="px-5 sm:px-6 py-4 font-semibold">Course/Year/Section</th>
-                                <th class="px-5 sm:px-6 py-4 font-semibold">Account Age</th>
+                                <th class="px-5 sm:px-6 py-4 font-semibold">Module Access Status</th>
+                                <th class="px-5 sm:px-6 py-4 font-semibold">Current Activity Status</th>
                                 <th class="px-5 sm:px-6 py-4 font-semibold">Date Added</th>
-                                <th class="px-5 sm:px-6 py-4 text-right font-semibold">Action</th>
+                                <th class="px-5 sm:px-6 py-4 text-right font-semibold">Action Buttons</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 bg-white">
@@ -240,7 +241,41 @@
                                     $course = $student->course ?? '—';
                                     $yl = $student->year_level ?? '—';
                                     $sec = $student->section ?? '—';
-                                    $moved = $student->moved_at;
+                                    $moved = $student->archived_at;
+                                    $moduleAccessStatus = $student->module_access_status ?? 'locked';
+                                    $activityStatus = $student->current_activity_status ?? 'inactive';
+                                    $enrollmentStatus = $student->enrollment_status ?? 'archived';
+
+                                    $moduleClass = match ($moduleAccessStatus) {
+                                        'ready_for_training' => 'bg-violet-100 text-violet-700',
+                                        'locked' => 'bg-slate-100 text-slate-700',
+                                        'active_in_firing_range' => 'bg-cyan-100 text-cyan-700',
+                                        'completed_session' => 'bg-emerald-100 text-emerald-700',
+                                        'archived' => 'bg-gray-200 text-gray-700',
+                                        default => 'bg-slate-100 text-slate-700',
+                                    };
+                                    $activityClass = match ($activityStatus) {
+                                        'inactive' => 'bg-slate-100 text-slate-700',
+                                        'active_in_firing_range' => 'bg-cyan-100 text-cyan-700',
+                                        'active_in_assembly' => 'bg-violet-100 text-violet-700',
+                                        'completed_session' => 'bg-emerald-100 text-emerald-700',
+                                        'archived' => 'bg-gray-200 text-gray-700',
+                                        default => 'bg-slate-100 text-slate-700',
+                                    };
+
+                                    $studentPayload = [
+                                        'id' => $student->id,
+                                        'student_id_number' => $sid,
+                                        'full_name' => $name,
+                                        'course' => $course,
+                                        'year_level' => $yl,
+                                        'section' => $sec,
+                                        'status' => 'Archived',
+                                        'enrollment_status' => $enrollmentStatus,
+                                        'module_access_status' => $moduleAccessStatus,
+                                        'current_activity_status' => $activityStatus,
+                                        'date_added' => $moved ? $moved->format('Y-m-d H:i') : null,
+                                    ];
                                 @endphp
                                 <tr class="hover:bg-amber-50/50 transition-colors">
                                     <td class="px-5 sm:px-6 py-4 font-semibold text-gray-900">{{ $sid }}</td>
@@ -249,19 +284,23 @@
                                         <div class="text-xs text-gray-500">{{ $course }}</div>
                                     </td>
                                     <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $course }} / {{ $yl }} / {{ $sec }}</td>
-                                    <td class="px-5 sm:px-6 py-4">
-                                        <span class="status-pill bg-amber-100 text-amber-700">Transferred</span>
-                                    </td>
+                                    <td class="px-5 sm:px-6 py-4"><span class="status-pill {{ $moduleClass }}">{{ str_replace('_', ' ', $moduleAccessStatus) }}</span></td>
+                                    <td class="px-5 sm:px-6 py-4"><span class="status-pill {{ $activityClass }}">{{ str_replace('_', ' ', $activityStatus) }}</span></td>
                                     <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $moved ? $moved->format('M d, Y') : '—' }}</td>
-                                    <td class="px-5 sm:px-6 py-4 text-right">
-                                        <span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gray-100 text-gray-500 text-xs font-bold">
-                                            <i class="fas fa-archive"></i> Archived
-                                        </span>
+                                    <td class="px-5 sm:px-6 py-4">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <button type="button" class="view-student inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors" data-student='@json($studentPayload)'>
+                                                <i class="fas fa-eye"></i> View
+                                            </button>
+                                            <button type="button" class="edit-student inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-violet-100 text-violet-700 text-xs font-bold hover:bg-violet-200 transition-colors" data-student='@json($studentPayload)'>
+                                                <i class="fas fa-pen-to-square"></i> Update
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-6 py-16 text-center text-gray-500">
+                                    <td colspan="7" class="px-6 py-16 text-center text-gray-500">
                                         <div class="max-w-md mx-auto">
                                             <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-2xl">
                                                 <i class="fas fa-clock"></i>
@@ -606,8 +645,15 @@
                 });
                 this.classList.add('bg-white', 'text-violet-700', 'shadow-sm');
                 this.classList.remove('text-gray-600');
-                document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
-                document.getElementById('tab-' + this.dataset.tab)?.classList.add('active');
+                document.querySelectorAll('.tab-content').forEach(tc => {
+                    tc.classList.remove('active');
+                    tc.classList.add('hidden');
+                });
+                const target = document.getElementById('tab-' + this.dataset.tab);
+                if (target) {
+                    target.classList.remove('hidden');
+                    target.classList.add('active');
+                }
             });
         });
     </script>

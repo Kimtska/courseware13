@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VirtualArm - Manage Instructors</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/assets/logo.png') }}">
+    <title>IOT-Based Marksmanship - Manage Instructors</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/assets/Marksmanship innovatech.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         body{font-family:'Inter',sans-serif;margin:0;background:#f8fafc;overflow:hidden;height:100vh}
@@ -37,8 +37,8 @@
     @endphp
     <aside id="sidebar" class="bg-violet-950 text-white flex flex-col border-r border-violet-800/30 flex-shrink-0 h-full overflow-hidden">
         <div class="p-6 border-b border-violet-800/30 flex items-center gap-3">
-            <img src="{{ asset('images/assets/logo.png') }}" alt="SPC" class="h-10 w-auto flex-shrink-0">
-            <div class="sidebar-header-text whitespace-nowrap overflow-hidden"><span class="font-display font-bold text-sm">VirtualArm</span><span class="block text-[9px] text-violet-300 uppercase tracking-widest">Admin Panel</span></div>
+            <img src="{{ asset('images/assets/Marksmanship innovatech.png') }}" alt="SPC" class="h-10 w-auto flex-shrink-0">
+            <div class="sidebar-header-text whitespace-nowrap overflow-hidden"><span class="font-display font-bold text-sm">IOT-Based Marksmanship</span><span class="block text-[9px] text-violet-300 uppercase tracking-widest">Admin Panel</span></div>
         </div>
         @include('department-head.partials.nav-links', ['activeNav' => 'instructors'])
         <div class="p-4 border-t border-violet-800/30">
@@ -87,18 +87,6 @@
                     @endforeach
                 </div>
             @endif
-
-            <section class="portal-card p-4 mb-6 max-w-md">
-                <div class="flex items-center gap-3">
-                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
-                        <i class="fas fa-chalkboard-teacher text-sm"></i>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">Instructor Total</p>
-                        <p class="text-xl font-display font-bold text-gray-900 leading-tight">{{ $instructors->count() }}</p>
-                    </div>
-                </div>
-            </section>
 
             <section class="glass-card rounded-3xl p-5 sm:p-6 mb-6">
                 <form method="GET" action="{{ route('department-head.manage-instructors') }}" id="filter-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">

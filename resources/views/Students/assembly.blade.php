@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VirtualArm - Assembly Trainer</title>
-<link rel="icon" type="image/png" href="{{ asset('images/assets/logo.png') }}">
+<title>IOT-Based Marksmanship - Assembly Trainer</title>
+<link rel="icon" type="image/png" href="{{ asset('images/assets/Marksmanship innovatech.png') }}">
 @vite(['resources/css/app.css', 'resources/js/app.js'])
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -120,8 +120,8 @@ body.simulation-locked{overflow:hidden}
   <div class="max-w-7xl mx-auto px-4 sm:px-6">
     <div class="flex items-center justify-between h-16">
       <div class="flex items-center gap-3 flex-shrink-0 hide-play">
-        <img src="{{ asset('images/assets/logo.png') }}" alt="SPC" class="h-9 w-auto">
-        <div class="hidden sm:block"><span class="font-display font-bold text-sm">VirtualArm</span><span class="block text-[8px] text-violet-300 uppercase tracking-widest leading-none">Student Portal</span></div>
+        <img src="{{ asset('images/assets/Marksmanship innovatech.png') }}" alt="SPC" class="h-9 w-auto">
+        <div class="hidden sm:block"><span class="font-display font-bold text-sm">IOT-Based Marksmanship</span><span class="block text-[8px] text-violet-300 uppercase tracking-widest leading-none">Student Portal</span></div>
       </div>
       <div class="hide-play">
         @include('Students.partials.nav-links', ['type' => 'desktop', 'activeNav' => 'assembly'])
@@ -506,7 +506,7 @@ render();
 prog();
 </script>
 
-@include('shared.sweet-alerts.logout', ['logoutLabel' => 'Student — ' . $name, 'logoutSubtext' => 'VirtualArm Assembly Trainer', 'logoutDescription' => 'You are about to end your session. Make sure your progress is saved before logging out.', 'redirectUrl' => url('/')])
+@include('shared.sweet-alerts.logout', ['logoutLabel' => 'Student — ' . $name, 'logoutSubtext' => 'IOT-Based Assembly Trainer', 'logoutDescription' => 'You are about to end your session. Make sure your progress is saved before logging out.', 'redirectUrl' => url('/')])
 </main>
 </body>
 </html>
