@@ -155,8 +155,7 @@ class InstructorStudentManagementController extends Controller
             'student_id_number' => ['required', 'string', 'max:60', 'unique:students,student_id_number'],
             'password' => ['nullable', 'string', 'min:8', 'max:255'],
             'section' => ['nullable', 'string', 'max:50'],
-            'course' => ['nullable', 'string', 'max:120'],
-            'year_level' => ['nullable', 'string', 'max:20'],
+            'email' => ['nullable', 'email', 'max:255'],
         ]);
 
         $fullName = trim(implode(' ', array_filter([
@@ -174,9 +173,8 @@ class InstructorStudentManagementController extends Controller
                 'password' => Hash::make($plainPassword),
                 'status' => 'active',
                 'full_name' => $fullName,
-                'course' => $data['course'] ?? 'BSCRIM',
-                'year_level' => $data['year_level'] ?? '2nd',
                 'section' => $data['section'] ?? null,
+                'email' => $data['email'] ?? null,
                 'enrollment_status' => 'verified_enrolled',
                 'module_access_status' => 'ready_for_training',
                 'current_activity_status' => 'inactive',
@@ -249,9 +247,8 @@ class InstructorStudentManagementController extends Controller
                     'password' => Hash::make('password'),
                     'status' => 'active',
                     'full_name' => $normalized['full_name'],
-                    'course' => $normalized['course'],
-                    'year_level' => $normalized['year_level'],
                     'section' => $normalized['section'],
+                    'email' => $normalized['email'],
                     'enrollment_status' => 'verified_enrolled',
                     'module_access_status' => 'ready_for_training',
                     'current_activity_status' => 'inactive',
@@ -317,9 +314,8 @@ class InstructorStudentManagementController extends Controller
 
         $data = $request->validate([
             'full_name' => ['required', 'string', 'max:255'],
-            'course' => ['nullable', 'string', 'max:120'],
-            'year_level' => ['nullable', 'string', 'max:20'],
             'section' => ['nullable', 'string', 'max:50'],
+            'email' => ['nullable', 'email', 'max:255'],
             'enrollment_status' => ['required', 'in:verified_enrolled,pending,rejected,archived'],
             'module_access_status' => ['required', 'in:ready_for_training,locked,active_in_firing_range,completed_session,archived'],
             'current_activity_status' => ['required', 'in:inactive,active_in_firing_range,active_in_assembly,completed_session,archived'],
@@ -456,9 +452,8 @@ class InstructorStudentManagementController extends Controller
         return [
             'student_id_number' => $studentId,
             'full_name' => $fullName,
-            'course' => $normalized['course'] ?? $normalized['program'] ?? 'BSCRIM',
-            'year_level' => $normalized['year_level'] ?? $normalized['year'] ?? '2nd',
             'section' => $normalized['section'] ?? null,
+            'email' => $normalized['email'] ?? null,
             'metadata' => [
                 'source_row' => $normalized,
             ],
@@ -614,8 +609,6 @@ class InstructorStudentManagementController extends Controller
                 'id' => $student->id,
                 'student_id_number' => $student->student_id_number,
                 'full_name' => $student->full_name,
-                'course' => $student->course,
-                'year_level' => $student->year_level,
                 'section' => $student->section,
                 'enrollment_status' => $student->enrollment_status,
             ]);
@@ -625,8 +618,6 @@ class InstructorStudentManagementController extends Controller
                 'id' => $student->id,
                 'student_id_number' => $student->student_number,
                 'full_name' => $student->full_name,
-                'course' => null,
-                'year_level' => $student->year_level,
                 'section' => $student->section,
                 'enrollment_status' => $student->verification_status,
             ]);

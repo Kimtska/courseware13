@@ -96,6 +96,7 @@ body.simulation-locked{overflow:hidden}
 *::-webkit-scrollbar-thumb:hover{background:#5b21b6}
 @media (max-width:900px){.layout{grid-template-columns:1fr}.tray{min-height:auto;flex-direction:row;flex-wrap:wrap}.pcard{width:min(100%,170px)}.rbtn{margin-left:0}}
 </style>
+    @include('shared.back-button-prevention')
 </head>
 <body>
 @php
@@ -506,7 +507,7 @@ render();
 prog();
 </script>
 
-@include('shared.sweet-alerts.logout', ['logoutLabel' => 'Student — ' . $name, 'logoutSubtext' => 'IOT-Based Assembly Trainer', 'logoutDescription' => 'You are about to end your session. Make sure your progress is saved before logging out.', 'redirectUrl' => url('/')])
+@include('shared.sweet-alerts.logout', ['logoutLabel' => 'Student — ' . $name, 'logoutSubtext' => 'IOT-Based Assembly Trainer', 'logoutDescription' => 'You are about to end your session. Make sure your progress is saved before logging out.', 'redirectUrl' => url('/login')])
 </main>
 </body>
 </html>

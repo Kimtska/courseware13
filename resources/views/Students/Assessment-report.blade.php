@@ -18,6 +18,7 @@
         .module-card{transition:all .25s ease}
         .module-card:hover{transform:translateY(-3px);border-color:#c4b5fd;box-shadow:0 16px 30px -20px rgba(91,33,182,.35)}
     </style>
+    @include('shared.back-button-prevention')
 </head>
 <body>
     @php
@@ -77,7 +78,7 @@
             $marksmanshipTotal = 0;
             $marksmanshipMax = 0;
             foreach ($scores as $s) {
-                if (($s->module_key ?? '') === 'module-4') {
+                if (($s->module_key ?? '') === 'final') {
                     $marksmanshipTotal += $s->score;
                     $marksmanshipMax += $s->max_score;
                 } else {
@@ -117,9 +118,6 @@
         </div>
 
         <div class="grid grid-cols-1 gap-6">
-            @if (! $profile)
-                <div class="p-4 bg-yellow-50 border border-yellow-200 rounded">No student profile found for your account. Contact your instructor.</div>
-            @else
                 @php $byModule = $scores->groupBy('module_key'); @endphp
 
                 @if ($byModule->isEmpty())
@@ -147,7 +145,6 @@
                                 <thead>
                                     <tr class="text-left text-xs text-gray-500 border-t border-b">
                                         <th class="py-2">Date</th>
-                                        <th class="py-2">Session</th>
                                         <th class="py-2">Score</th>
                                         <th class="py-2">Notes</th>
                                     </tr>
@@ -156,7 +153,6 @@
                                     @foreach ($moduleScores as $s)
                                         <tr class="border-b">
                                             <td class="py-2 text-xs text-gray-500">{{ optional($s->recorded_at)->format('Y-m-d H:i') }}</td>
-                                            <td class="py-2">{{ $s->trainingSession?->name ?? ($s->metadata['session_name'] ?? '—') }}</td>
                                             <td class="py-2">{{ $s->score }} / {{ $s->max_score }}</td>
                                             <td class="py-2 text-xs text-gray-500">{{ $s->metadata['notes'] ?? '-' }}</td>
                                         </tr>
@@ -166,12 +162,11 @@
                         </div>
                     @endforeach
                 @endif
-            @endif
         </div>
     </main>
     </main>
 
-        @include('shared.sweet-alerts.logout', ['logoutLabel' => 'Student — ' . $name, 'logoutSubtext' => 'Student Reports', 'logoutDescription' => 'You are about to end your session.', 'redirectUrl' => url('/')])
+        @include('shared.sweet-alerts.logout', ['logoutLabel' => 'Student — ' . $name, 'logoutSubtext' => 'Student Reports', 'logoutDescription' => 'You are about to end your session.', 'redirectUrl' => url('/login')])
 
         <script>
             const mobileToggle = document.getElementById('mobile-toggle');

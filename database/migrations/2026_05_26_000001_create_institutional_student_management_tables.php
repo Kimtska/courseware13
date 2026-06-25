@@ -8,15 +8,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('instructors', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->unique()->constrained('users')->cascadeOnDelete();
-            $table->string('full_name');
-            $table->string('email')->nullable();
-            $table->string('department')->nullable();
-            $table->timestamps();
-        });
-
         Schema::create('students', function (Blueprint $table) {
             $table->id();
             $table->foreignId('instructor_user_id')->constrained('users')->cascadeOnDelete();
@@ -88,6 +79,5 @@ return new class extends Migration
         Schema::dropIfExists('student_activity_logs');
         Schema::dropIfExists('student_training_sessions');
         Schema::dropIfExists('students');
-        Schema::dropIfExists('instructors');
     }
 };

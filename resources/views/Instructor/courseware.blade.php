@@ -65,88 +65,36 @@
 
         <div class="glass-card rounded-3xl p-6 sm:p-8">
             <div class="presentation-wrapper">
-                <aside class="checkpoint-sidebar" aria-label="Presentation progress">
-                    <div class="checkpoint-track">
-                        <div class="checkpoint-track-fill" id="track-fill"></div>
-                    </div>
-                    @php
-                        $lessonIndexes = $lessonPages->pluck('lesson_index')->unique()->sort()->values();
-                    @endphp
-                    @foreach($lessonIndexes as $li)
-                        <div class="checkpoint-item {{ $loop->first ? 'active' : '' }}" data-cp="{{ $li }}">
-                            <div class="checkpoint-node">{{ $loop->index + 1 }}</div>
-                            <span class="checkpoint-label">Lesson {{ $loop->index + 1 }}</span>
-                        </div>
-                    @endforeach
-                </aside>
-
-                @include('Students.partials.lesson-presentation-shell')
+                @include('Students.partials.lesson-presentation-shell', ['moduleKey' => $moduleKey])
             </div>
         </div>
     </div>
 
     <script>
-        const pages = Array.from(document.querySelectorAll('.presentation-page'));
-        const dots = Array.from(document.querySelectorAll('.presentation-dot'));
-        const cpItems = Array.from(document.querySelectorAll('.checkpoint-item'));
-        const trackFill = document.getElementById('track-fill');
-        const prevButton = document.getElementById('presentation-prev');
-        const nextButton = document.getElementById('presentation-next');
-        const totalSteps = cpItems.length;
-        const totalPages = pages.length;
-        let currentPage = 0;
-
-        function getLessonIndex(pageIndex) {
-            const page = pages[pageIndex];
-            const raw = page?.dataset?.lesson;
-            return Number.isNaN(parseInt(raw, 10)) ? 0 : parseInt(raw, 10);
-        }
-
-        function firstPageIndexForLesson(lessonIndex) {
-            const match = pages.findIndex(page => parseInt(page.dataset.lesson, 10) === lessonIndex);
-            return match === -1 ? 0 : match;
-        }
-
-        function updatePresentationPage() {
-            const currentLesson = getLessonIndex(currentPage);
-            pages.forEach((page, index) => page.classList.toggle('active', index === currentPage));
-            dots.forEach((dot, index) => dot.classList.toggle('active', index === currentPage));
-            cpItems.forEach((cp, index) => {
-                cp.classList.remove('active', 'completed');
-                if (index < currentLesson) cp.classList.add('completed');
-                else if (index === currentLesson) cp.classList.add('active');
-            });
-            cpItems.forEach((cp, index) => {
-                const node = cp.querySelector('.checkpoint-node');
-                if (!node) return;
-                node.innerHTML = index < currentLesson ? '<i class="fas fa-check text-[11px]"></i>' : String(index + 1);
-            });
-            if (trackFill) {
-                const pct = totalSteps > 1 ? (currentLesson / (totalSteps - 1)) * 100 : 0;
-                trackFill.style.height = pct + '%';
+        const shell = document.querySelector('.presentation-stage');
+        if (shell) {
+            const pages = Array.from(shell.querySelectorAll('.presentation-page'));
+            const counterEl = document.getElementById('page-counter');
+            const prevButton = document.getElementById('presentation-prev');
+            const nextButton = document.getElementById('presentation-next');
+            if (pages.length > 0) {
+                let currentPage = 0;
+                function updatePage() {
+                    pages.forEach((p, i) => p.classList.toggle('active', i === currentPage));
+                    if (counterEl) counterEl.textContent = (currentPage + 1) + ' / ' + pages.length;
+                    if (prevButton) prevButton.disabled = currentPage === 0;
+                    if (nextButton) nextButton.disabled = currentPage === pages.length - 1;
+                }
+                prevButton?.addEventListener('click', () => {
+                    currentPage = Math.max(0, currentPage - 1);
+                    updatePage();
+                });
+                nextButton?.addEventListener('click', () => {
+                    currentPage = Math.min(pages.length - 1, currentPage + 1);
+                    updatePage();
+                });
+                updatePage();
             }
-            if (prevButton) prevButton.disabled = currentPage === 0;
-            if (nextButton) nextButton.disabled = currentPage === totalPages - 1;
         }
-
-        function goToPresentationPage(pageIndex) {
-            currentPage = Math.max(0, Math.min(pageIndex, pages.length - 1));
-            updatePresentationPage();
-        }
-
-        prevButton?.addEventListener('click', () => goToPresentationPage(currentPage - 1));
-        nextButton?.addEventListener('click', () => goToPresentationPage(currentPage + 1));
-        dots.forEach(dot => {
-            dot.addEventListener('click', () => goToPresentationPage(parseInt(dot.dataset.dot, 10) || 0));
-        });
-
-        cpItems.forEach(cp => {
-            cp.addEventListener('click', () => {
-                const lessonIndex = parseInt(cp.dataset.cp, 10) || 0;
-                goToPresentationPage(firstPageIndexForLesson(lessonIndex));
-            });
-        });
-
-        updatePresentationPage();
     </script>
 @endsection

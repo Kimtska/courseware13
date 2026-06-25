@@ -8,6 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::dropIfExists('old_students');
+    }
+
+    public function down(): void
+    {
         Schema::create('old_students', function (Blueprint $table) {
             $table->id();
             $table->foreignId('instructor_user_id')->constrained('users')->cascadeOnDelete();
@@ -30,10 +35,5 @@ return new class extends Migration
             $table->index(['instructor_user_id', 'course', 'year_level'], 'old_students_inst_course_year_idx');
             $table->index(['enrollment_status', 'module_access_status', 'current_activity_status'], 'old_students_status_idx');
         });
-    }
-
-    public function down(): void
-    {
-        Schema::dropIfExists('old_students');
     }
 };

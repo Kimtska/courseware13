@@ -78,6 +78,9 @@
         <button type="button" class="ml-tab-btn px-5 py-3 text-sm font-bold rounded-t-xl transition-all text-gray-600 hover:text-violet-700 hover:bg-violet-50" data-tab="progress">
             <i class="fas fa-chart-line mr-2"></i> View Student Progress Tracking
         </button>
+        <button type="button" class="ml-tab-btn px-5 py-3 text-sm font-bold rounded-t-xl transition-all text-gray-600 hover:text-violet-700 hover:bg-violet-50" data-tab="questions">
+            <i class="fas fa-pen-to-square mr-2"></i> Manage Activity
+        </button>
     </div>
 
     <div id="ml-tab-lessons" class="ml-tab-content">
@@ -214,7 +217,7 @@
                         <tr>
                             <th class="px-5 sm:px-6 py-4 font-semibold">Student ID</th>
                             <th class="px-5 sm:px-6 py-4 font-semibold">Full Name</th>
-                            <th class="px-5 sm:px-6 py-4 font-semibold">Course/Year/Section</th>
+                            <th class="px-5 sm:px-6 py-4 font-semibold">Section</th>
                             <th class="px-5 sm:px-6 py-4 font-semibold">Current Page</th>
                             <th class="px-5 sm:px-6 py-4 font-semibold">Last Active</th>
                             <th class="px-5 sm:px-6 py-4 font-semibold">Status</th>
@@ -246,6 +249,82 @@
 
     </div>
 
+    <div id="ml-tab-questions" class="ml-tab-content hidden">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h2 class="text-xl font-bold text-gray-900">Manage Assessment Questions</h2>
+                <p class="text-sm text-gray-500">Add, edit, or remove questions for each module assessment.</p>
+            </div>
+
+        </div>
+
+        <div class="flex gap-2 mb-6">
+            <button type="button" class="qm-tab-btn px-4 py-2 text-sm font-bold rounded-lg transition-all bg-violet-700 text-white" data-qm="1">Module 1</button>
+            <button type="button" class="qm-tab-btn px-4 py-2 text-sm font-bold rounded-lg transition-all bg-white text-gray-600 border border-gray-200 hover:bg-violet-50" data-qm="2">Module 2</button>
+            <button type="button" class="qm-tab-btn px-4 py-2 text-sm font-bold rounded-lg transition-all bg-white text-gray-600 border border-gray-200 hover:bg-violet-50" data-qm="3">Module 3</button>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50 text-xs text-gray-500 uppercase tracking-wider">
+                        <tr>
+                            <th class="px-4 py-3 font-semibold w-12">#</th>
+                            <th class="px-4 py-3 font-semibold">Question</th>
+                            <th class="px-4 py-3 font-semibold">Options</th>
+                            <th class="px-4 py-3 font-semibold w-24">Correct</th>
+                            <th class="px-4 py-3 font-semibold w-28">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="qm-tbody" class="divide-y divide-gray-100">
+                        <tr id="qm-empty-row">
+                            <td colspan="5" class="px-6 py-16 text-center text-gray-500">
+                                <div class="max-w-md mx-auto">
+                                    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-violet-100 text-violet-700 flex items-center justify-center text-2xl"><i class="fas fa-file-pen"></i></div>
+                                    <p class="font-semibold text-gray-900 mb-2">No questions yet</p>
+                                    <p class="text-sm">Select a module above or click "Add Question" to create the first one.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Add/Edit Question Modal -->
+        <div id="qm-modal-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" style="display:none">
+            <div class="bg-white rounded-2xl w-full max-w-2xl mx-4 shadow-2xl overflow-hidden" style="transform:scale(0.95);transition:transform 0.2s">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h3 id="qm-modal-title" class="text-lg font-bold text-gray-900">Add Question</h3>
+                    <button type="button" onclick="closeQmModal()" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400"><i class="fas fa-times"></i></button>
+                </div>
+                <form id="qm-form" class="p-6 space-y-4" onsubmit="return saveQuestion(event)">
+                    <input type="hidden" id="qm-edit-id" value="">
+                    <input type="hidden" id="qm-module" value="1">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Question Text</label>
+                        <textarea id="qm-question-text" rows="2" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" required></textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        @for ($i = 0; $i < 4; $i++)
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Option {{ chr(65 + $i) }}</label>
+                            <div class="flex items-center gap-2">
+                                <input type="radio" name="qm-correct" value="{{ $i }}" class="accent-violet-600" {{ $i === 0 ? 'checked' : '' }}>
+                                <input type="text" id="qm-option-{{ $i }}" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" required>
+                            </div>
+                        </div>
+                        @endfor
+                    </div>
+                    <div class="flex items-center justify-end gap-3 pt-2">
+                        <button type="button" onclick="closeQmModal()" class="px-4 py-2 text-sm font-bold text-gray-600 hover:text-gray-800 transition-all">Cancel</button>
+                        <button type="submit" class="px-6 py-2 bg-violet-700 text-white text-sm font-bold rounded-lg hover:bg-violet-800 transition-all flex items-center gap-2"><i class="fas fa-check"></i> <span id="qm-submit-text">Add Question</span></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
         (function () {
             const apiUrl = @json(route('api.lesson.active-students')) + '?lesson=gun-parts-presentation';
@@ -259,6 +338,7 @@
             let inFlight = false;
             let allRows = [];
             let sectionOptions = new Set();
+            let rowsVersion = 0;
 
             function escapeHtml(s) {
                 if (s == null) return '';
@@ -295,7 +375,7 @@
             function rowHtml(r) {
                 const page = Math.max(1, (parseInt(r.current_page, 10) || 0) + 1);
                 const last = escapeHtml(relativeTime(r.last_active_at));
-                const meta = ((r.course || '—') + ' / ' + (r.year_level || '—') + ' / ' + (r.section || '—')).replace(/^[\s\/]+|[\s\/]+$/g, '');
+                const meta = r.section || '—';
                 const idle = Math.max(0, Math.floor(Date.now() / 1000) - r.last_active_at);
                 const statusKey = idle > 15 ? 'idle' : 'active';
                 const statusPill = statusKey === 'idle'
@@ -314,7 +394,10 @@
                 '</tr>';
             }
 
+            let rebuildVersion = -1;
             function rebuildSectionOptions() {
+                if (rebuildVersion === rowsVersion) return;
+                rebuildVersion = rowsVersion;
                 const current = filterSection.value || '';
                 const next = new Set();
                 allRows.forEach(r => { if (r.section) next.add(r.section); });
@@ -344,23 +427,41 @@
             }
 
             function refreshRelativeTimes() {
+                const now = Math.floor(Date.now() / 1000);
                 tbody.querySelectorAll('tr[data-last-active]').forEach(tr => {
                     const ts = parseInt(tr.getAttribute('data-last-active'), 10);
                     if (!Number.isFinite(ts)) return;
                     const cell = tr.querySelector('td[data-ts]');
                     if (cell) cell.textContent = relativeTime(ts);
+                    const diff = Math.max(0, now - ts);
+                    const statusKey = diff > 15 ? 'idle' : 'active';
+                    const prev = tr.getAttribute('data-status');
+                    if (prev !== statusKey) {
+                        tr.setAttribute('data-status', statusKey);
+                        const statusCell = tr.querySelector('td:last-child');
+                        if (statusCell) {
+                            statusCell.innerHTML = statusKey === 'idle'
+                                ? '<span class="status-pill bg-amber-100 text-amber-700"><i class="fas fa-circle-pause"></i> idle</span>'
+                                : '<span class="status-pill bg-emerald-100 text-emerald-700"><span class="ml-pulse-dot"></span> active</span>';
+                        }
+                    }
                 });
-                if (allRows.length > 0) render();
             }
 
             async function tick() {
                 if (inFlight) return;
+                const progressTab = document.getElementById('ml-tab-progress');
+                if (progressTab && progressTab.classList.contains('hidden')) return;
                 inFlight = true;
                 try {
                     const res = await fetch(apiUrl, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
                     if (!res.ok) throw new Error('http ' + res.status);
                     const data = await res.json();
-                    allRows = data.students || [];
+                    const next = data.students || [];
+                    if (next.length !== allRows.length || next.some((r, i) => r.section !== allRows[i].section || r.last_active_at !== allRows[i].last_active_at || r.full_name !== allRows[i].full_name)) {
+                        rowsVersion++;
+                    }
+                    allRows = next;
                     rebuildSectionOptions();
                     render();
                 } catch (err) {
@@ -387,8 +488,86 @@
             const tabLessons = document.getElementById('ml-tab-lessons');
             if (!tabLessons) return;
             let pages, prevButton, nextButton, counterEl, trackFill, cpModules;
+            let currentPage = 0;
+            let cpBound = false;
 
-            function initCp() {
+            function getModuleIndex(pageIndex) {
+                const page = pages[pageIndex];
+                const raw = page?.dataset?.lesson;
+                const num = parseInt(raw, 10);
+                if (isNaN(num)) return 0;
+                return Math.max(0, num - 1);
+            }
+
+            function firstPageForModule(moduleIndex) {
+                if (moduleIndex === 0) return 0;
+                const target = moduleIndex + 1;
+                const match = pages.findIndex(p => parseInt(p.dataset.lesson, 10) === target);
+                return match === -1 ? 0 : match;
+            }
+
+            function updateCheckpoints() {
+                const currentMod = getModuleIndex(currentPage);
+                cpModules.forEach((m, i) => {
+                    m.classList.remove('completed', 'active');
+                    if (i < currentMod) m.classList.add('completed');
+                    else if (i === currentMod) m.classList.add('active');
+                    const node = m.querySelector('.cp-node');
+                    if (!node) return;
+                    if (i < currentMod) {
+                        node.className = 'cp-node completed';
+                        node.innerHTML = '<svg class="cp-node-check" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 4.5L6 12l-3.5-3.5"/></svg><div class="cp-node-glow"></div>';
+                    } else if (i === currentMod) {
+                        node.className = 'cp-node in-progress';
+                        node.innerHTML = '<span>' + (i + 1) + '</span><div class="cp-node-pulse"></div>';
+                    }
+                    const card = m.querySelector('.cp-card');
+                    if (card) card.style.borderColor = i === currentMod ? '#c4b5fd' : '';
+                });
+                if (trackFill) {
+                    const totalModules = cpModules.length;
+                    const pct = totalModules > 1 ? (currentMod / (totalModules - 1)) * 100 : 0;
+                    trackFill.style.height = pct + '%';
+                }
+            }
+
+            function updateLessonStates() {
+                const currentMod = getModuleIndex(currentPage);
+                tabLessons.querySelectorAll('.cp-lesson').forEach(lesson => {
+                    const mod = lesson.closest('.cp-module');
+                    if (!mod) return;
+                    const modIdx = cpModules.indexOf(mod);
+                    if (modIdx !== currentMod) return;
+                    const page = parseInt(lesson.dataset.page, 10);
+                    if (isNaN(page)) return;
+                    const icon = lesson.querySelector('.cp-lesson-icon i');
+                    lesson.classList.remove('active', 'completed');
+                    if (page === currentPage) {
+                        lesson.classList.add('active');
+                        if (icon) icon.className = 'fa-solid fa-circle-play';
+                    } else {
+                        lesson.classList.add('completed');
+                        if (icon) icon.className = 'fa-solid fa-circle-check';
+                    }
+                });
+            }
+
+            function updatePresentationPage() {
+                const totalPages = pages.length;
+                pages.forEach((p, i) => p.classList.toggle('active', i === currentPage));
+                if (counterEl) counterEl.textContent = (currentPage + 1) + ' / ' + totalPages;
+                if (prevButton) prevButton.disabled = currentPage === 0;
+                if (nextButton) nextButton.disabled = currentPage === totalPages - 1;
+                updateCheckpoints();
+                updateLessonStates();
+            }
+
+            function goToPage(idx) {
+                currentPage = Math.max(0, Math.min(idx, pages.length - 1));
+                updatePresentationPage();
+            }
+
+            function refreshCp() {
                 pages = Array.from(tabLessons.querySelectorAll('.presentation-page'));
                 if (!pages.length) return;
                 prevButton = tabLessons.querySelector('#presentation-prev');
@@ -396,119 +575,41 @@
                 counterEl = tabLessons.querySelector('#page-counter');
                 trackFill = tabLessons.querySelector('#track-fill');
                 cpModules = Array.from(tabLessons.querySelectorAll('.cp-module'));
-                const totalPages = pages.length;
-                const totalModules = cpModules.length;
-                let currentPage = 0;
-
-                function getModuleIndex(pageIndex) {
-                    const page = pages[pageIndex];
-                    const raw = page?.dataset?.lesson;
-                    const num = parseInt(raw, 10);
-                    if (isNaN(num)) return 0;
-                    return Math.max(0, num - 1);
-                }
-
-                function firstPageForModule(moduleIndex) {
-                    if (moduleIndex === 0) return 0;
-                    const target = moduleIndex + 1;
-                    const match = pages.findIndex(p => parseInt(p.dataset.lesson, 10) === target);
-                    return match === -1 ? 0 : match;
-                }
-
-                function updateCheckpoints() {
-                    const currentMod = getModuleIndex(currentPage);
-                    cpModules.forEach((m, i) => {
-                        m.classList.remove('completed', 'active');
-                        if (i < currentMod) m.classList.add('completed');
-                        else if (i === currentMod) m.classList.add('active');
-                        const node = m.querySelector('.cp-node');
-                        if (!node) return;
-                        if (i < currentMod) {
-                            node.className = 'cp-node completed';
-                            node.innerHTML = '<svg class="cp-node-check" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 4.5L6 12l-3.5-3.5"/></svg><div class="cp-node-glow"></div>';
-                        } else if (i === currentMod) {
-                            node.className = 'cp-node in-progress';
-                            node.innerHTML = '<span>' + (i + 1) + '</span><div class="cp-node-pulse"></div>';
-                        }
-                        const card = m.querySelector('.cp-card');
-                        if (card) card.style.borderColor = i === currentMod ? '#c4b5fd' : '';
-                    });
-                    if (trackFill) {
-                        const pct = totalModules > 1 ? (currentMod / (totalModules - 1)) * 100 : 0;
-                        trackFill.style.height = pct + '%';
-                    }
-                }
-
-                function updateLessonStates() {
-                    const currentMod = getModuleIndex(currentPage);
-                    tabLessons.querySelectorAll('.cp-lesson').forEach(lesson => {
-                        const mod = lesson.closest('.cp-module');
-                        if (!mod) return;
-                        const modIdx = cpModules.indexOf(mod);
-                        if (modIdx !== currentMod) return;
-                        const page = parseInt(lesson.dataset.page, 10);
-                        if (isNaN(page)) return;
-                        const icon = lesson.querySelector('.cp-lesson-icon i');
-                        lesson.classList.remove('active', 'completed');
-                        if (page === currentPage) {
-                            lesson.classList.add('active');
-                            if (icon) icon.className = 'fa-solid fa-circle-play';
-                        } else {
-                            lesson.classList.add('completed');
-                            if (icon) icon.className = 'fa-solid fa-circle-check';
-                        }
-                    });
-                }
-
-                function updatePresentationPage() {
-                    pages.forEach((p, i) => p.classList.toggle('active', i === currentPage));
-                    if (counterEl) counterEl.textContent = (currentPage + 1) + ' / ' + totalPages;
-                    if (prevButton) prevButton.disabled = currentPage === 0;
-                    if (nextButton) nextButton.disabled = currentPage === totalPages - 1;
-                    updateCheckpoints();
-                    updateLessonStates();
-                }
-
-                function goToPage(idx) {
-                    currentPage = Math.max(0, Math.min(idx, pages.length - 1));
-                    updatePresentationPage();
-                }
-
-                prevButton?.addEventListener('click', () => goToPage(currentPage - 1));
-                nextButton?.addEventListener('click', () => goToPage(currentPage + 1));
-
-                cpModules.forEach(m => {
-                    const header = m.querySelector('.cp-card-header');
-                    if (!header) return;
-                    header.addEventListener('click', () => {
-                        const body = m.querySelector('.cp-card-body');
-                        const chevron = header.querySelector('.cp-chevron');
-                        if (!body) return;
-                        const wasOpen = body.classList.contains('open');
-                        tabLessons.querySelectorAll('.cp-card-body.open').forEach(b => {
-                            if (b !== body) {
-                                b.classList.remove('open');
-                                const ch = b.closest('.cp-module')?.querySelector('.cp-chevron');
-                                if (ch) ch.classList.remove('rotated');
+                if (!cpBound) {
+                    cpBound = true;
+                    prevButton?.addEventListener('click', () => goToPage(currentPage - 1));
+                    nextButton?.addEventListener('click', () => goToPage(currentPage + 1));
+                    cpModules.forEach(m => {
+                        const header = m.querySelector('.cp-card-header');
+                        if (!header) return;
+                        header.addEventListener('click', () => {
+                            const body = m.querySelector('.cp-card-body');
+                            const chevron = header.querySelector('.cp-chevron');
+                            if (!body) return;
+                            const wasOpen = body.classList.contains('open');
+                            tabLessons.querySelectorAll('.cp-card-body.open').forEach(b => {
+                                if (b !== body) {
+                                    b.classList.remove('open');
+                                    const ch = b.closest('.cp-module')?.querySelector('.cp-chevron');
+                                    if (ch) ch.classList.remove('rotated');
+                                }
+                            });
+                            body.classList.toggle('open');
+                            if (chevron) chevron.classList.toggle('rotated', !wasOpen);
+                            if (!wasOpen) {
+                                const modIdx = parseInt(m.dataset.cp, 10) || 0;
+                                goToPage(firstPageForModule(modIdx));
                             }
                         });
-                        body.classList.toggle('open');
-                        if (chevron) chevron.classList.toggle('rotated', !wasOpen);
-                        if (!wasOpen) {
-                            const modIdx = parseInt(m.dataset.cp, 10) || 0;
-                            goToPage(firstPageForModule(modIdx));
-                        }
                     });
-                });
-
-                tabLessons.querySelector('.cp-sidebar')?.addEventListener('click', (e) => {
-                    const lesson = e.target.closest('.cp-lesson');
-                    if (!lesson) return;
-                    e.stopPropagation();
-                    const page = parseInt(lesson.dataset.page, 10);
-                    if (!isNaN(page)) goToPage(page);
-                });
-
+                    tabLessons.querySelector('.cp-sidebar')?.addEventListener('click', (e) => {
+                        const lesson = e.target.closest('.cp-lesson');
+                        if (!lesson) return;
+                        e.stopPropagation();
+                        const page = parseInt(lesson.dataset.page, 10);
+                        if (!isNaN(page)) goToPage(page);
+                    });
+                }
                 updatePresentationPage();
             }
 
@@ -526,12 +627,159 @@
                     const target = document.getElementById(tabId);
                     if (target) target.classList.remove('hidden');
                     if (this.dataset.tab === 'lessons') {
-                        setTimeout(initCp, 50);
+                        setTimeout(refreshCp, 50);
                     }
                 });
             });
 
-            initCp();
+            refreshCp();
+        })();
+
+        (function() {
+            const tbody = document.getElementById('qm-tbody');
+            const modalOverlay = document.getElementById('qm-modal-overlay');
+            const modalTitle = document.getElementById('qm-modal-title');
+            const submitText = document.getElementById('qm-submit-text');
+            const editId = document.getElementById('qm-edit-id');
+            const qmModule = document.getElementById('qm-module');
+            const qText = document.getElementById('qm-question-text');
+            const optionInputs = [0,1,2,3].map(i => document.getElementById('qm-option-'+i));
+            const correctRadios = document.querySelectorAll('input[name="qm-correct"]');
+            let currentModule = 1;
+
+            function loadQuestions(module) {
+                currentModule = module;
+                qmModule.value = module;
+                document.querySelectorAll('.qm-tab-btn').forEach(b => {
+                    b.classList.remove('bg-violet-700', 'text-white');
+                    b.classList.add('bg-white', 'text-gray-600', 'border', 'border-gray-200', 'hover:bg-violet-50');
+                });
+                const activeBtn = document.querySelector('.qm-tab-btn[data-qm="'+module+'"]');
+                if (activeBtn) {
+                    activeBtn.classList.add('bg-violet-700', 'text-white');
+                    activeBtn.classList.remove('bg-white', 'text-gray-600', 'border', 'border-gray-200', 'hover:bg-violet-50');
+                }
+                fetch('/instructor/activity/' + module, { headers: { 'Accept': 'application/json' } })
+                    .then(r => r.json())
+                    .then(questions => renderQuestions(questions))
+                    .catch(err => console.error('Failed to load questions', err));
+            }
+
+            function renderQuestions(questions) {
+                if (!questions.length) {
+                    tbody.innerHTML = '<tr id="qm-empty-row"><td colspan="5" class="px-6 py-16 text-center text-gray-500"><div class="max-w-md mx-auto"><div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-violet-100 text-violet-700 flex items-center justify-center text-2xl"><i class="fas fa-file-pen"></i></div><p class="font-semibold text-gray-900 mb-2">No questions yet</p><p class="text-sm">Click "Add Question" to create the first one.</p></div></td></tr>';
+                    return;
+                }
+                tbody.innerHTML = questions.map((q, i) => {
+                    const opts = q.options || [];
+                    const labels = ['A','B','C','D'];
+                    const optHtml = opts.map((o, j) =>
+                        '<span class="' + (j === q.correct_answer ? 'text-emerald-600 font-semibold' : 'text-gray-600') + '">' +
+                        labels[j] + '. ' + escapeHtml(o) +
+                        (j === q.correct_answer ? ' <i class="fas fa-check text-emerald-500 text-xs"></i>' : '') +
+                        '</span>'
+                    ).join('<br>');
+                    const qData = { id: q.id, module: q.module, question_text: q.question_text, options: q.options, correct_answer: q.correct_answer };
+                    return '<tr class="hover:bg-violet-50/50 transition-colors" data-qid="' + q.id + '" data-question=\'' + JSON.stringify(qData) + '\'>' +
+                        '<td class="px-4 py-3 text-sm text-gray-500 font-mono">' + q.question_number + '</td>' +
+                        '<td class="px-4 py-3 text-sm text-gray-900 font-medium">' + escapeHtml(q.question_text) + '</td>' +
+                        '<td class="px-4 py-3 text-xs">' + optHtml + '</td>' +
+                        '<td class="px-4 py-3 text-sm"><span class="px-2 py-1 rounded-full text-xs font-bold ' + (q.correct_answer === 0 ? 'bg-emerald-100 text-emerald-700' : q.correct_answer === 1 ? 'bg-blue-100 text-blue-700' : q.correct_answer === 2 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700') + '">' + labels[q.correct_answer] + '</span></td>' +
+                        '<td class="px-4 py-3"><div class="flex items-center gap-2">' +
+                        '<button onclick="editQuestion(' + q.id + ')" class="px-4 py-2 text-sm font-bold bg-violet-700 text-white rounded-lg hover:bg-violet-800 transition-all flex items-center gap-2"><i class="fas fa-edit"></i> Edit</button>' +
+                        '</div></td></tr>';
+                }).join('');
+            }
+
+            window.openQmModal = function(module) {
+                editId.value = '';
+                modalTitle.textContent = 'Add Question';
+                submitText.textContent = 'Add Question';
+                qText.value = '';
+                optionInputs.forEach(inp => inp.value = '');
+                correctRadios[0].checked = true;
+                qmModule.value = module || currentModule;
+                modalOverlay.style.display = 'flex';
+                setTimeout(() => { modalOverlay.querySelector('div:first-child').style.transform = 'scale(1)'; }, 50);
+            };
+
+            window.closeQmModal = function() {
+                modalOverlay.querySelector('div:first-child').style.transform = 'scale(0.95)';
+                setTimeout(() => { modalOverlay.style.display = 'none'; }, 150);
+            };
+
+            window.saveQuestion = function(e) {
+                e.preventDefault();
+                const id = editId.value;
+                const module = parseInt(qmModule.value, 10);
+                const q = qText.value.trim();
+                const opts = optionInputs.map(inp => inp.value.trim());
+                let correct = 0;
+                correctRadios.forEach((r, i) => { if (r.checked) correct = i; });
+
+                if (!q || opts.some(o => !o)) { alert('Please fill in all fields.'); return; }
+
+                const payload = {
+                    module: module,
+                    question_text: q,
+                    options: opts,
+                    correct_answer: correct,
+                    _token: '{{ csrf_token() }}'
+                };
+
+                const url = id ? '/instructor/activity/' + id : '/instructor/activity';
+                const method = id ? 'PUT' : 'POST';
+
+                fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                    body: JSON.stringify(payload)
+                })
+                .then(r => {
+                    if (!r.ok) throw new Error('Save failed');
+                    return r.json();
+                })
+                .then(() => {
+                    closeQmModal();
+                    loadQuestions(currentModule);
+                })
+                .catch(err => { alert('Failed to save question: ' + err.message); });
+                return false;
+            };
+
+            window.editQuestion = function(id) {
+                const row = tbody.querySelector('tr[data-qid="' + id + '"]');
+                if (!row) return;
+                const raw = row.getAttribute('data-question');
+                if (!raw) return;
+                try {
+                    const q = JSON.parse(raw);
+                    editId.value = q.id;
+                    modalTitle.textContent = 'Edit Question';
+                    submitText.textContent = 'Save Changes';
+                    qmModule.value = q.module;
+                    qText.value = q.question_text;
+                    (q.options || []).forEach((o, i) => { if (optionInputs[i]) optionInputs[i].value = o; });
+                    correctRadios.forEach((r, i) => { r.checked = i === q.correct_answer; });
+                    modalOverlay.style.display = 'flex';
+                    setTimeout(() => { modalOverlay.querySelector('div:first-child').style.transform = 'scale(1)'; }, 50);
+                } catch (e) {
+                    console.error('Failed to parse question data', e);
+                }
+            };
+
+            function escapeHtml(s) {
+                if (s == null) return '';
+                return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+            }
+
+            document.querySelectorAll('.qm-tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    loadQuestions(parseInt(this.dataset.qm, 10));
+                });
+            });
+
+            loadQuestions(1);
         })();
     </script>
 @endsection

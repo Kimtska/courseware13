@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\InstructorStudentProfileController;
 use App\Http\Controllers\InstructorStudentManagementController;
 use App\Http\Controllers\LessonActivityController;
+use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\StudentController;
 
 /*
@@ -22,15 +23,18 @@ use App\Http\Controllers\StudentController;
 
 Route::get('/', function () {
     return view('welcome');
-});
+})->middleware('guest:web,student');
 
 // Authentication Routes
 // Allow GET /login to render the login view even if a user session exists
-Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
+Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login')->middleware('guest:web,student');
 // Keep POST /login guarded by guest to prevent already-authenticated users from attempting to re-authenticate
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store')->middleware('guest');
 
-Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->middleware('auth')->name('logout');
+Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->middleware('auth:web,student')->name('logout');
+
+Route::get('/login/verify', [AuthenticatedSessionController::class, 'showVerifyForm'])->name('login.verify');
+Route::post('/login/verify', [AuthenticatedSessionController::class, 'verify'])->name('login.verify.submit');
 
 // Instructor Routes
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -60,8 +64,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/instructor/student-profiles', [InstructorStudentProfileController::class, 'store'])->name('instructor.student-profiles.store');
     Route::get('/instructor/student-profiles/search', [InstructorStudentProfileController::class, 'search'])->name('instructor.student-profiles.search');
     Route::patch('/instructor/student-profiles/{studentProfile}/verify', [InstructorStudentProfileController::class, 'verify'])->name('instructor.student-profiles.verify');
-    Route::post('/instructor/modules/{module}/sessions', [InstructorStudentProfileController::class, 'startSession'])->name('instructor.modules.sessions.store');
-    Route::post('/instructor/modules/{module}/sessions/{trainingSession}/attach-student', [InstructorStudentProfileController::class, 'attachStudent'])->name('instructor.modules.sessions.attach-student');
+
+
+    // Activity Management
+    Route::get('/instructor/activity/{module}', [ActivityController::class, 'index'])->name('instructor.activity.index');
+    Route::post('/instructor/activity', [ActivityController::class, 'store'])->name('instructor.activity.store');
+    Route::put('/instructor/activity/{id}', [ActivityController::class, 'update'])->name('instructor.activity.update');
+    Route::delete('/instructor/activity/{id}', [ActivityController::class, 'destroy'])->name('instructor.activity.destroy');
+    Route::post('/instructor/activity/reorder', [ActivityController::class, 'reorder'])->name('instructor.activity.reorder');
 });
 
 Route::middleware(['auth:web,student', 'student.active'])->group(function () {
@@ -76,6 +86,8 @@ Route::middleware(['auth:web,student', 'student.active'])->group(function () {
     // Lesson activity presence (heartbeat + leave)
     Route::post('/api/lesson/heartbeat', [LessonActivityController::class, 'heartbeat'])->name('api.lesson.heartbeat');
     Route::post('/api/lesson/leave', [LessonActivityController::class, 'leave'])->name('api.lesson.leave');
+    Route::post('/student/assessment/save-score', [StudentController::class, 'saveAssessmentScore'])->name('student.assessment.save-score');
+    Route::post('/student/progress/update', [StudentController::class, 'updateProgress'])->name('student.progress.update');
 });
 
 Route::middleware(['auth:web,student'])->group(function () {

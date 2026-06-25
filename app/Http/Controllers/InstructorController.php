@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Lesson;
 use App\Models\LessonPage;
+use App\Models\ManagedStudent;
 use App\Models\StudentProfile;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -33,6 +34,18 @@ class InstructorController extends Controller
 
         $completedActivities = $students->filter(fn($s) => $s->scores->isNotEmpty())->count();
 
+        $sections = Schema::hasTable('students')
+            ? ManagedStudent::query()
+                ->whereNotNull('section')
+                ->where('section', '!=', '')
+                ->where('instructor_user_id', $user->id)
+                ->select('section')
+                ->distinct()
+                ->orderBy('section')
+                ->pluck('section')
+                ->all()
+            : [];
+
         // Instructor data
         $instructorData = [
             'name' => $user->name,
@@ -42,9 +55,10 @@ class InstructorController extends Controller
             'pending_evaluations' => 12,
             'live_sessions' => 1,
             'students' => $students,
+            'sections' => $sections,
             'stats' => [
                 'total_students' => $students->count(),
-                'sections' => 4,
+                'sections' => count($sections),
                 'avg_score' => 76,
                 'score_change' => 4,
                 'pending' => 12,
@@ -136,7 +150,7 @@ class InstructorController extends Controller
             $module1Score = $scores->get('module-1');
             $module2Score = $scores->get('module-2');
             $module3Score = $scores->get('module-3');
-            $marksmanshipScore = $scores->get('module-4');
+            $marksmanshipScore = $scores->get('final');
 
             return [
                 'student' => $student,

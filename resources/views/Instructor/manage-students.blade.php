@@ -117,8 +117,8 @@
                             <tr>
                                 <th class="px-5 sm:px-6 py-4 font-semibold">Student ID</th>
                                 <th class="px-5 sm:px-6 py-4 font-semibold">Full Name</th>
-                                <th class="px-5 sm:px-6 py-4 font-semibold">Course/Year/Section</th>
-                                <th class="px-5 sm:px-6 py-4 font-semibold">Module Access Status</th>
+                                <th class="px-5 sm:px-6 py-4 font-semibold">Section</th>
+                                <th class="px-5 sm:px-6 py-4 font-semibold">Progress Track</th>
                                 <th class="px-5 sm:px-6 py-4 font-semibold">Current Activity Status</th>
                                 <th class="px-5 sm:px-6 py-4 font-semibold">Date Added</th>
                                 <th class="px-5 sm:px-6 py-4 text-right font-semibold">Action Buttons</th>
@@ -129,27 +129,14 @@
                                 @php
                                     $studentId = $student->student_id_number ?? $student->student_number ?? '';
                                     $fullName = $student->full_name ?? trim(($student->first_name ?? '') . ' ' . ($student->middle_name ?? '') . ' ' . ($student->last_name ?? ''));
-                                    $course = $student->course ?? '—';
-                                    $yearLevel = $student->year_level ?? '—';
                                     $section = $student->section ?? '—';
                                     $enrollmentStatus = $student->enrollment_status ?? ($student->verification_status ?? 'pending');
                                     $moduleAccessStatus = $student->module_access_status ?? (($enrollmentStatus === 'verified_enrolled' || $enrollmentStatus === 'verified') ? 'ready_for_training' : 'locked');
                                     $activityStatus = $student->current_activity_status ?? 'inactive';
                                     $dateAdded = $student->created_at ?? null;
                                     $isStudentActive = ($student->status ?? 'active') === 'active';
-                                    $studentPayload = [
-                                        'id' => $student->id,
-                                        'student_id_number' => $studentId,
-                                        'full_name' => $fullName,
-                                        'course' => $course,
-                                        'year_level' => $yearLevel,
-                                        'section' => $section,
-                                        'status' => $isStudentActive ? 'Active' : 'Inactive',
-                                        'enrollment_status' => $enrollmentStatus,
-                                        'module_access_status' => $moduleAccessStatus,
-                                        'current_activity_status' => $activityStatus,
-                                        'date_added' => $dateAdded ? $dateAdded->format('Y-m-d H:i') : null,
-                                    ];
+                                    $currentModule = $student->latestTrainingSession?->module_key;
+                                    $progressTrack = $currentModule ? ucwords(str_replace(['module-', '_'], ['Module ', ' '], $currentModule)) : str_replace('_', ' ', $moduleAccessStatus);
 
                                     $enrollmentClass = match ($enrollmentStatus) {
                                         'verified_enrolled', 'verified' => 'bg-emerald-100 text-emerald-700',
@@ -166,6 +153,19 @@
                                         'archived' => 'bg-gray-200 text-gray-700',
                                         default => 'bg-slate-100 text-slate-700',
                                     };
+                                    $progressClass = $currentModule ? 'bg-violet-100 text-violet-700' : $moduleClass;
+                                    $studentPayload = [
+                                        'id' => $student->id,
+                                        'student_id_number' => $studentId,
+                                        'full_name' => $fullName,
+                                        'section' => $section,
+                                        'status' => $isStudentActive ? 'Active' : 'Inactive',
+                                        'enrollment_status' => $enrollmentStatus,
+                                        'module_access_status' => $progressTrack,
+                                        'current_activity_status' => $activityStatus,
+                                        'date_added' => $dateAdded ? $dateAdded->format('Y-m-d H:i') : null,
+                                        'current_module' => $currentModule,
+                                    ];
                                     $activityClass = match ($activityStatus) {
                                         'inactive' => 'bg-slate-100 text-slate-700',
                                         'active_in_firing_range' => 'bg-cyan-100 text-cyan-700',
@@ -179,10 +179,9 @@
                                     <td class="px-5 sm:px-6 py-4 font-semibold text-gray-900">{{ $studentId }}</td>
                                     <td class="px-5 sm:px-6 py-4">
                                         <div class="font-medium text-gray-900">{{ $fullName }}</div>
-                                        <div class="text-xs text-gray-500">{{ $course }}</div>
                                     </td>
-                                    <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $course }} / {{ $yearLevel }} / {{ $section }}</td>
-                                    <td class="px-5 sm:px-6 py-4"><span class="status-pill {{ $moduleClass }}">{{ str_replace('_', ' ', $moduleAccessStatus) }}</span></td>
+                                    <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $section }}</td>
+                                    <td class="px-5 sm:px-6 py-4"><span class="status-pill {{ $progressClass }}">{{ $progressTrack }}</span></td>
                                     <td class="px-5 sm:px-6 py-4"><span class="status-pill {{ $activityClass }}">{{ str_replace('_', ' ', $activityStatus) }}</span></td>
                                     <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $dateAdded ? $dateAdded->format('M d, Y') : '—' }}</td>
                                     <td class="px-5 sm:px-6 py-4">
@@ -226,8 +225,8 @@
                             <tr>
                                 <th class="px-5 sm:px-6 py-4 font-semibold">Student ID</th>
                                 <th class="px-5 sm:px-6 py-4 font-semibold">Full Name</th>
-                                <th class="px-5 sm:px-6 py-4 font-semibold">Course/Year/Section</th>
-                                <th class="px-5 sm:px-6 py-4 font-semibold">Module Access Status</th>
+                                <th class="px-5 sm:px-6 py-4 font-semibold">Section</th>
+                                <th class="px-5 sm:px-6 py-4 font-semibold">Progress Track</th>
                                 <th class="px-5 sm:px-6 py-4 font-semibold">Current Activity Status</th>
                                 <th class="px-5 sm:px-6 py-4 font-semibold">Date Added</th>
                                 <th class="px-5 sm:px-6 py-4 text-right font-semibold">Action Buttons</th>
@@ -238,22 +237,21 @@
                                 @php
                                     $sid = $student->student_id_number ?? '';
                                     $name = $student->full_name ?? '';
-                                    $course = $student->course ?? '—';
-                                    $yl = $student->year_level ?? '—';
                                     $sec = $student->section ?? '—';
                                     $moved = $student->archived_at;
                                     $moduleAccessStatus = $student->module_access_status ?? 'locked';
                                     $activityStatus = $student->current_activity_status ?? 'inactive';
                                     $enrollmentStatus = $student->enrollment_status ?? 'archived';
-
-                                    $moduleClass = match ($moduleAccessStatus) {
+                                    $currentModule = $student->latestTrainingSession?->module_key;
+                                    $progressTrack = $currentModule ? ucwords(str_replace(['module-', '_'], ['Module ', ' '], $currentModule)) : str_replace('_', ' ', $moduleAccessStatus);
+                                    $progressClass = $currentModule ? 'bg-violet-100 text-violet-700' : (match ($moduleAccessStatus) {
                                         'ready_for_training' => 'bg-violet-100 text-violet-700',
                                         'locked' => 'bg-slate-100 text-slate-700',
                                         'active_in_firing_range' => 'bg-cyan-100 text-cyan-700',
                                         'completed_session' => 'bg-emerald-100 text-emerald-700',
                                         'archived' => 'bg-gray-200 text-gray-700',
                                         default => 'bg-slate-100 text-slate-700',
-                                    };
+                                    });
                                     $activityClass = match ($activityStatus) {
                                         'inactive' => 'bg-slate-100 text-slate-700',
                                         'active_in_firing_range' => 'bg-cyan-100 text-cyan-700',
@@ -267,24 +265,22 @@
                                         'id' => $student->id,
                                         'student_id_number' => $sid,
                                         'full_name' => $name,
-                                        'course' => $course,
-                                        'year_level' => $yl,
                                         'section' => $sec,
                                         'status' => 'Archived',
                                         'enrollment_status' => $enrollmentStatus,
-                                        'module_access_status' => $moduleAccessStatus,
+                                        'module_access_status' => $progressTrack,
                                         'current_activity_status' => $activityStatus,
                                         'date_added' => $moved ? $moved->format('Y-m-d H:i') : null,
+                                        'current_module' => $currentModule,
                                     ];
                                 @endphp
                                 <tr class="hover:bg-amber-50/50 transition-colors">
                                     <td class="px-5 sm:px-6 py-4 font-semibold text-gray-900">{{ $sid }}</td>
                                     <td class="px-5 sm:px-6 py-4">
                                         <div class="font-medium text-gray-900">{{ $name }}</div>
-                                        <div class="text-xs text-gray-500">{{ $course }}</div>
                                     </td>
-                                    <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $course }} / {{ $yl }} / {{ $sec }}</td>
-                                    <td class="px-5 sm:px-6 py-4"><span class="status-pill {{ $moduleClass }}">{{ str_replace('_', ' ', $moduleAccessStatus) }}</span></td>
+                                    <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $sec }}</td>
+                                    <td class="px-5 sm:px-6 py-4"><span class="status-pill {{ $progressClass }}">{{ $progressTrack }}</span></td>
                                     <td class="px-5 sm:px-6 py-4"><span class="status-pill {{ $activityClass }}">{{ str_replace('_', ' ', $activityStatus) }}</span></td>
                                     <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $moved ? $moved->format('M d, Y') : '—' }}</td>
                                     <td class="px-5 sm:px-6 py-4">
@@ -320,42 +316,6 @@
             </div>
         </section>
 
-        @if (!empty($showArchivedStudents) && $archivedStudents->isNotEmpty())
-            <section class="glass-card rounded-3xl overflow-hidden mt-6">
-                <div class="px-5 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
-                    <div>
-                        <h2 class="font-display font-bold text-xl text-gray-900">Archived Students</h2>
-                        <p class="text-sm text-gray-500">Stored records for completed or ineligible students. These rows remain in the database.</p>
-                    </div>
-                    <span class="chip bg-gray-200 text-gray-700"><i class="fas fa-box-archive"></i> Admin Only</span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left min-w-[900px]">
-                        <thead class="bg-gray-100 text-xs text-gray-600 uppercase tracking-wider">
-                            <tr>
-                                <th class="px-5 sm:px-6 py-4 font-semibold">Student ID</th>
-                                <th class="px-5 sm:px-6 py-4 font-semibold">Full Name</th>
-                                <th class="px-5 sm:px-6 py-4 font-semibold">Course/Year/Section</th>
-                                <th class="px-5 sm:px-6 py-4 font-semibold">Status</th>
-                                <th class="px-5 sm:px-6 py-4 font-semibold">Archived At</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100 bg-white">
-                            @foreach ($archivedStudents as $student)
-                                <tr class="even:bg-gray-100/80 bg-gray-50/80">
-                                    <td class="px-5 sm:px-6 py-4 font-semibold text-gray-900">{{ $student->student_id_number }}</td>
-                                    <td class="px-5 sm:px-6 py-4 text-gray-900">{{ $student->full_name }}</td>
-                                    <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $student->course ?? '—' }} / {{ $student->year_level ?? '—' }} / {{ $student->section ?? '—' }}</td>
-                                    <td class="px-5 sm:px-6 py-4"><span class="status-pill bg-gray-200 text-gray-700">archived</span></td>
-                                    <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $student->archived_at ? $student->archived_at->format('M d, Y') : '—' }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        @endif
-
     <!-- Bulk Upload Modal -->
     <div id="bulk-modal" class="fixed inset-0 z-50 hidden opacity-0 pointer-events-none items-center justify-center p-4 modal-backdrop transition-opacity duration-200 ease-out backdrop-blur-sm bg-slate-950/35">
         <div class="modal-panel w-full max-w-2xl rounded-3xl bg-white shadow-2xl overflow-hidden transform scale-95 translate-y-3 opacity-0 transition-all duration-200 ease-out">
@@ -378,7 +338,7 @@
                         <a href="{{ route('instructor.manage-students.template') }}" class="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-white text-gray-700 border border-gray-200 text-sm font-bold hover:border-violet-300 hover:text-violet-700 transition-colors">
                             <i class="fas fa-download"></i> Download Template
                         </a>
-                        <p class="text-[10px] text-gray-400 text-right">Download a simplified CSV template. Course is fixed to BSCRIM and year level is fixed to 2nd year, so leave those out.</p>
+                        <p class="text-[10px] text-gray-400 text-right">Download a simplified CSV template for importing students.</p>
                     </div>
                 </div>
                 <div class="flex items-center justify-end gap-3">
@@ -423,8 +383,11 @@
                         <input type="text" name="section" value="{{ old('section') }}" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" placeholder="e.g. A">
                     </div>
                     <div class="md:col-span-2">
-                        <input type="hidden" name="course" value="BSCRIM">
-                        <input type="hidden" name="year_level" value="2nd">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Email</label>
+                        <input type="email" name="email" value="{{ old('email') }}" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" placeholder="student@example.com">
+                        <p class="text-xs text-gray-500 mt-2">Required for login verification. If left blank, email can be added later.</p>
+                    </div>
+                    <div class="md:col-span-2">
                         <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Password</label>
                         <input type="text" name="password" value="{{ old('password', 'Password123!') }}" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" required>
                         <p class="text-xs text-gray-500 mt-2">Default password is prefilled, but you can change it before saving.</p>
@@ -452,10 +415,9 @@
                 <div class="grid sm:grid-cols-2 gap-4">
                     <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Student ID</p><p id="view-id" class="text-lg font-semibold text-gray-900"></p></div>
                     <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Full Name</p><p id="view-name" class="text-lg font-semibold text-gray-900"></p></div>
-                    <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Course</p><p id="view-course" class="text-gray-700"></p></div>
-                    <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Year/Section</p><p id="view-year-section" class="text-gray-700"></p></div>
+                    <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Section</p><p id="view-section" class="text-gray-700"></p></div>
                     <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Enrollment Status</p><p id="view-enrollment" class="text-gray-700"></p></div>
-                    <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Module Access</p><p id="view-access" class="text-gray-700"></p></div>
+                    <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Progress Track</p><p id="view-access" class="text-gray-700"></p></div>
                     <div class="sm:col-span-2"><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Current Activity</p><p id="view-activity" class="text-gray-700"></p></div>
                 </div>
             </div>
@@ -482,16 +444,12 @@
                         <input type="text" name="full_name" id="edit-full-name" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" required>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Course</label>
-                        <input type="text" name="course" id="edit-course" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Year Level</label>
-                        <input type="text" name="year_level" id="edit-year-level" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
-                    </div>
-                    <div>
                         <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Section</label>
                         <input type="text" name="section" id="edit-section" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Email</label>
+                        <input type="email" name="email" id="edit-email" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" placeholder="student@example.com">
                     </div>
                     <div>
                         <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Enrollment Status</label>
@@ -504,7 +462,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Module Access Status</label>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Progress Track</label>
                         <select name="module_access_status" id="edit-module-access-status" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
                             <option value="ready_for_training">Ready for Training</option>
                             <option value="locked">Locked</option>
@@ -592,8 +550,7 @@
                 const student = JSON.parse(button.dataset.student);
                 document.getElementById('view-id').textContent = student.student_id_number;
                 document.getElementById('view-name').textContent = student.full_name;
-                document.getElementById('view-course').textContent = student.course || '—';
-                document.getElementById('view-year-section').textContent = `${student.year_level || '—'} / ${student.section || '—'}`;
+                document.getElementById('view-section').textContent = student.section || '—';
                 document.getElementById('view-enrollment').textContent = student.enrollment_status;
                 document.getElementById('view-access').textContent = student.module_access_status;
                 document.getElementById('view-activity').textContent = student.current_activity_status;
@@ -607,9 +564,8 @@
                 editForm.action = `{{ url('/instructor/manage-students') }}/${student.id}`;
                 document.getElementById('edit-id').value = student.id;
                 document.getElementById('edit-full-name').value = student.full_name;
-                document.getElementById('edit-course').value = student.course || '';
-                document.getElementById('edit-year-level').value = student.year_level || '';
                 document.getElementById('edit-section').value = student.section || '';
+                document.getElementById('edit-email').value = student.email || '';
                 document.getElementById('edit-enrollment-status').value = student.enrollment_status;
                 document.getElementById('edit-module-access-status').value = student.module_access_status;
                 document.getElementById('edit-activity-status').value = student.current_activity_status;

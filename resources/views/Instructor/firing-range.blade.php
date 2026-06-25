@@ -7,6 +7,7 @@
     <link rel="icon" type="image/png" href="{{ asset('images/assets/Marksmanship innovatech.png') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @include('shared.back-button-prevention')
 </head>
 <body style="margin:0;overflow:hidden;background:#f8fafc;height:100vh">
 
@@ -14,6 +15,7 @@
     <input type="hidden" id="fr-config-time" value="{{ $time ?? 30 }}">
     <input type="hidden" id="fr-config-mode" value="{{ $mode ?? 'steady' }}">
     <input type="hidden" id="fr-config-student" value="{{ $studentId ?? '' }}">
+    <input type="hidden" id="fr-config-max-shots" value="{{ $maxShots ?? 0 }}">
 
     <div id="game-area" style="height:100vh;overflow:hidden;background:#f8fafc;position:relative">
         <div style="position:absolute;inset:0;background:url('{{ asset('images/firing-range/firing-rangebg.jpg') }}') center center/cover no-repeat;filter:saturate(1.08) contrast(1.05)"></div>
@@ -213,6 +215,7 @@
         const configTime = parseInt(document.getElementById('fr-config-time')?.value || '30', 10);
         const configMode = document.getElementById('fr-config-mode')?.value || 'steady';
         const configStudentId = document.getElementById('fr-config-student')?.value || '';
+        const configMaxShots = parseInt(document.getElementById('fr-config-max-shots')?.value || '0', 10);
 
         const weaponStats = {
             '9mm': { name: '9mm Pistol', magSize: 15, totalAmmo: 45, reloadTime: 1500, recoil: 8, flashColor: 'rgba(255,200,50,0.4)', flashSize: '40%' },
@@ -233,7 +236,12 @@
             hasStarted: false,
             totalShots: 0,
             hits: 0,
-            bullseyes: 0
+            bullseyes: 0,
+            alphaCount: 0,
+            bravoCount: 0,
+            charlieCount: 0,
+            deltaCount: 0,
+            missCount: 0
         };
 
         let gameTimer = null;
@@ -289,6 +297,7 @@
         function startFiring() {
             state.isPlaying = true;
             state.hasStarted = true;
+            state._startedAt = new Date().toISOString();
             state.timeLeft = state.selectedTime;
             gameArea.classList.add('cursor-hidden');
             crosshair.style.display = 'block';
@@ -442,7 +451,15 @@
                     hits: state.hits,
                     weapon: configWeapon,
                     time_limit: configTime,
-                    target_mode: configMode
+                    target_mode: configMode,
+                    alpha_count: state.alphaCount,
+                    bravo_count: state.bravoCount,
+                    charlie_count: state.charlieCount,
+                    delta_count: state.deltaCount,
+                    miss_count: state.missCount,
+                    max_shots: configMaxShots > 0 ? configMaxShots : state.totalShots,
+                    started_at: state._startedAt || null,
+                    completed_at: new Date().toISOString()
                 };
                 fetch('{{ route('instructor.firing-range.save-score') }}', {
                     method: 'POST',
@@ -467,12 +484,17 @@
             const wStats = weaponStats[state.selectedWeapon];
             state.score = 0;
             state.timeLeft = state.selectedTime;
-            state.currentAmmo = wStats.magSize;
-            state.reserveAmmo = wStats.totalAmmo;
+            state.currentAmmo = configMaxShots > 0 ? configMaxShots : wStats.magSize;
+            state.reserveAmmo = configMaxShots > 0 ? configMaxShots : wStats.totalAmmo;
             state.isReloading = false;
             state.totalShots = 0;
             state.hits = 0;
             state.bullseyes = 0;
+            state.alphaCount = 0;
+            state.bravoCount = 0;
+            state.charlieCount = 0;
+            state.deltaCount = 0;
+            state.missCount = 0;
             state.isPlaying = false;
             state.hasStarted = false;
             targetContainer.innerHTML = '';
@@ -591,6 +613,7 @@
             if (!state.isPlaying || state.isReloading) return;
             if (audioCtx.state === 'suspended') audioCtx.resume();
 
+            if (configMaxShots > 0 && state.totalShots >= configMaxShots) { return; }
             if (state.currentAmmo <= 0) { playEmptyClickSound(); initiateReload(); return; }
 
             state.currentAmmo--; state.totalShots++; updateHUD();
@@ -608,14 +631,18 @@
                 if (hitElement) {
                     points = parseInt(hitElement.dataset.points || '2', 10);
                     zoneName = hitElement.dataset.zone || 'body';
-                    if (zoneName === 'bullseye') state.bullseyes++;
+                    if (zoneName === 'bullseye') { state.bullseyes++; state.alphaCount++; }
+                    else if (zoneName === 'alpha') state.alphaCount++;
+                    else if (zoneName === 'bravo') state.bravoCount++;
+                    else if (zoneName === 'charlie') state.charlieCount++;
+                    else if (zoneName === 'delta') state.deltaCount++;
                 } else if (e.target.classList.contains('target-bullseye')) {
-                    points = 20; state.bullseyes++; zoneName = 'bullseye';
+                    points = 20; state.bullseyes++; state.alphaCount++; zoneName = 'bullseye';
                 } else if (e.target.classList.contains('target-ring')) {
-                    if (e.target.classList.contains('alpha')) { points = 10; zoneName = 'alpha'; }
-                    else if (e.target.classList.contains('bravo')) { points = 5; zoneName = 'bravo'; }
-                    else if (e.target.classList.contains('charlie')) { points = 3; zoneName = 'charlie'; }
-                    else if (e.target.classList.contains('delta')) { points = 1; zoneName = 'delta'; }
+                    if (e.target.classList.contains('alpha')) { points = 10; state.alphaCount++; zoneName = 'alpha'; }
+                    else if (e.target.classList.contains('bravo')) { points = 5; state.bravoCount++; zoneName = 'bravo'; }
+                    else if (e.target.classList.contains('charlie')) { points = 3; state.charlieCount++; zoneName = 'charlie'; }
+                    else if (e.target.classList.contains('delta')) { points = 1; state.deltaCount++; zoneName = 'delta'; }
                 } else if (e.target.classList.contains('target-head-zone')) {
                     points = 15; zoneName = 'head';
                 }
@@ -623,7 +650,7 @@
                 state.score += points; playHitSound();
                 hitMarker.classList.remove('show'); void hitMarker.offsetWidth; hitMarker.classList.add('show');
                 removeTarget(targetCheck.parentElement, true);
-            } else { createBulletHole(e.clientX, e.clientY); }
+            } else { state.missCount++; createBulletHole(e.clientX, e.clientY); }
 
             updateHUD();
             if (state.currentAmmo <= 0 && state.reserveAmmo <= 0) { setTimeout(() => endGame("Out of ammunition!"), 1000); }
@@ -637,6 +664,7 @@
         }
 
         function initiateReload() {
+            if (configMaxShots > 0) return;
             if (state.isReloading || state.currentAmmo === weaponStats[state.selectedWeapon].magSize || state.reserveAmmo <= 0 || !state.isPlaying) return;
             state.isReloading = true; btnReload.disabled = true; reloadUI.style.display = 'block';
             reloadFill.style.transition = 'width ' + weaponStats[state.selectedWeapon].reloadTime + 'ms linear';
@@ -651,12 +679,19 @@
         }
 
         function updateHUD() {
-            hudScore.innerText = state.score; hudTimer.innerText = state.timeLeft; hudAmmo.innerText = state.currentAmmo; hudReserve.innerText = '/ ' + state.reserveAmmo;
+            hudScore.innerText = state.score; hudTimer.innerText = state.timeLeft;
+            if (configMaxShots > 0) {
+                hudAmmo.innerText = (configMaxShots - state.totalShots);
+                hudReserve.innerText = '/ ' + configMaxShots;
+            } else {
+                hudAmmo.innerText = state.currentAmmo;
+                hudReserve.innerText = '/ ' + state.reserveAmmo;
+            }
             const accuracy = state.totalShots > 0 ? Math.round((state.hits / state.totalShots) * 100) : 0; hudAccuracy.innerText = accuracy + '%';
 
             if (state.timeLeft <= 10) hudTimer.style.color = '#ef4444'; else hudTimer.style.color = '#fff';
             if (state.currentAmmo <= 3 && state.currentAmmo > 0) hudAmmo.style.color = '#f59e0b'; else if (state.currentAmmo === 0) hudAmmo.style.color = '#ef4444'; else hudAmmo.style.color = '#fff';
-            btnReload.disabled = state.isReloading || state.currentAmmo === weaponStats[state.selectedWeapon].magSize || state.reserveAmmo <= 0;
+            btnReload.disabled = configMaxShots > 0 || state.isReloading || state.currentAmmo === weaponStats[state.selectedWeapon].magSize || state.reserveAmmo <= 0;
         }
 
         document.addEventListener('mousemove', (e) => { crosshair.style.left = e.clientX + 'px'; crosshair.style.top = e.clientY + 'px'; });

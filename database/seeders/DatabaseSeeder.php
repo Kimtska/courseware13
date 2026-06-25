@@ -14,5 +14,6 @@ class DatabaseSeeder extends Seeder
     {
         // Seed courseware test data
         $this->call(CoursewareSeeder::class);
+        $this->call(ModuleContentSeeder::class);
     }
 }

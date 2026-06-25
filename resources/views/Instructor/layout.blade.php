@@ -19,6 +19,7 @@
         #sidebar.collapsed .sidebar-profile-text { display: none; }
         #sidebar.collapsed .sidebar-link { justify-content: center; padding-left: 0; padding-right: 0; border-left: none; }
     </style>
+    @include('shared.back-button-prevention')
 </head>
 <body class="flex h-screen">
     @php
@@ -155,7 +156,7 @@
         </div>
     </div>
 
-    @include('shared.sweet-alerts.logout', ['logoutLabel' => $name, 'logoutSubtext' => 'Instructor session active', 'logoutDescription' => 'You are about to end your instructor session. Please make sure your class records and assessments are saved before logging out.', 'redirectUrl' => url('/')])
+    @include('shared.sweet-alerts.logout', ['logoutLabel' => $name, 'logoutSubtext' => 'Instructor session active', 'logoutDescription' => 'You are about to end your instructor session. Please make sure your class records and assessments are saved before logging out.', 'redirectUrl' => url('/login')])
 
     <script>
         const sidebar = document.getElementById('sidebar');

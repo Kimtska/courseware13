@@ -25,6 +25,7 @@
         #sidebar.collapsed .sidebar-link:hover { border-left: none; background: rgba(255,255,255,0.1); }
         #sidebar.collapsed .sidebar-profile { justify-content: center; padding: 16px 0; }
     </style>
+    @include('shared.back-button-prevention')
 </head>
 <body class="flex h-screen">
     @php
@@ -78,7 +79,7 @@
         </div>
     </main>
 
-    @include('shared.sweet-alerts.logout', ['logoutLabel' => $name, 'logoutSubtext' => 'Department Head session active', 'logoutDescription' => 'You are about to end your department head session. Review your system updates and user management tasks before leaving.', 'redirectUrl' => url('/')])
+    @include('shared.sweet-alerts.logout', ['logoutLabel' => $name, 'logoutSubtext' => 'Department Head session active', 'logoutDescription' => 'You are about to end your department head session. Review your system updates and user management tasks before leaving.', 'redirectUrl' => url('/login')])
 
     <script>
 

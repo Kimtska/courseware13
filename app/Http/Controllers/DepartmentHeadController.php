@@ -75,24 +75,34 @@ class DepartmentHeadController extends Controller
 
         $search = trim($request->input('q', ''));
         $section = trim($request->input('section', ''));
-        $enrollmentStatus = trim($request->input('enrollment_status', ''));
         $activityStatus = trim($request->input('activity_status', ''));
 
         if (Schema::hasTable('students')) {
-            $students = ManagedStudent::query()
+            ManagedStudent::query()
+                ->active()
+                ->where('created_at', '<', now()->subMonths(5))
+                ->update([
+                    'status' => 'archived',
+                    'archived_at' => now(),
+                ]);
+
+            $students = ManagedStudent::with('latestTrainingSession')
                 ->active()
                 ->when($search, fn ($query) => $query->where(function ($nested) use ($search) {
                     $nested->where('student_id_number', 'like', '%' . $search . '%')
                         ->orWhere('full_name', 'like', '%' . $search . '%');
                 }))
                 ->when($section, fn ($query) => $query->where('section', $section))
-                ->when($enrollmentStatus, fn ($query) => $query->where('enrollment_status', $enrollmentStatus))
                 ->when($activityStatus, fn ($query) => $query->where('current_activity_status', $activityStatus))
                 ->latest()
                 ->paginate(6)
                 ->withQueryString();
 
             $archivedStudents = ManagedStudent::withArchived()->archived()->latest()->take(10)->get();
+            $fiveMonthOld = ManagedStudent::withArchived()
+                ->where('status', 'archived')
+                ->latest('archived_at')
+                ->get();
             $sections = ManagedStudent::query()
                 ->whereNotNull('section')
                 ->where('section', '!=', '')
@@ -114,6 +124,7 @@ class DepartmentHeadController extends Controller
                 ->withQueryString();
 
             $archivedStudents = collect();
+            $fiveMonthOld = collect();
             $sections = StudentProfile::query()
                 ->whereNotNull('section')
                 ->where('section', '!=', '')
@@ -126,6 +137,7 @@ class DepartmentHeadController extends Controller
         } else {
             $students = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 6);
             $archivedStudents = collect();
+            $fiveMonthOld = collect();
             $sections = [];
             $totalStudents = 0;
         }
@@ -136,10 +148,10 @@ class DepartmentHeadController extends Controller
             'students' => $students,
             'archivedStudents' => $archivedStudents,
             'showArchivedStudents' => true,
+            'fiveMonthOld' => $fiveMonthOld,
             'filters' => [
                 'q' => $request->input('q', ''),
                 'section' => $request->input('section', ''),
-                'enrollment_status' => $request->input('enrollment_status', ''),
                 'activity_status' => $request->input('activity_status', ''),
             ],
             'sections' => $sections,
@@ -173,12 +185,22 @@ class DepartmentHeadController extends Controller
             ->when($dateRange === 'this_week', fn ($query) => $query->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]))
             ->when($dateRange === 'this_month', fn ($query) => $query->whereMonth('created_at', now()->month))
             ->latest()
-            ->get();
+            ->paginate(20);
+
+        $sectionCountsByInstructor = ManagedStudent::whereIn('instructor_user_id', $instructors->pluck('id'))
+            ->whereNotNull('section')
+            ->where('section', '!=', '')
+            ->selectRaw('instructor_user_id, section, COUNT(*) as count')
+            ->groupBy('instructor_user_id', 'section')
+            ->get()
+            ->groupBy('instructor_user_id')
+            ->map(fn ($group) => $group->keyBy('section')->map->count);
 
         return view('department-head.manage-instructors', [
             'name' => $user->name,
             'email' => $user->email,
             'instructors' => $instructors,
+            'sectionCountsByInstructor' => $sectionCountsByInstructor,
             'filters' => [
                 'q' => $request->input('q', ''),
                 'status' => $request->input('status', ''),
@@ -199,19 +221,26 @@ class DepartmentHeadController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:255'],
+            'middle_name' => ['nullable', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
+        $fullName = trim($validated['first_name'] . ' ' . ($validated['middle_name'] ? $validated['middle_name'] . ' ' : '') . $validated['last_name']);
+
         User::create([
-            'name' => $validated['name'],
+            'name' => $fullName,
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role' => 'instructor',
         ]);
 
-        return redirect()->route('department-head.manage-instructors')->with('success', 'Instructor account created successfully.');
+        return redirect()->route('department-head.manage-instructors')->with([
+            'created_email' => $validated['email'],
+            'created_password' => $validated['password'],
+        ]);
     }
 
     /**

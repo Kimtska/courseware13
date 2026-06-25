@@ -41,11 +41,6 @@ class StudentProfile extends Model
         return $this->belongsTo(User::class, 'verified_by_user_id');
     }
 
-    public function attendanceRecords()
-    {
-        return $this->hasMany(StudentAttendance::class);
-    }
-
     public function scores()
     {
         return $this->hasMany(StudentScore::class);
@@ -54,12 +49,6 @@ class StudentProfile extends Model
     public function participationLogs()
     {
         return $this->hasMany(ModuleParticipationLog::class);
-    }
-
-    public function trainingSessions()
-    {
-        return $this->belongsToMany(TrainingSession::class, 'attendance_records')
-            ->withTimestamps();
     }
 
     public function getFullNameAttribute(): string

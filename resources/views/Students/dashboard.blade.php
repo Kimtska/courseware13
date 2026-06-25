@@ -18,6 +18,7 @@
         .module-card{transition:all .25s ease}
         .module-card:hover{transform:translateY(-3px);border-color:#c4b5fd;box-shadow:0 16px 30px -20px rgba(91,33,182,.35)}
     </style>
+    @include('shared.back-button-prevention')
 </head>
 <body>
     @php
@@ -125,7 +126,7 @@
         </div>
     </main>
 
-    @include('shared.sweet-alerts.logout', ['logoutLabel' => 'Student — ' . $name, 'logoutSubtext' => 'Student Dashboard', 'logoutDescription' => 'You are about to end your session.', 'redirectUrl' => url('/')])
+    @include('shared.sweet-alerts.logout', ['logoutLabel' => 'Student — ' . $name, 'logoutSubtext' => 'Student Dashboard', 'logoutDescription' => 'You are about to end your session.', 'redirectUrl' => url('/login')])
 
     <script>
         const mobileToggle = document.getElementById('mobile-toggle');

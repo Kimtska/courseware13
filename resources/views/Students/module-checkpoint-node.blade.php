@@ -105,6 +105,7 @@
         }
         @keyframes cpShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
     </style>
+    @include('shared.back-button-prevention')
 </head>
 <body>
     @php
@@ -153,191 +154,162 @@
                     <div class="cp-track-fill" id="track-fill"></div>
                 </div>
 
-                <div class="cp-module completed" data-cp="0">
-                    <div class="cp-node completed" data-state="completed">
+                @php
+                    $moduleIcons = ['module-1' => 'fa-book-open', 'module-2' => 'fa-wrench', 'module-3' => 'fa-tools'];
+                @endphp
+
+                @foreach ($modules as $mIdx => $mod)
+                @php
+                    $modKey = $mod->module_key;
+                    $modNum = $mIdx + 1;
+                    $lessonCount = $mod->lessons->count();
+                    $isActive = $modKey === $moduleKey;
+                    // Check module access control
+                    $access = \App\Models\ModuleAccessControl::where('module_key', $modKey)->first();
+                    $isUnlocked = $access && $access->is_unlocked;
+                    $canAccess = $isUnlocked || $mIdx === 0; // module-1 is always accessible
+                    $stateClass = $isActive ? 'active' : ($canAccess && !$isActive ? 'completed' : 'locked');
+                    $icon = $moduleIcons[$modKey] ?? 'fa-book';
+                    $nodeState = $isActive ? 'in-progress' : ($canAccess ? 'completed' : 'locked');
+                @endphp
+                <div class="cp-module {{ $stateClass }}" data-cp="{{ $mIdx }}" data-module-key="{{ $modKey }}">
+                    <div class="cp-node {{ $nodeState }}" data-state="{{ $nodeState }}">
+                        @if ($canAccess && !$isActive)
                         <svg class="cp-node-check" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 4.5L6 12l-3.5-3.5"/></svg>
                         <div class="cp-node-glow"></div>
+                        @elseif ($isActive)
+                        <span>{{ $modNum }}</span>
+                        <div class="cp-node-pulse"></div>
+                        @else
+                        <span>{{ $modNum }}</span>
+                        @endif
                     </div>
-                    <div class="cp-card">
-                        <div class="cp-card-header" data-toggle="cp-body-0">
-                            <div class="cp-icon-box"><i class="fa-solid fa-book-open"></i></div>
+                    <div class="cp-card" @if ($isActive) style="border-color:#c4b5fd" @endif>
+                        <div class="cp-card-header" data-toggle="cp-body-{{ $mIdx }}">
+                            <div class="cp-icon-box"><i class="fa-solid {{ $icon }}"></i></div>
                             <div class="cp-card-info">
-                                <div class="cp-card-title">Module 1: Gun Parts</div>
-                                <div class="cp-card-meta"><i class="fa-regular fa-clock"></i> 30 mins <span class="dot">·</span> 6 lessons</div>
+                                <div class="cp-card-title">{{ $mod->title }}</div>
+                                <div class="cp-card-meta"><i class="fa-regular fa-clock"></i> {{ $lessonCount }} lessons</div>
                             </div>
-                            <div class="cp-progress-bar"><div class="cp-progress-fill" style="width:100%"></div></div>
-                            <button class="cp-chevron" type="button"><i class="fa-solid fa-chevron-down"></i></button>
+                            <div class="cp-progress-bar"><div class="cp-progress-fill" style="width:{{ $isActive ? '0%' : ($canAccess ? '100%' : '0%') }}"></div></div>
+                            <button class="cp-chevron {{ $isActive ? 'rotated' : '' }}" type="button"><i class="fa-solid fa-chevron-down"></i></button>
                         </div>
-                        <div class="cp-card-body" id="cp-body-0">
-                            <div class="cp-lesson completed" data-page="2"><span class="cp-lesson-icon"><i class="fa-solid fa-circle-check"></i></span><span class="cp-lesson-title">Lesson 1.1: Firearm Overview</span><span class="cp-badge cp-badge-lavender">Lesson</span></div>
-                            <div class="cp-lesson completed" data-page="3"><span class="cp-lesson-icon"><i class="fa-solid fa-circle-check"></i></span><span class="cp-lesson-title">Lesson 1.2: Weapon Types</span><span class="cp-badge cp-badge-lavender">Lesson</span></div>
-                            <div class="cp-lesson completed" data-page="4"><span class="cp-lesson-icon"><i class="fa-solid fa-circle-check"></i></span><span class="cp-lesson-title">Lesson 1.3: Parts ID</span><span class="cp-badge cp-badge-lavender">Lesson</span></div>
-                            <div class="cp-lesson completed" data-page="5"><span class="cp-lesson-icon"><i class="fa-solid fa-circle-check"></i></span><span class="cp-lesson-title">Lesson 1.4: Safety &amp; Handling</span><span class="cp-badge cp-badge-lavender">Lesson</span></div>
-                            <div class="cp-lesson completed" data-page="6"><span class="cp-lesson-icon"><i class="fa-solid fa-circle-check"></i></span><span class="cp-lesson-title">Lesson 1.5: Ammunition</span><span class="cp-badge cp-badge-lavender">Lesson</span></div>
-                            <div class="cp-lesson completed" data-page="7"><span class="cp-lesson-icon"><i class="fa-solid fa-circle-check"></i></span><span class="cp-lesson-title">Module 1 Assessment</span><span class="cp-badge cp-badge-yellow">Assessment</span><span class="cp-badge cp-badge-green">95%</span></div>
-                            <div class="cp-lesson completed" data-page="27"><span class="cp-lesson-icon"><i class="fa-solid fa-circle-check"></i></span><span class="cp-lesson-title">Assessment Result</span><span class="cp-badge cp-badge-green">Score</span></div>
+                        <div class="cp-card-body {{ $isActive ? 'open' : '' }}" id="cp-body-{{ $mIdx }}">
+                            @foreach ($mod->lessons as $l)
+                            <div class="cp-lesson {{ $canAccess ? 'completed' : 'locked' }}" data-module="{{ $modKey }}" data-lesson-key="{{ $l->key }}">
+                                <span class="cp-lesson-icon"><i class="fa-solid {{ $canAccess ? 'fa-circle-check' : 'fa-lock' }}"></i></span>
+                                <span class="cp-lesson-title">{{ $l->title }}</span>
+                                <span class="cp-badge cp-badge-lavender">Lesson</span>
+                            </div>
+                            @endforeach
+                            <div class="cp-lesson {{ $canAccess ? '' : 'locked' }}" data-module="{{ $modKey }}" data-lesson-key="assessment">
+                                <span class="cp-lesson-icon"><i class="fa-solid {{ $canAccess ? 'fa-file-pen' : 'fa-lock' }}"></i></span>
+                                <span class="cp-lesson-title">Module {{ $modNum }} Assessment</span>
+                                <span class="cp-badge cp-badge-yellow">Assessment</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-
-                <div class="cp-module active" data-cp="1">
-                    <div class="cp-node in-progress" data-state="in-progress"><span>2</span><div class="cp-node-pulse"></div></div>
-                    <div class="cp-card" style="border-color:#c4b5fd">
-                        <div class="cp-card-header" data-toggle="cp-body-1">
-                            <div class="cp-icon-box"><i class="fa-solid fa-wrench"></i></div>
-                            <div class="cp-card-info">
-                                <div class="cp-card-title">Module 2: Disassembly</div>
-                                <div class="cp-card-meta"><i class="fa-regular fa-clock"></i> 45 mins <span class="dot">·</span> 8 lessons</div>
-                            </div>
-                            <div class="cp-progress-bar"><div class="cp-progress-fill" style="width:25%"></div></div>
-                            <button class="cp-chevron rotated" type="button"><i class="fa-solid fa-chevron-down"></i></button>
-                        </div>
-                        <div class="cp-card-body open" id="cp-body-1">
-                            <div class="cp-lesson completed" data-page="29"><span class="cp-lesson-icon"><i class="fa-solid fa-circle-check"></i></span><span class="cp-lesson-title">Lesson 2.1: Firing Principles</span><span class="cp-badge cp-badge-lavender">Lesson</span></div>
-                            <div class="cp-lesson completed" data-page="30"><span class="cp-lesson-icon"><i class="fa-solid fa-circle-check"></i></span><span class="cp-lesson-title">Lesson 2.2: Stance &amp; Grip</span><span class="cp-badge cp-badge-lavender">Lesson</span></div>
-                            <div class="cp-lesson active" data-page="31"><span class="cp-lesson-icon"><i class="fa-solid fa-circle-play"></i></span><span class="cp-lesson-title">Lesson 2.3: Frame Separation</span><span class="cp-badge cp-badge-lavender">Lesson</span></div>
-                            <div class="cp-lesson locked" data-page="32"><span class="cp-lesson-icon"><i class="fa-solid fa-lock"></i></span><span class="cp-lesson-title">Lesson 2.4: Slide Removal</span><span class="cp-badge cp-badge-lavender">Lesson</span></div>
-                            <div class="cp-lesson locked" data-page="33"><span class="cp-lesson-icon"><i class="fa-solid fa-lock"></i></span><span class="cp-lesson-title">Lesson 2.5: Barrel Inspection</span><span class="cp-badge cp-badge-lavender">Lesson</span></div>
-                            <div class="cp-lesson locked" data-page="34"><span class="cp-lesson-icon"><i class="fa-solid fa-lock"></i></span><span class="cp-lesson-title">Module 2 Assessment</span><span class="cp-badge cp-badge-yellow">Assessment</span></div>
-                            <div class="cp-lesson locked" data-page="56"><span class="cp-lesson-icon"><i class="fa-solid fa-lock"></i></span><span class="cp-lesson-title">Assemble &amp; Disassemble</span><span class="cp-badge cp-badge-lavender">Lesson</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="cp-module locked" data-cp="2">
-                    <div class="cp-node locked" data-state="locked"><span>3</span></div>
-                    <div class="cp-card" style="opacity:.65">
-                        <div class="cp-card-header" data-toggle="lock">
-                            <div class="cp-icon-box" style="color:#aca7b8"><i class="fa-solid fa-lock"></i></div>
-                            <div class="cp-card-info">
-                                <div class="cp-card-title">Module 3: Maintenance</div>
-                                <div class="cp-card-meta"><i class="fa-regular fa-clock"></i> 35 mins <span class="dot">·</span> 6 lessons</div>
-                            </div>
-                            <div class="cp-progress-bar"><div class="cp-progress-fill" style="width:0%"></div></div>
-                            <button class="cp-chevron" type="button"><i class="fa-solid fa-chevron-down"></i></button>
-                        </div>
-                        <div class="cp-card-body" id="cp-body-2">
-                            <div class="cp-lesson locked" data-page="58"><span class="cp-lesson-icon"><i class="fa-solid fa-lock"></i></span><span class="cp-lesson-title">Lesson 3.1: Cleaning</span><span class="cp-badge cp-badge-lavender">Lesson</span></div>
-                            <div class="cp-lesson locked" data-page="59"><span class="cp-lesson-icon"><i class="fa-solid fa-lock"></i></span><span class="cp-lesson-title">Lesson 3.2: Lubrication</span><span class="cp-badge cp-badge-lavender">Lesson</span></div>
-                            <div class="cp-lesson locked" data-page="60"><span class="cp-lesson-icon"><i class="fa-solid fa-lock"></i></span><span class="cp-lesson-title">Lesson 3.3: Spring Replacement</span><span class="cp-badge cp-badge-lavender">Lesson</span></div>
-                            <div class="cp-lesson locked" data-page="61"><span class="cp-lesson-icon"><i class="fa-solid fa-lock"></i></span><span class="cp-lesson-title">Lesson 3.4: Part Inspection</span><span class="cp-badge cp-badge-lavender">Lesson</span></div>
-                            <div class="cp-lesson locked" data-page="62"><span class="cp-lesson-icon"><i class="fa-solid fa-lock"></i></span><span class="cp-lesson-title">Lesson 3.5: Troubleshooting</span><span class="cp-badge cp-badge-lavender">Lesson</span></div>
-                            <div class="cp-lesson locked" data-page="63"><span class="cp-lesson-icon"><i class="fa-solid fa-lock"></i></span><span class="cp-lesson-title">Module 3 Assessment</span><span class="cp-badge cp-badge-yellow">Assessment</span></div>
-                        </div>
-                    </div>
-                </div>
+                @endforeach
             </aside>
 
             <div class="cp-toast" id="locked-toast"><i class="fa-solid fa-lock"></i> <span>Complete the previous module first</span></div>
 
             <div class="presentation-shell w-full">
-                <div class="presentation-stage">
-                    @include('Students.partials.lesson-presentation-shell')
+                <div class="presentation-stage presentation-stage-main">
+                    @include('Students.partials.lesson-presentation-shell', ['moduleKey' => $moduleKey])
                 </div>
             </div>
         </div>
     </main>
 
     @unless($embedded)
-    @include('Students.partials.module-access-watch', ['currentModuleKey' => 'module-1', 'currentModuleLabel' => 'Gun Parts'])
-    @include('shared.sweet-alerts.logout', ['logoutLabel' => 'Student — ' . ($name ?? 'Student'), 'logoutSubtext' => 'Gun Parts', 'logoutDescription' => 'You are about to end your session.', 'redirectUrl' => url('/')])
+    @include('Students.partials.module-access-watch', ['currentModuleKey' => $moduleKey, 'currentModuleLabel' => $activeModule?->title ?? ''])
+    @include('shared.sweet-alerts.logout', ['logoutLabel' => 'Student — ' . ($name ?? 'Student'), 'logoutSubtext' => $activeModule?->title ?? '', 'logoutDescription' => 'You are about to end your session.', 'redirectUrl' => url('/login')])
     @endunless
 
     <script>
         const mobileToggle = document.getElementById('mobile-toggle');
         const mobileMenu = document.getElementById('mobile-menu');
-        const pages = Array.from(document.querySelectorAll('.presentation-page'));
-        const counterEl = document.getElementById('page-counter');
-        const trackFill = document.getElementById('track-fill');
-        const prevButton = document.getElementById('presentation-prev');
-        const nextButton = document.getElementById('presentation-next');
-        const cpModules = Array.from(document.querySelectorAll('.cp-module'));
-        const totalPages = pages.length;
-        const totalModules = cpModules.length;
-        let currentPage = 0;
-        let highestVisitedPage = 0;
-        document.querySelectorAll('.cp-lesson.completed').forEach(lesson => {
-            const p = parseInt(lesson.dataset.page, 10);
-            if (!isNaN(p) && p > highestVisitedPage) highestVisitedPage = p;
-        });
 
-        function getModuleIndex(pageIndex) {
-            const page = pages[pageIndex];
-            const raw = page?.dataset?.lesson;
-            const num = parseInt(raw, 10);
-            if (isNaN(num)) return 0;
-            return Math.max(0, num - 1);
-        }
+        function initPresentation() {
+            const shell = document.querySelector('.presentation-stage-main');
+            if (!shell) return;
+            const pages = Array.from(shell.querySelectorAll('.presentation-page'));
+            const counterEl = document.getElementById('page-counter');
+            const prevButton = document.getElementById('presentation-prev');
+            const nextButton = document.getElementById('presentation-next');
+            if (pages.length === 0) return;
+            let currentPage = 0;
+            let highestVisitedPage = 0;
 
-        function firstPageForModule(moduleIndex) {
-            if (moduleIndex === 0) return 0;
-            const target = moduleIndex + 1;
-            const match = pages.findIndex(p => parseInt(p.dataset.lesson, 10) === target);
-            return match === -1 ? 0 : match;
-        }
-
-        function updateCheckpoints() {
-            const currentMod = getModuleIndex(currentPage);
-            cpModules.forEach((m, i) => {
-                m.classList.remove('completed', 'active');
-                if (i < currentMod) m.classList.add('completed');
-                else if (i === currentMod) m.classList.add('active');
-                const node = m.querySelector('.cp-node');
-                if (!node) return;
-                if (i < currentMod) {
-                    node.className = 'cp-node completed';
-                    node.innerHTML = '<svg class="cp-node-check" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 4.5L6 12l-3.5-3.5"/></svg><div class="cp-node-glow"></div>';
-                } else if (i === currentMod) {
-                    node.className = 'cp-node in-progress';
-                    node.innerHTML = '<span>' + (i + 1) + '</span><div class="cp-node-pulse"></div>';
-                }
-                const card = m.querySelector('.cp-card');
-                if (card) card.style.borderColor = i === currentMod ? '#c4b5fd' : '';
-            });
-            if (trackFill) {
-                const pct = totalModules > 1 ? (currentMod / (totalModules - 1)) * 100 : 0;
-                trackFill.style.height = pct + '%';
+            function updatePage() {
+                pages.forEach((p, i) => p.classList.toggle('active', i === currentPage));
+                if (counterEl) counterEl.textContent = (currentPage + 1) + ' / ' + pages.length;
+                if (prevButton) prevButton.disabled = currentPage === 0;
+                if (nextButton) nextButton.disabled = currentPage === pages.length - 1;
             }
+
+            function goToPage(idx) {
+                currentPage = Math.max(0, Math.min(idx, pages.length - 1));
+                highestVisitedPage = Math.max(highestVisitedPage, currentPage);
+                updatePage();
+            }
+
+            prevButton?.addEventListener('click', () => goToPage(currentPage - 1));
+            nextButton?.addEventListener('click', () => goToPage(currentPage + 1));
+            updatePage();
         }
 
-        function updateLessonStates() {
-            const currentMod = getModuleIndex(currentPage);
-            document.querySelectorAll('.cp-lesson').forEach(lesson => {
-                const mod = lesson.closest('.cp-module');
+        function switchModule(moduleKey) {
+            const params = new URLSearchParams(window.location.search);
+            params.set('module', moduleKey);
+            window.location.search = params.toString();
+        }
+
+        // Sidebar module toggle
+        document.querySelector('.cp-sidebar')?.addEventListener('click', (e) => {
+            const header = e.target.closest('.cp-card-header');
+            const lesson = e.target.closest('.cp-lesson');
+
+            if (header) {
+                const mod = header.closest('.cp-module');
                 if (!mod) return;
-                const modIdx = cpModules.indexOf(mod);
-                if (modIdx !== currentMod) return;
-                const page = parseInt(lesson.dataset.page, 10);
-                if (isNaN(page)) return;
-                const icon = lesson.querySelector('.cp-lesson-icon i');
-                lesson.classList.remove('active', 'completed', 'locked');
-                if (page === currentPage) {
-                    lesson.classList.add('active');
-                    if (icon) icon.className = 'fa-solid fa-circle-play';
-                } else if (page <= highestVisitedPage) {
-                    lesson.classList.add('completed');
-                    if (icon) icon.className = 'fa-solid fa-circle-check';
-                } else {
-                    lesson.classList.add('locked');
-                    if (icon) icon.className = 'fa-solid fa-lock';
+                const modKey = mod.dataset.moduleKey;
+                if (mod.classList.contains('locked')) {
+                    const toast = document.getElementById('locked-toast');
+                    if (toast) {
+                        toast.classList.add('show');
+                        setTimeout(() => toast.classList.remove('show'), 3000);
+                    }
+                    return;
                 }
-            });
-        }
+                if (modKey && !mod.classList.contains('active')) {
+                    switchModule(modKey);
+                    return;
+                }
+                const body = mod.querySelector('.cp-card-body');
+                const chevron = header.querySelector('.cp-chevron');
+                if (body) {
+                    body.classList.toggle('open');
+                    if (chevron) chevron.classList.toggle('rotated');
+                }
+                return;
+            }
 
-        function updatePresentationPage() {
-            pages.forEach((p, i) => p.classList.toggle('active', i === currentPage));
-            if (counterEl) counterEl.textContent = (currentPage + 1) + ' / ' + totalPages;
-            if (prevButton) prevButton.disabled = currentPage === 0;
-            if (nextButton) nextButton.disabled = currentPage === totalPages - 1;
-            updateCheckpoints();
-            updateLessonStates();
-        }
+            if (lesson) {
+                const mod = lesson.closest('.cp-module');
+                if (!mod || mod.classList.contains('locked')) return;
+                const modKey = lesson.dataset.module;
+                const lessonKey = lesson.dataset.lessonKey;
 
-        function goToPage(idx) {
-            currentPage = Math.max(0, Math.min(idx, pages.length - 1));
-            highestVisitedPage = Math.max(highestVisitedPage, currentPage);
-            updatePresentationPage();
-        }
+                if (modKey && !mod.classList.contains('active')) {
+                    switchModule(modKey);
+                } else if (lessonKey && typeof window.jumpToLessonPage === 'function') {
+                    window.jumpToLessonPage(lessonKey);
+                }
+            }
+        });
 
         if (mobileToggle && mobileMenu) {
             mobileToggle.addEventListener('click', () => {
@@ -347,54 +319,7 @@
             });
         }
 
-        prevButton?.addEventListener('click', () => goToPage(currentPage - 1));
-        nextButton?.addEventListener('click', () => goToPage(currentPage + 1));
-
-        cpModules.forEach(m => {
-            const header = m.querySelector('.cp-card-header');
-            const card = m.querySelector('.cp-card');
-            if (!header) return;
-            header.addEventListener('click', () => {
-                if (m.classList.contains('locked') || !card) {
-                    const toast = document.getElementById('locked-toast');
-                    if (toast) {
-                        toast.classList.add('show');
-                        setTimeout(() => toast.classList.remove('show'), 3000);
-                    }
-                    card.style.animation = 'none';
-                    void card.offsetHeight;
-                    card.style.animation = 'cpShake .35s ease';
-                    return;
-                }
-                const body = m.querySelector('.cp-card-body');
-                const chevron = header.querySelector('.cp-chevron');
-                if (!body) return;
-                const wasOpen = body.classList.contains('open');
-                document.querySelectorAll('.cp-card-body.open').forEach(b => {
-                    if (b !== body) {
-                        b.classList.remove('open');
-                        const ch = b.closest('.cp-module')?.querySelector('.cp-chevron');
-                        if (ch) ch.classList.remove('rotated');
-                    }
-                });
-                body.classList.toggle('open');
-                chevron.classList.toggle('rotated', !wasOpen);
-                if (!wasOpen) {
-                    const modIdx = parseInt(m.dataset.cp, 10) || 0;
-                    goToPage(firstPageForModule(modIdx));
-                }
-            });
-        });
-
-        document.querySelector('.cp-sidebar').addEventListener('click', (e) => {
-            const lesson = e.target.closest('.cp-lesson');
-            if (!lesson || lesson.classList.contains('locked')) return;
-            e.stopPropagation();
-            const page = parseInt(lesson.dataset.page, 10);
-            if (!isNaN(page)) goToPage(page);
-        });
-
-        updatePresentationPage();
+        initPresentation();
     </script>
 </body>
 </html>

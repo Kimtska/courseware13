@@ -28,8 +28,8 @@
         <!-- Login Form Card -->
         <div class="p-8 md:p-12 rounded-2xl bg-white border border-violet-100 shadow-xl">
             
-            <h2 class="font-display font-bold text-3xl text-black mb-2 text-center">Welcome Back</h2>
-            <p class="text-gray-400 text-sm text-center mb-8">Admin, instructor, and student accounts all use email and password</p>
+            <h2 class="font-display font-bold text-3xl text-black mb-2 text-center">Welcome</h2>
+            <p class="text-gray-400 text-sm text-center mb-8">Students use their Student ID. Instructors and Admins use their email address.</p>
 
             <!-- Error Messages -->
             @if ($errors->any())
@@ -72,23 +72,31 @@
                 <!-- Password Field -->
                 <div>
                     <label for="password" class="block text-xs font-semibold text-gray-600 mb-1.5">Password</label>
-                    <input 
-                        type="password" 
-                        id="password" 
-                        name="password" 
-                        placeholder="Enter your password"
-                        class="w-full px-4 py-3 bg-light-50 border border-violet-100 rounded-lg text-black text-sm placeholder-gray-400 focus:outline-none focus:border-violet-400 focus:shadow-[0_0_0_3px_rgba(91,33,182,.1)] transition-all @error('password') border-red-500 @enderror"
-                        required
-                    >
+                    <div class="flex items-center bg-light-50 border border-violet-100 rounded-lg overflow-hidden focus-within:border-violet-400 focus-within:shadow-[0_0_0_3px_rgba(91,33,182,.1)] transition-all @error('password') border-red-500 @enderror">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            placeholder="Enter your password"
+                            class="flex-1 px-4 py-3 bg-transparent border-0 text-black text-sm placeholder-gray-400 focus:outline-none"
+                            required
+                        >
+                        <button type="button" id="toggle-password" tabindex="-1" class="px-3 py-3 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0">
+                            <i id="toggle-password-icon" class="fas fa-eye"></i>
+                        </button>
+                    </div>
                     @error('password')
                         <p class="text-red-500 text-xs mt-1"><i class="fas fa-exclamation-triangle mr-1"></i>{{ $message }}</p>
                     @enderror
                 </div>
 
-                <!-- Remember Me -->
-                <div class="flex items-center gap-2">
-                    <input type="checkbox" id="remember" name="remember" class="w-4 h-4 rounded text-violet-600" {{ old('remember') ? 'checked' : '' }}>
-                    <label for="remember" class="text-xs text-gray-600">Remember me</label>
+                <!-- Remember Me + Forgot Password -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="remember" name="remember" class="w-4 h-4 rounded text-violet-600" {{ old('remember') ? 'checked' : '' }}>
+                        <label for="remember" class="text-xs text-gray-600">Remember me</label>
+                    </div>
+                    <a href="#" class="text-xs text-violet-600 hover:text-violet-800 font-medium hover:underline">Forgot Password?</a>
                 </div>
 
                 <!-- Submit Button -->
@@ -99,10 +107,6 @@
                     <i class="fas fa-sign-in-alt text-violet-300"></i> Sign In
                 </button>
             </form>
-
-            <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
-                Student accounts use their ID number as the email address.
-            </div>
 
             <!-- SPC Contact Info -->
             <div class="mt-8 pt-6 border-t border-gray-100 text-center">
@@ -120,5 +124,20 @@
         </div>
     </div>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const toggleBtn = document.getElementById('toggle-password');
+        const passwordInput = document.getElementById('password');
+        const icon = document.getElementById('toggle-password-icon');
+
+        if (toggleBtn && passwordInput && icon) {
+            toggleBtn.addEventListener('click', function () {
+                const isPassword = passwordInput.type === 'password';
+                passwordInput.type = isPassword ? 'text' : 'password';
+                icon.className = isPassword ? 'fas fa-eye-slash' : 'fas fa-eye';
+            });
+        }
+    });
+</script>
 </body>
 </html>

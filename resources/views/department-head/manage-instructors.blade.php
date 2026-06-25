@@ -26,6 +26,7 @@
         #sidebar.collapsed .sidebar-link:hover { border-left: none; background: rgba(255,255,255,0.1); }
         #sidebar.collapsed .sidebar-profile { justify-content: center; padding: 16px 0; }
     </style>
+    @include('shared.back-button-prevention')
 </head>
 <body class="flex h-screen">
     @php
@@ -75,11 +76,6 @@
         </header>
 
         <div class="p-8 space-y-6">
-            @if(session('success'))
-                <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                    <i class="fas fa-circle-check mr-2"></i>{{ session('success') }}
-                </div>
-            @endif
             @if($errors->any())
                 <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 space-y-1">
                     @foreach($errors->all() as $error)
@@ -114,7 +110,7 @@
                     </div>
                     <div class="flex items-end">
                         <a href="{{ route('department-head.manage-instructors') }}" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-600 text-sm font-bold hover:bg-gray-50 transition-colors text-center">
-                            <i class="fas fa-rotate-left mr-1"></i> Reset
+                            <i class="fas fa-rotate-left mr-1"></i> Clear
                         </a>
                     </div>
                 </form>
@@ -134,8 +130,8 @@
                             <tr>
                                 <th class="px-5 sm:px-6 py-4 font-semibold">Name</th>
                                 <th class="px-5 sm:px-6 py-4 font-semibold">Email</th>
-                                <th class="px-5 sm:px-6 py-4 font-semibold">Role</th>
                                 <th class="px-5 sm:px-6 py-4 font-semibold">Status</th>
+                                <th class="px-5 sm:px-6 py-4 font-semibold">Students</th>
                                 <th class="px-5 sm:px-6 py-4 font-semibold">Date Added</th>
                                 <th class="px-5 sm:px-6 py-4 text-right font-semibold">Actions</th>
                             </tr>
@@ -156,12 +152,25 @@
                                         <div class="font-medium text-gray-900">{{ $instructor->name }}</div>
                                     </td>
                                     <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $instructor->email }}</td>
-                                    <td class="px-5 sm:px-6 py-4"><span class="status-pill bg-violet-100 text-violet-700">Instructor</span></td>
                                     <td class="px-5 sm:px-6 py-4">
                                         <span class="status-pill {{ $isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700' }}">
                                             <i class="fas {{ $isActive ? 'fa-circle-check' : 'fa-circle' }} text-[8px]"></i>
                                             {{ $isActive ? 'Active' : 'Inactive' }}
                                         </span>
+                                    </td>
+                                    <td class="px-5 sm:px-6 py-4">
+                                        @php $sectionCounts = $sectionCountsByInstructor[$instructor->id] ?? collect(); @endphp
+                                        @if($sectionCounts->isEmpty())
+                                            <span class="text-gray-400 text-sm">—</span>
+                                        @else
+                                            <div class="flex flex-wrap gap-1.5">
+                                                @foreach($sectionCounts as $sec => $cnt)
+                                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-violet-100 text-violet-700 text-xs font-semibold">
+                                                        Sec {{ $sec }} <span class="text-violet-500 font-bold">{{ $cnt }}</span>
+                                                    </span>
+                                                @endforeach
+                                            </div>
+                                        @endif
                                     </td>
                                     <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $instructor->created_at ? $instructor->created_at->format('M d, Y') : '—' }}</td>
                                     <td class="px-5 sm:px-6 py-4">
@@ -197,7 +206,12 @@
                 </div>
 
                 <div class="px-5 sm:px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div class="text-sm text-gray-500">Showing {{ $instructors->count() }} record(s)</div>
+                    <div class="text-sm text-gray-500">Showing {{ $instructors->firstItem() ?? 0 }}–{{ $instructors->lastItem() ?? 0 }} of {{ $instructors->total() }} record(s)</div>
+                    @if($instructors->hasPages())
+                        <div class="flex items-center gap-1">
+                            {{ $instructors->onEachSide(1)->links('vendor.pagination.violet') }}
+                        </div>
+                    @endif
                 </div>
             </section>
         </div>
@@ -215,21 +229,33 @@
                 <form method="POST" action="{{ route('department-head.manage-instructors.store') }}" class="p-6 space-y-5">
                     @csrf
                     <div class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Full Name</label>
-                            <input name="name" type="text" value="{{ old('name') }}" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" required>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">First Name</label>
+                                <input name="first_name" type="text" value="{{ old('first_name') }}" placeholder="e.g. Juan" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Middle Name <span class="text-gray-400 font-normal normal-case tracking-normal">(optional)</span></label>
+                                <input name="middle_name" type="text" value="{{ old('middle_name') }}" placeholder="e.g. Santos" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Email</label>
-                            <input name="email" type="email" value="{{ old('email') }}" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" required>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Last Name</label>
+                                <input name="last_name" type="text" value="{{ old('last_name') }}" placeholder="e.g. Dela Cruz" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Email</label>
+                                <input name="email" type="email" value="{{ old('email') }}" placeholder="e.g. instructor@school.edu.ph" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" required>
+                            </div>
                         </div>
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Password</label>
-                            <input name="password" type="password" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" required>
+                            <input name="password" type="text" value="instructor123" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" required>
                         </div>
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Confirm Password</label>
-                            <input name="password_confirmation" type="password" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" required>
+                            <input name="password_confirmation" type="text" value="instructor123" placeholder="Re-type password to confirm" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" required>
                         </div>
                     </div>
                     <div class="flex items-center justify-end gap-3">
@@ -254,7 +280,6 @@
                     <div class="grid sm:grid-cols-2 gap-4">
                         <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Name</p><p id="view-name" class="text-lg font-semibold text-gray-900"></p></div>
                         <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Email</p><p id="view-email" class="text-gray-700"></p></div>
-                        <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Role</p><p id="view-role" class="text-gray-700"></p></div>
                         <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Status</p><p id="view-status" class="text-gray-700"></p></div>
                         <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Date Added</p><p id="view-date" class="text-gray-700"></p></div>
                     </div>
@@ -378,7 +403,7 @@
         </div>
     </main>
 
-    @include('shared.sweet-alerts.logout', ['logoutLabel' => $name, 'logoutSubtext' => 'Department Head session active', 'logoutDescription' => 'You are about to end your department head session. Review your faculty account list before leaving.', 'redirectUrl' => url('/')])
+    @include('shared.sweet-alerts.logout', ['logoutLabel' => $name, 'logoutSubtext' => 'Department Head session active', 'logoutDescription' => 'You are about to end your department head session. Review your faculty account list before leaving.', 'redirectUrl' => url('/login')])
 
     <!-- Toggle Status Confirmation -->
     <div id="toggle-overlay" class="swal-overlay" role="dialog" aria-modal="true">
@@ -405,6 +430,57 @@
             </div>
         </div>
     </div>
+
+    <!-- Created Credentials SweetAlert -->
+    @if(session('created_email'))
+        <div id="cred-overlay" class="swal-overlay active" role="dialog" aria-modal="true">
+            <div class="swal-modal" style="max-width:460px">
+                <svg class="swal-bg-shape" style="top:-20px;right:-20px;width:120px;height:120px" viewBox="0 0 120 120"><circle cx="60" cy="60" r="60" fill="#7C3AED"></circle></svg>
+                <svg class="swal-bg-shape" style="bottom:-30px;left:-30px;width:150px;height:150px" viewBox="0 0 150 150"><circle cx="75" cy="75" r="75" fill="#7C3AED"></circle></svg>
+                <div class="pt-8 pb-2"><div class="swal-icon-wrap"><div class="swal-icon-ring"><i class="fas fa-check text-sm"></i></div><span class="swal-dot"></span><span class="swal-dot"></span><span class="swal-dot"></span><span class="swal-dot"></span></div></div>
+                <div class="px-8 pt-4 pb-3 text-center">
+                    <h3 class="swal-title">Instructor Created</h3>
+                    <p class="swal-text mt-2">Account has been created successfully. Please share these credentials with the instructor.</p>
+                </div>
+                <div class="mx-8 mb-4 p-4 bg-violet-50/70 rounded-xl border border-violet-100/80 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-violet-900">Email</span>
+                        <span id="cred-email" class="text-sm font-mono font-bold text-violet-700">{{ session('created_email') }}</span>
+                    </div>
+                    <div class="border-t border-violet-200/60"></div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-violet-900">Password</span>
+                        <span id="cred-password" class="text-sm font-mono font-bold text-violet-700">{{ session('created_password') }}</span>
+                    </div>
+                </div>
+                <div class="px-8 pb-8 flex items-center gap-3">
+                    <button id="cred-copy" class="swal-btn swal-btn-cancel flex-1" type="button"><i class="fas fa-copy text-xs"></i> Copy Credentials</button>
+                    <button id="cred-ok" class="swal-btn swal-btn-logout btn-shine flex-1" type="button"><i class="fas fa-check text-sm"></i> Okay</button>
+                </div>
+                <div id="cred-toast" style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);background:#065f46;color:#fff;padding:8px 16px;border-radius:10px;font-size:12px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none">Copied!</div>
+            </div>
+        </div>
+        <script>
+            (function(){
+                var overlay = document.getElementById('cred-overlay');
+                var okBtn = document.getElementById('cred-ok');
+                var copyBtn = document.getElementById('cred-copy');
+                var toast = document.getElementById('cred-toast');
+                okBtn.addEventListener('click', function(){
+                    overlay.classList.add('closing');
+                    overlay.classList.remove('active');
+                });
+                copyBtn.addEventListener('click', function(){
+                    var email = document.getElementById('cred-email').textContent;
+                    var pass = document.getElementById('cred-password').textContent;
+                    navigator.clipboard.writeText('Email: ' + email + '\nPassword: ' + pass).then(function(){
+                        toast.style.opacity = '1';
+                        setTimeout(function(){ toast.style.opacity = '0'; }, 2000);
+                    });
+                });
+            })();
+        </script>
+    @endif
 
     <script>
         const sidebar = document.getElementById('sidebar');
@@ -457,7 +533,6 @@
                 const instructor = JSON.parse(button.dataset.instructor);
                 document.getElementById('view-name').textContent = instructor.name;
                 document.getElementById('view-email').textContent = instructor.email;
-                document.getElementById('view-role').textContent = 'Instructor';
                 document.getElementById('view-status').textContent = instructor.status;
                 document.getElementById('view-date').textContent = instructor.date_added;
                 openModal(viewModal);

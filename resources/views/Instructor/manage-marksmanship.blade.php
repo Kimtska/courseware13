@@ -46,12 +46,6 @@
                         <option value="">All Sections</option>
                     </select>
                 </div>
-                <div>
-                    <label class="block text-[10px] font-bold uppercase tracking-[0.28em] text-gray-500 mb-2">Course</label>
-                    <select name="course" id="mm-filter-course" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
-                        <option value="">All Courses</option>
-                    </select>
-                </div>
             </form>
         </section>
 
@@ -76,7 +70,7 @@
                         <tr>
                             <th class="px-5 sm:px-6 py-4 font-semibold">Student ID</th>
                             <th class="px-5 sm:px-6 py-4 font-semibold">Full Name</th>
-                            <th class="px-5 sm:px-6 py-4 font-semibold">Course/Year/Section</th>
+                            <th class="px-5 sm:px-6 py-4 font-semibold">Section</th>
                             <th class="px-5 sm:px-6 py-4 font-semibold">Status</th>
                             <th class="px-5 sm:px-6 py-4 text-right font-semibold">Action</th>
                         </tr>
@@ -86,36 +80,32 @@
                             @php
                                 $studentId = $student->student_id_number ?? $student->student_number ?? '';
                                 $fullName = $student->full_name ?? trim((($student->first_name ?? '') . ' ' . ($student->middle_name ?? '') . ' ' . ($student->last_name ?? '')));
-                                $course = $student->course ?? '—';
-                                $yearLevel = $student->year_level ?? '—';
                                 $section = $student->section ?? '—';
                             @endphp
-                            <tr class="hover:bg-violet-50/50 transition-colors" data-search="{{ strtolower($studentId . ' ' . $fullName) }}" data-section="{{ $section }}" data-course="{{ $course }}">
+                            <tr class="hover:bg-violet-50/50 transition-colors" data-search="{{ strtolower($studentId . ' ' . $fullName) }}" data-section="{{ $section }}">
                                 <td class="px-5 sm:px-6 py-4 font-semibold text-gray-900">{{ $studentId }}</td>
                                 <td class="px-5 sm:px-6 py-4">
                                     <div class="font-medium text-gray-900">{{ $fullName }}</div>
-                                    <div class="text-xs text-gray-500">{{ $course }}</div>
                                 </td>
-                                <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $course }} / {{ $yearLevel }} / {{ $section }}</td>
+                                <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $section }}</td>
                                 <td class="px-5 sm:px-6 py-4"><span class="status-pill bg-emerald-100 text-emerald-700">Completed Gun Parts</span></td>
                                 <td class="px-5 sm:px-6 py-4 text-right">
-                                    <a href="{{ route('instructor.manage-module.module-4') }}?weapon=9mm&time=60&mode=steady&student_id={{ urlencode($studentId) }}" target="_blank" rel="noopener" data-proceed-link data-student-id="{{ $studentId }}" class="proceed-btn inline-flex items-center justify-center gap-2 rounded-lg bg-violet-700 px-4 py-2 text-xs font-bold text-white hover:bg-violet-800 transition-colors">
+                                    <a href="{{ route('instructor.manage-module.module-4') }}?weapon=9mm&time=60&mode=steady&max_shots=10&student_id={{ urlencode($studentId) }}" target="_blank" rel="noopener" data-proceed-link data-student-id="{{ $studentId }}" class="proceed-btn inline-flex items-center justify-center gap-2 rounded-lg bg-violet-700 px-4 py-2 text-xs font-bold text-white hover:bg-violet-800 transition-colors">
                                         <i class="fas fa-arrow-right"></i>
                                         Proceed
                                     </a>
                                 </td>
                             </tr>
                         @empty
-                            <tr class="hover:bg-violet-50/50 transition-colors" data-search="20260001 juan dela cruz" data-section="A" data-course="BSCRIM">
+                            <tr class="hover:bg-violet-50/50 transition-colors" data-search="20260001 juan dela cruz" data-section="A">
                                 <td class="px-5 sm:px-6 py-4 font-semibold text-gray-900">20260001</td>
                                 <td class="px-5 sm:px-6 py-4">
                                     <div class="font-medium text-gray-900">Juan Dela Cruz</div>
-                                    <div class="text-xs text-gray-500">BSCRIM</div>
                                 </td>
                                 <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">BSCRIM / 2 / A</td>
                                 <td class="px-5 sm:px-6 py-4"><span class="status-pill bg-emerald-100 text-emerald-700">Completed Gun Parts</span></td>
                                 <td class="px-5 sm:px-6 py-4 text-right">
-                                    <a href="{{ route('instructor.manage-module.module-4') }}?weapon=9mm&time=60&mode=steady&student_id=20260001" target="_blank" rel="noopener" data-proceed-link data-student-id="20260001" class="proceed-btn inline-flex items-center justify-center gap-2 rounded-lg bg-violet-700 px-4 py-2 text-xs font-bold text-white hover:bg-violet-800 transition-colors">
+                                    <a href="{{ route('instructor.manage-module.module-4') }}?weapon=9mm&time=60&mode=steady&max_shots=10&student_id=20260001" target="_blank" rel="noopener" data-proceed-link data-student-id="20260001" class="proceed-btn inline-flex items-center justify-center gap-2 rounded-lg bg-violet-700 px-4 py-2 text-xs font-bold text-white hover:bg-violet-800 transition-colors">
                                         <i class="fas fa-arrow-right"></i>
                                         Proceed
                                     </a>
@@ -515,6 +505,7 @@
                 params.set('weapon', weaponValue);
                 params.set('time', String(msState.time));
                 params.set('mode', modeValue);
+                params.set('max_shots', '10');
                 params.set('student_id', sid);
                 a.href = baseUrl + '?' + params.toString();
             });
@@ -550,20 +541,16 @@
                 const summaryEl = document.getElementById('mm-summary-text');
                 const searchInput = document.getElementById('mm-search');
                 const filterSection = document.getElementById('mm-filter-section');
-                const filterCourse = document.getElementById('mm-filter-course');
-                if (!tbody || !searchInput || !filterSection || !filterCourse) return;
+                if (!tbody || !searchInput || !filterSection) return;
 
                 const dataRows = Array.from(tbody.querySelectorAll('tr[data-search]'));
                 const totalRows = dataRows.length;
                 const sectionOptions = new Set();
-                const courseOptions = new Set();
                 const defaultSummary = summaryEl ? summaryEl.textContent : '';
 
                 dataRows.forEach(r => {
                     const sec = r.getAttribute('data-section');
-                    const course = r.getAttribute('data-course');
                     if (sec && sec !== '—') sectionOptions.add(sec);
-                    if (course && course !== '—') courseOptions.add(course);
                 });
 
                 Array.from(sectionOptions).sort().forEach(s => {
@@ -573,24 +560,15 @@
                     filterSection.appendChild(opt);
                 });
 
-                Array.from(courseOptions).sort().forEach(c => {
-                    const opt = document.createElement('option');
-                    opt.value = c;
-                    opt.textContent = c;
-                    filterCourse.appendChild(opt);
-                });
-
                 function matchesFilters(row) {
                     const q = (searchInput.value || '').trim().toLowerCase();
                     const section = filterSection.value || '';
-                    const course = filterCourse.value || '';
 
                     if (q) {
                         const hay = (row.getAttribute('data-search') || '').toLowerCase();
                         if (hay.indexOf(q) === -1) return false;
                     }
                     if (section && (row.getAttribute('data-section') || '') !== section) return false;
-                    if (course && (row.getAttribute('data-course') || '') !== course) return false;
                     return true;
                 }
 
@@ -606,7 +584,7 @@
                     });
 
                     if (summaryEl) {
-                        const isFiltering = !!(searchInput.value || filterSection.value || filterCourse.value);
+                        const isFiltering = !!(searchInput.value || filterSection.value);
                         if (isFiltering) {
                             summaryEl.textContent = 'Showing ' + visibleCount + ' of ' + totalRows + ' completed student' + (totalRows === 1 ? '' : 's');
                         } else if (defaultSummary) {
@@ -617,7 +595,6 @@
 
                 searchInput.addEventListener('input', render);
                 filterSection.addEventListener('change', render);
-                filterCourse.addEventListener('change', render);
             }
 
             if (document.readyState === 'loading') {

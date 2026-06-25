@@ -9,6 +9,8 @@ class EnrollmentImportBatch extends Model
 {
     use HasFactory;
 
+    protected $table = 'student_import_batches';
+
     protected $fillable = [
         'instructor_user_id',
         'file_name',

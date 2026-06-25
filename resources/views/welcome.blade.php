@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="zoom:133%;overflow-x:auto">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,7 +19,7 @@
     .target{width:160px;height:160px;position:relative;cursor:none;filter:drop-shadow(0 12px 24px rgba(0,0,0,0.4));transform-origin:center center}
     .target-board{position:absolute;inset:0;border-radius:50%;background:#1a1a1a;border:3px solid #000;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.05), inset 0 -4px 20px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.4)}
     .target-board::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 40% 40%, rgba(255,255,255,0.04) 0%, transparent 50%);opacity:0.5}
-    .target-rings{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:100%;pointer-events:none}
+    .target-rings{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:100%}
     .target-ring{position:absolute;left:50%;top:50%;border-radius:50%;transform:translate(-50%,-50%)}
     .target-ring.delta{width:140px;height:140px;background:#000;border:2px solid #111}
     .target-ring.charlie{width:106px;height:106px;background:#000;border:2px solid #111}

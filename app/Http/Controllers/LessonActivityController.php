@@ -99,8 +99,6 @@ class LessonActivityController extends Controller
             'full_name' => $student->full_name ?? ($student->first_name . ' ' . $student->last_name),
             'first_name' => $student->first_name ?? null,
             'last_name' => $student->last_name ?? null,
-            'course' => $student->course ?? '—',
-            'year_level' => $student->year_level ?? '—',
             'section' => $student->section ?? '—',
             'current_page' => $currentPage,
             'last_active_at' => $now,

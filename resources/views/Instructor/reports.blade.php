@@ -85,8 +85,6 @@
                                 $student = $report['student'];
                                 $fullName = $student->full_name ?? trim((($student->first_name ?? '') . ' ' . ($student->middle_name ?? '') . ' ' . ($student->last_name ?? '')));
                                 $studentId = $student->student_id_number ?? $student->student_number ?? '';
-                                $course = $student->course ?? '—';
-                                $yearLevel = $student->year_level ?? '—';
                                 $section = $student->section ?? '—';
 
                                 $m1 = $report['module_1'];
@@ -102,7 +100,7 @@
                             <tr class="hover:bg-violet-50/50 transition-colors">
                                 <td class="px-5 sm:px-6 py-4">
                                     <div class="font-medium text-gray-900">{{ $fullName }}</div>
-                                    <div class="text-xs text-gray-500">{{ $studentId }} &middot; {{ $course }} / {{ $yearLevel }} / {{ $section }}</div>
+                                    <div class="text-xs text-gray-500">{{ $studentId }} &middot; Section {{ $section }}</div>
                                 </td>
                                 <td class="px-5 sm:px-6 py-4 text-center">
                                     @if ($m1)

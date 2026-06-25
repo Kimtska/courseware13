@@ -74,7 +74,7 @@
                             <th style="width:60px">#</th>
                             <th>Student</th>
                             <th>Student ID</th>
-                            <th>Course / Year / Section</th>
+                            <th>Section</th>
                             <th>Current Page</th>
                             <th>Last Active</th>
                             <th>Status</th>
@@ -94,7 +94,7 @@
                                     </div>
                                 </td>
                                 <td class="font-semibold text-gray-900">{{ $row['student_id'] }}</td>
-                                <td class="text-sm text-gray-700">{{ trim(($row['course'] ?? '—') . ' / ' . ($row['year_level'] ?? '—') . ' / ' . ($row['section'] ?? '—'), ' /') }}</td>
+                                <td class="text-sm text-gray-700">{{ $row['section'] ?? '—' }}</td>
                                 <td>
                                     <span class="la-badge la-badge-page"><i class="fas fa-file-lines"></i> Page {{ max(1, ((int) ($row['current_page'] ?? 0)) + 1) }}</span>
                                 </td>
@@ -167,7 +167,7 @@
                         '<td class="text-gray-400 font-semibold">' + (i + 1) + '</td>' +
                         '<td><div class="flex items-center gap-3"><div class="la-avatar">' + escapeHtml(init) + '</div><div><div class="la-row-name">' + escapeHtml(r.full_name || '—') + '</div><div class="la-row-meta">Viewing: Gun Parts Lesson</div></div></div></td>' +
                         '<td class="font-semibold text-gray-900">' + escapeHtml(r.student_id) + '</td>' +
-                        '<td class="text-sm text-gray-700">' + escapeHtml(((r.course || '—') + ' / ' + (r.year_level || '—') + ' / ' + (r.section || '—')).replace(/^[\s\/]+|[\s\/]+$/g, '')) + '</td>' +
+                        '<td class="text-sm text-gray-700">' + escapeHtml(r.section || '—') + '</td>' +
                         '<td><span class="la-badge la-badge-page"><i class="fas fa-file-lines"></i> Page ' + page + '</span></td>' +
                         '<td class="text-sm text-gray-700" data-last-active="' + r.last_active_at + '">' + last + '</td>' +
                         '<td><span class="la-badge la-badge-fresh"><span class="la-pulse"></span> Active</span></td>' +

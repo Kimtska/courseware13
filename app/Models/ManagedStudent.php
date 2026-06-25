@@ -14,11 +14,10 @@ class ManagedStudent extends Authenticatable
     protected $fillable = [
         'instructor_user_id',
         'student_id_number',
+        'email',
         'password',
         'status',
         'full_name',
-        'course',
-        'year_level',
         'section',
         'enrollment_status',
         'module_access_status',
@@ -74,6 +73,12 @@ class ManagedStudent extends Authenticatable
     public function trainingSessions()
     {
         return $this->hasMany(StudentTrainingSession::class, 'student_id');
+    }
+
+    public function latestTrainingSession()
+    {
+        return $this->hasOne(StudentTrainingSession::class, 'student_id')
+            ->latest('started_at');
     }
 
     public function activityLogs()

@@ -6,10 +6,8 @@ use App\Models\ManagedStudent;
 use App\Models\ModuleAccessControl;
 use App\Models\ModuleParticipationLog;
 use App\Models\StudentActivityLog;
-use App\Models\StudentAttendance;
 use App\Models\StudentProfile;
-use App\Models\StudentTrainingSession;
-use App\Models\TrainingSession;
+
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -54,7 +52,7 @@ class InstructorStudentProfileController extends Controller
             $module1Score = $scores->get('module-1');
             $module2Score = $scores->get('module-2');
             $module3Score = $scores->get('module-3');
-            $marksmanshipScore = $scores->get('module-4');
+            $marksmanshipScore = $scores->get('final');
 
             return [
                 'student' => $student,
@@ -126,8 +124,6 @@ class InstructorStudentProfileController extends Controller
                 'id' => $student->id,
                 'student_id_number' => $student->student_id_number,
                 'full_name' => $student->full_name,
-                'course' => $student->course,
-                'year_level' => $student->year_level,
                 'section' => $student->section,
                 'enrollment_status' => $student->enrollment_status,
             ]);
@@ -166,20 +162,22 @@ class InstructorStudentProfileController extends Controller
     {
         $moduleState = $this->moduleAccessState('module-1');
 
-        $lesson = \App\Models\Lesson::where('key', 'gun-parts')
-            ->with(['pages' => function ($query) {
-                $query->orderBy('page_index');
-            }])
+        $module = \App\Models\Module::where('module_key', 'module-1')
+            ->with(['lessons' => function ($q) {
+                $q->orderBy('sort_order');
+            }, 'lessons.pages'])
             ->first();
 
-        $lessonPages = $lesson?->pages ?? collect();
+        $lessonPages = $module?->lessons->flatMap(function ($l) {
+            return $l->pages;
+        }) ?? collect();
 
         return view('Instructor.courseware', [
             'moduleKey' => 'module-1',
-            'moduleTitle' => 'Courseware',
-            'moduleDescription' => 'Instruction of Guns and Gun Parts',
+            'moduleTitle' => $module?->title ?? 'Courseware',
+            'moduleDescription' => $module?->description ?? 'Instruction of Guns and Gun Parts',
             'moduleState' => $moduleState,
-            'lesson' => $lesson,
+            'module' => $module,
             'lessonPages' => $lessonPages,
         ]);
     }
@@ -204,6 +202,7 @@ class InstructorStudentProfileController extends Controller
         $time = (int) $request->query('time', 30);
         $mode = $request->query('mode', 'steady');
         $studentId = $request->query('student_id', '');
+        $maxShots = (int) $request->query('max_shots', 0);
 
         $weaponCycle = ['9mm', '.45'];
         $modeCycle = ['steady', 'sideways'];
@@ -245,6 +244,7 @@ class InstructorStudentProfileController extends Controller
             'time' => $time,
             'mode' => $mode,
             'studentId' => $studentId,
+            'maxShots' => $maxShots,
         ]);
     }
 
@@ -263,6 +263,14 @@ class InstructorStudentProfileController extends Controller
             'weapon' => ['nullable', 'string'],
             'time_limit' => ['nullable', 'integer'],
             'target_mode' => ['nullable', 'string'],
+            'alpha_count' => ['nullable', 'integer', 'min:0'],
+            'bravo_count' => ['nullable', 'integer', 'min:0'],
+            'charlie_count' => ['nullable', 'integer', 'min:0'],
+            'delta_count' => ['nullable', 'integer', 'min:0'],
+            'miss_count' => ['nullable', 'integer', 'min:0'],
+            'max_shots' => ['nullable', 'integer', 'min:0'],
+            'started_at' => ['nullable', 'string'],
+            'completed_at' => ['nullable', 'string'],
         ]);
 
         $profile = \App\Models\StudentProfile::where('student_number', $data['student_id'])->first();
@@ -271,28 +279,10 @@ class InstructorStudentProfileController extends Controller
             return response()->json(['message' => 'Student profile not found.'], 404);
         }
 
-        $session = \App\Models\TrainingSession::firstOrCreate(
-            [
-                'instructor_id' => $user->id,
-                'module_key' => 'module-4',
-                'status' => 'active',
-            ],
-            [
-                'title' => 'Firing Range Session',
-                'started_at' => now(),
-                'metadata' => [
-                    'weapon' => $data['weapon'] ?? null,
-                    'time_limit' => $data['time_limit'] ?? null,
-                    'target_mode' => $data['target_mode'] ?? null,
-                ],
-            ]
-        );
-
         $score = \App\Models\StudentScore::create([
-            'training_session_id' => $session->id,
             'student_profile_id' => $profile->id,
             'recorded_by_user_id' => $user->id,
-            'module_key' => 'module-4',
+            'module_key' => 'final',
             'score' => $data['score'],
             'max_score' => $data['max_score'],
             'recorded_at' => now(),
@@ -304,7 +294,36 @@ class InstructorStudentProfileController extends Controller
                 'weapon' => $data['weapon'] ?? null,
                 'time_limit' => $data['time_limit'] ?? null,
                 'target_mode' => $data['target_mode'] ?? null,
+                'alpha_count' => $data['alpha_count'] ?? null,
+                'bravo_count' => $data['bravo_count'] ?? null,
+                'charlie_count' => $data['charlie_count'] ?? null,
+                'delta_count' => $data['delta_count'] ?? null,
+                'miss_count' => $data['miss_count'] ?? null,
+                'max_shots' => $data['max_shots'] ?? null,
             ],
+        ]);
+
+        \App\Models\MarksmanshipScore::create([
+            'score_id' => $score->id,
+            'student_profile_id' => $profile->id,
+            'student_id' => \App\Models\ManagedStudent::where('student_id_number', $data['student_id'])->value('id'),
+            'instructor_id' => $user->id,
+            'weapon' => $data['weapon'] ?? null,
+            'time_limit' => $data['time_limit'] ?? null,
+            'target_mode' => $data['target_mode'] ?? null,
+            'total_shots' => $data['total_shots'] ?? 0,
+            'max_shots' => $data['max_shots'] ?? 0,
+            'bullseye_count' => $data['bullseyes'] ?? 0,
+            'alpha_count' => $data['alpha_count'] ?? 0,
+            'bravo_count' => $data['bravo_count'] ?? 0,
+            'charlie_count' => $data['charlie_count'] ?? 0,
+            'delta_count' => $data['delta_count'] ?? 0,
+            'miss_count' => $data['miss_count'] ?? 0,
+            'total_score' => $data['score'],
+            'max_score' => $data['max_score'],
+            'accuracy' => $data['accuracy'] ?? null,
+            'started_at' => $data['started_at'] ?? null,
+            'completed_at' => $data['completed_at'] ?? null,
         ]);
 
         return response()->json([
@@ -357,7 +376,7 @@ class InstructorStudentProfileController extends Controller
         $this->currentUser();
 
         $headers = [
-            'student_id_number', 'first_name', 'middle_name', 'last_name', 'full_name', 'course', 'year_level', 'section', 'gender', 'metadata'
+            'student_id_number', 'first_name', 'middle_name', 'last_name', 'full_name', 'section', 'gender', 'metadata'
         ];
 
         $filename = 'student_import_template.csv';
@@ -365,7 +384,7 @@ class InstructorStudentProfileController extends Controller
         $callback = function () use ($headers) {
             $out = fopen('php://output', 'w');
             fputcsv($out, $headers);
-            fputcsv($out, ['20260001', 'Juan', 'Dela', 'Cruz', 'Juan Dela Cruz', 'BSCS', '1', 'A', 'M', '']);
+            fputcsv($out, ['20260001', 'Juan', 'Dela', 'Cruz', 'Juan Dela Cruz', 'A', 'M', '']);
             fclose($out);
         };
 
@@ -383,8 +402,6 @@ class InstructorStudentProfileController extends Controller
 
         $data = $request->validate([
             'full_name' => ['required', 'string', 'max:255'],
-            'course' => ['nullable', 'string', 'max:120'],
-            'year_level' => ['nullable', 'string', 'max:20'],
             'section' => ['nullable', 'string', 'max:50'],
             'enrollment_status' => ['required', 'in:verified_enrolled,pending,rejected,archived'],
             'module_access_status' => ['required', 'in:ready_for_training,locked,active_in_firing_range,completed_session,archived'],
@@ -417,8 +434,6 @@ class InstructorStudentProfileController extends Controller
     private function queryStudents($user, Request $request)
     {
         $search = trim($request->string('q')->toString());
-        $course = trim($request->string('course')->toString());
-        $yearLevel = trim($request->string('year_level')->toString());
         $enrollmentStatus = trim($request->string('enrollment_status')->toString());
         $activityStatus = trim($request->string('activity_status')->toString());
 
@@ -429,8 +444,6 @@ class InstructorStudentProfileController extends Controller
                     $nested->where('student_id_number', 'like', '%' . $search . '%')
                         ->orWhere('full_name', 'like', '%' . $search . '%');
                 }))
-                ->when($course, fn ($query) => $query->where('course', $course))
-                ->when($yearLevel, fn ($query) => $query->where('year_level', $yearLevel))
                 ->when($enrollmentStatus, fn ($query) => $query->where('enrollment_status', $enrollmentStatus))
                 ->when($activityStatus, fn ($query) => $query->where('current_activity_status', $activityStatus))
                 ->latest();
@@ -485,8 +498,6 @@ class InstructorStudentProfileController extends Controller
         return [
             'student_id_number' => $studentId,
             'full_name' => $fullName,
-            'course' => $normalized['course'] ?? $normalized['program'] ?? null,
-            'year_level' => $normalized['year_level'] ?? $normalized['year'] ?? null,
             'section' => $normalized['section'] ?? null,
             'metadata' => [
                 'source_row' => $normalized,
@@ -647,34 +658,6 @@ class InstructorStudentProfileController extends Controller
         ]);
     }
 
-    public function startSession(Request $request, string $module): JsonResponse
-    {
-        $user = $this->currentUser();
-
-        $data = $request->validate([
-            'title' => ['nullable', 'string', 'max:255'],
-            'metadata' => ['nullable', 'array'],
-        ]);
-
-        $allowedModules = ['firing_range', 'assembly_disassembly', 'practical_examination'];
-
-        abort_unless(in_array($module, $allowedModules, true), 422);
-
-        $session = TrainingSession::create([
-            'instructor_id' => $user->id,
-            'module_key' => $module,
-            'title' => $data['title'] ?? null,
-            'status' => 'active',
-            'started_at' => now(),
-            'metadata' => $data['metadata'] ?? null,
-        ]);
-
-        return response()->json([
-            'message' => 'Training session opened.',
-            'data' => $session,
-        ], 201);
-    }
-
     public function unlockModule(Request $request, string $module)
     {
         $this->currentUser();
@@ -740,55 +723,4 @@ class InstructorStudentProfileController extends Controller
             ]);
     }
 
-    public function attachStudent(Request $request, string $module, TrainingSession $trainingSession): JsonResponse
-    {
-        $user = $this->currentUser();
-
-        abort_unless($trainingSession->module_key === $module, 422);
-
-        if ($user->role === 'instructor' && $trainingSession->instructor_id !== $user->id) {
-            abort(403);
-        }
-
-        $data = $request->validate([
-            'student_profile_id' => ['required', 'exists:student_profiles,id'],
-            'metadata' => ['nullable', 'array'],
-        ]);
-
-        $studentProfile = StudentProfile::query()
-            ->when($user->role === 'instructor', function ($query) use ($user) {
-                $query->where('instructor_id', $user->id);
-            })
-            ->findOrFail($data['student_profile_id']);
-
-        $attendance = StudentAttendance::updateOrCreate(
-            [
-                'training_session_id' => $trainingSession->id,
-                'student_profile_id' => $studentProfile->id,
-            ],
-            [
-                'marked_by_user_id' => $user->id,
-                'checked_in_at' => now(),
-                'status' => 'attached',
-                'metadata' => $data['metadata'] ?? null,
-            ]
-        );
-
-        ModuleParticipationLog::create([
-            'training_session_id' => $trainingSession->id,
-            'student_profile_id' => $studentProfile->id,
-            'recorded_by_user_id' => $user->id,
-            'module_key' => $module,
-            'event_type' => 'selected',
-            'payload' => $data['metadata'] ?? ['source' => 'instructor_portal'],
-        ]);
-
-        return response()->json([
-            'message' => 'Student attached to the active training session.',
-            'data' => [
-                'student_profile' => $studentProfile,
-                'attendance' => $attendance,
-            ],
-        ]);
-    }
 }

@@ -10,7 +10,6 @@ class ModuleParticipationLog extends Model
     use HasFactory;
 
     protected $fillable = [
-        'training_session_id',
         'student_profile_id',
         'recorded_by_user_id',
         'module_key',
@@ -21,11 +20,6 @@ class ModuleParticipationLog extends Model
     protected $casts = [
         'payload' => 'array',
     ];
-
-    public function trainingSession()
-    {
-        return $this->belongsTo(TrainingSession::class);
-    }
 
     public function studentProfile()
     {

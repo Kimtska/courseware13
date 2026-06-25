@@ -9,9 +9,11 @@ class StudentScore extends Model
 {
     use HasFactory;
 
+    protected $table = 'scores';
+
     protected $fillable = [
-        'training_session_id',
         'student_profile_id',
+        'student_id',
         'recorded_by_user_id',
         'module_key',
         'score',
@@ -25,14 +27,14 @@ class StudentScore extends Model
         'metadata' => 'array',
     ];
 
-    public function trainingSession()
-    {
-        return $this->belongsTo(TrainingSession::class);
-    }
-
     public function studentProfile()
     {
         return $this->belongsTo(StudentProfile::class);
+    }
+
+    public function student()
+    {
+        return $this->belongsTo(ManagedStudent::class, 'student_id');
     }
 
     public function recorder()
