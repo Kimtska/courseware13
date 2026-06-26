@@ -3,7 +3,7 @@
     $currentModule = \App\Models\Module::where('module_key', $moduleKey)
         ->with(['lessons' => function ($q) {
             $q->orderBy('sort_order');
-        }, 'lessons.pages'])
+        }, 'lessons.pages', 'firearms'])
         ->first();
 
     $allLessonPages = $currentModule?->lessons->flatMap(function ($lesson) {
@@ -56,7 +56,7 @@
 
         {{-- Assessment pages --}}
         @php
-            $questions = \App\Models\Activity::where('module', $moduleNum)->orderBy('question_number')->get();
+            $questions = \App\Models\Activity::where('module_id', $moduleNum)->orderBy('question_number')->get();
         @endphp
         @if ($questions->isNotEmpty())
         @foreach ($questions as $i => $question)
@@ -156,6 +156,78 @@
                 </div>
             </div>
         </section>
+        @endif
+
+        {{-- Firearm profile pages (for modules with firearms in pivot) --}}
+        @if ($currentModule && $currentModule->firearms->isNotEmpty())
+        @foreach ($currentModule->firearms as $fi => $firearm)
+        @php $pageCounter++; @endphp
+        <section class="presentation-page" data-page="{{ $pageCounter }}" data-lesson="firearm-profile-{{ $fi }}" data-firearm-slug="{{ $firearm->slug }}">
+            <div class="presentation-content">
+                <div class="flex flex-col items-center justify-center min-h-full px-6 sm:px-8 py-10 overflow-y-auto">
+                    <div class="max-w-3xl w-full">
+                        <p class="text-violet-600 text-sm font-semibold uppercase tracking-wide mb-1">Module {{ $moduleNum }} — Firearm Profile</p>
+                        <div class="bg-white border border-violet-100 rounded-2xl overflow-hidden shadow-sm">
+                            <div class="bg-gradient-to-r from-violet-950 to-violet-800 px-6 py-5">
+                                <h2 class="text-2xl font-bold text-white">{{ $firearm->name }}</h2>
+                                <p class="text-violet-200 text-sm mt-1">{{ ucfirst($firearm->type ?? 'Firearm') }} · {{ $firearm->caliber ?? 'N/A' }}</p>
+                            </div>
+                            <div class="p-6 flex flex-col sm:flex-row gap-6">
+                                <div class="sm:w-1/3 flex-shrink-0">
+                                    @if ($firearm->image_url)
+                                    <img src="{{ asset($firearm->image_url) }}" alt="{{ $firearm->name }}" class="w-full rounded-xl border border-gray-100">
+                                    @else
+                                    <div class="w-full aspect-square rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-300">
+                                        <i class="fas fa-gun text-6xl"></i>
+                                    </div>
+                                    @endif
+                                </div>
+                                <div class="sm:w-2/3 space-y-4">
+                                    <div>
+                                        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">Description</h3>
+                                        <p class="text-gray-600 text-sm leading-relaxed mt-1">{{ $firearm->description ?? 'No description available.' }}</p>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div class="bg-violet-50 rounded-xl p-3">
+                                            <p class="text-[10px] uppercase tracking-wider text-violet-600 font-bold">Caliber</p>
+                                            <p class="text-sm font-semibold text-gray-900 mt-0.5">{{ $firearm->caliber ?? 'N/A' }}</p>
+                                        </div>
+                                        <div class="bg-violet-50 rounded-xl p-3">
+                                            <p class="text-[10px] uppercase tracking-wider text-violet-600 font-bold">Type</p>
+                                            <p class="text-sm font-semibold text-gray-900 mt-0.5">{{ ucfirst($firearm->type ?? 'N/A') }}</p>
+                                        </div>
+                                        @if ($firearm->mag_size)
+                                        <div class="bg-violet-50 rounded-xl p-3">
+                                            <p class="text-[10px] uppercase tracking-wider text-violet-600 font-bold">Mag Capacity</p>
+                                            <p class="text-sm font-semibold text-gray-900 mt-0.5">{{ $firearm->mag_size }} rounds</p>
+                                        </div>
+                                        @endif
+                                        <div class="bg-violet-50 rounded-xl p-3">
+                                            <p class="text-[10px] uppercase tracking-wider text-violet-600 font-bold">Part Count</p>
+                                            <p class="text-sm font-semibold text-gray-900 mt-0.5">{{ $firearm->parts->count() }} parts</p>
+                                        </div>
+                                    </div>
+                                    @if ($firearm->parts->isNotEmpty())
+                                    <div>
+                                        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">Assembly Parts</h3>
+                                        <ul class="mt-2 space-y-1">
+                                            @foreach ($firearm->parts as $part)
+                                            <li class="flex items-center gap-2 text-sm text-gray-600">
+                                                <span class="w-5 h-5 rounded-full bg-violet-100 flex items-center justify-center text-[10px] font-bold text-violet-700">{{ $part->sort_order }}</span>
+                                                {{ $part->name }} — <span class="text-gray-400 text-xs">{{ ucfirst($part->slug) }}</span>
+                                            </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        @endforeach
         @endif
 
         {{-- Assembly trainer for module 2 --}}

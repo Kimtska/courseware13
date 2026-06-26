@@ -164,10 +164,8 @@
                     $modNum = $mIdx + 1;
                     $lessonCount = $mod->lessons->count();
                     $isActive = $modKey === $moduleKey;
-                    // Check module access control
-                    $access = \App\Models\ModuleAccessControl::where('module_key', $modKey)->first();
-                    $isUnlocked = $access && $access->is_unlocked;
-                    $canAccess = $isUnlocked || $mIdx === 0; // module-1 is always accessible
+                    // Check module access via student progress
+                    $canAccess = $student && $student->isModuleUnlocked($modKey);
                     $stateClass = $isActive ? 'active' : ($canAccess && !$isActive ? 'completed' : 'locked');
                     $icon = $moduleIcons[$modKey] ?? 'fa-book';
                     $nodeState = $isActive ? 'in-progress' : ($canAccess ? 'completed' : 'locked');
@@ -224,7 +222,6 @@
     </main>
 
     @unless($embedded)
-    @include('Students.partials.module-access-watch', ['currentModuleKey' => $moduleKey, 'currentModuleLabel' => $activeModule?->title ?? ''])
     @include('shared.sweet-alerts.logout', ['logoutLabel' => 'Student — ' . ($name ?? 'Student'), 'logoutSubtext' => $activeModule?->title ?? '', 'logoutDescription' => 'You are about to end your session.', 'redirectUrl' => url('/login')])
     @endunless
 

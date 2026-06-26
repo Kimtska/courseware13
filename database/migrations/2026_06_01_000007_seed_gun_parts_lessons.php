@@ -290,7 +290,7 @@ HTML,
         $now = now();
 
         foreach ($pages as $page) {
-            DB::table('lesson_pages')->insert([
+            DB::table('lesson_details')->insert([
                 'lesson_id' => $lessonId,
                 'lesson_index' => $page['lesson_index'],
                 'page_index' => $page['page_index'],
@@ -307,7 +307,7 @@ HTML,
         $lesson = DB::table('lessons')->where('key', 'gun-parts')->first();
 
         if ($lesson) {
-            DB::table('lesson_pages')->where('lesson_id', $lesson->id)->delete();
+            DB::table('lesson_details')->where('lesson_id', $lesson->id)->delete();
             DB::table('lessons')->where('id', $lesson->id)->delete();
         }
     }

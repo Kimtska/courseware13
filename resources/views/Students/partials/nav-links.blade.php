@@ -1,8 +1,11 @@
 @php
-    $moduleStates = \App\Models\ModuleAccessControl::whereIn('module_key', ['module-1','module-2','module-3','module-4'])->get()->keyBy('module_key');
-    $m1Unlocked = ($moduleStates->get('module-1') && $moduleStates->get('module-1')->is_unlocked);
-    $m2Unlocked = ($moduleStates->get('module-2') && $moduleStates->get('module-2')->is_unlocked);
-    $m4Unlocked = ($moduleStates->get('module-4') && $moduleStates->get('module-4')->is_unlocked);
+    $__navStudent = Auth::guard('student')->user();
+    if (!$__navStudent && Auth::guard('web')->check() && Auth::guard('web')->user()->role === 'student') {
+        $__navStudent = \App\Models\ManagedStudent::withArchived()->where('student_id_number', Auth::guard('web')->user()->email)->first();
+    }
+    $m1Unlocked = $__navStudent ? $__navStudent->isModuleUnlocked('module-1') : true;
+    $m2Unlocked = $__navStudent ? $__navStudent->isModuleUnlocked('module-2') : false;
+    $m4Unlocked = $__navStudent ? $__navStudent->isModuleUnlocked('module-4') : false;
 @endphp
 
 @if ($type === 'desktop')
@@ -146,77 +149,26 @@
 <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@7.3.0/dist/turbo.min.js" data-turbo-eval="false"></script>
 <script>
     (function () {
-        // Initialize module polling and locked-module handlers on initial load and after Turbo navigations
+        // Initialize locked-module handler on initial load and after Turbo navigations
         function initModuleNav() {
             const overlay = document.getElementById('locked-module-overlay');
             const closeBtn = document.getElementById('locked-module-close');
-            const statesUrl = "{{ route('student.module-states') }}";
 
-            // Avoid duplicate intervals/handlers across navigations
             if (window.__moduleNav && window.__moduleNav.initialized) return;
             window.__moduleNav = { initialized: true };
-
-            let lastBlockedModuleKey = null;
 
             function showLockedModal(moduleKey) {
                 const title = document.getElementById('locked-module-title');
                 const desc = document.getElementById('locked-module-desc');
                 title.textContent = 'Module Locked';
-                desc.textContent = 'This module is currently locked. Please contact your instructor to request access.';
-                lastBlockedModuleKey = moduleKey;
+                desc.textContent = 'This module is currently locked. Please complete the previous module first.';
                 overlay.classList.remove('hidden');
                 overlay.classList.add('flex');
             }
 
             function hideLockedModal() {
-                lastBlockedModuleKey = null;
                 overlay.classList.remove('flex');
                 overlay.classList.add('hidden');
-            }
-
-            function updateModuleElements(moduleKey, unlocked) {
-                const anchors = document.querySelectorAll('[data-module-key="' + moduleKey + '"]');
-                anchors.forEach(anchor => {
-                    anchor.setAttribute('data-unlocked', unlocked ? '1' : '0');
-                    const badge = anchor.querySelector('span.inline-flex');
-                    if (badge) {
-                        if (unlocked) {
-                            badge.textContent = 'Unlocked';
-                            badge.classList.remove('bg-rose-100', 'text-rose-800', 'border-rose-200');
-                            badge.classList.add('bg-emerald-100', 'text-emerald-800', 'border-emerald-200');
-                        } else {
-                            badge.textContent = 'Locked';
-                            badge.classList.remove('bg-emerald-100', 'text-emerald-800', 'border-emerald-200');
-                            badge.classList.add('bg-rose-100', 'text-rose-800', 'border-rose-200');
-                        }
-                    }
-                });
-            }
-
-            const AUTO_REDIRECT_ON_UNLOCK = overlay?.dataset?.autoRedirect === '1' || overlay?.dataset?.autoRedirect === 'true' || false;
-
-            async function pollStates() {
-                try {
-                    const res = await fetch(statesUrl, { credentials: 'same-origin' });
-                    if (!res.ok) return;
-                    const data = await res.json();
-                    const modules = data.modules || {};
-                    Object.keys(modules).forEach(k => {
-                        const unlocked = !!modules[k].is_unlocked;
-                        updateModuleElements(k, unlocked);
-                        if (lastBlockedModuleKey === k && unlocked) {
-                            hideLockedModal();
-                            if (AUTO_REDIRECT_ON_UNLOCK) {
-                                const anchor = document.querySelector('[data-module-key="' + k + '"]');
-                                if (anchor && anchor.href) window.location.href = anchor.href;
-                            }
-                        }
-                    });
-                    try { window.__moduleStates = modules; } catch (e) { /* ignore */ }
-                    window.dispatchEvent(new CustomEvent('moduleStatesUpdated', { detail: modules }));
-                } catch (err) {
-                    console.error('Module states poll error', err);
-                }
             }
 
             document.addEventListener('click', function (e) {
@@ -232,9 +184,6 @@
 
             closeBtn?.addEventListener('click', hideLockedModal);
             overlay?.addEventListener('click', function (e) { if (e.target === overlay) hideLockedModal(); });
-
-            pollStates();
-            setInterval(() => { if (!document.hidden) pollStates(); }, 15000);
         }
 
         // --- Student Settings Modal ---

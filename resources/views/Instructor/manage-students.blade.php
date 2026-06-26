@@ -69,25 +69,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div>
-                    <label class="block text-[10px] font-bold uppercase tracking-[0.28em] text-gray-500 mb-2">Enrollment Status</label>
-                    <select name="enrollment_status" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
-                        <option value="">All Statuses</option>
-                        <option value="verified_enrolled" @selected(($filters['enrollment_status'] ?? '') === 'verified_enrolled')>Verified Enrolled</option>
-                        <option value="ready_for_training" @selected(($filters['enrollment_status'] ?? '') === 'ready_for_training')>Ready for Training</option>
-                        <option value="pending" @selected(($filters['enrollment_status'] ?? '') === 'pending')>Pending</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold uppercase tracking-[0.28em] text-gray-500 mb-2">Session Activity</label>
-                    <select name="activity_status" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
-                        <option value="">All Activity</option>
-                        <option value="inactive" @selected(($filters['activity_status'] ?? '') === 'inactive')>Inactive</option>
-                        <option value="active_in_firing_range" @selected(($filters['activity_status'] ?? '') === 'active_in_firing_range')>Active in Firing Range</option>
-                        <option value="active_in_assembly" @selected(($filters['activity_status'] ?? '') === 'active_in_assembly')>Active in Assembly</option>
-                        <option value="completed_session" @selected(($filters['activity_status'] ?? '') === 'completed_session')>Completed Session</option>
-                    </select>
-                </div>
+                <div class="md:col-span-2"></div>
             </form>
         </section>
 
@@ -118,8 +100,7 @@
                                 <th class="px-5 sm:px-6 py-4 font-semibold">Student ID</th>
                                 <th class="px-5 sm:px-6 py-4 font-semibold">Full Name</th>
                                 <th class="px-5 sm:px-6 py-4 font-semibold">Section</th>
-                                <th class="px-5 sm:px-6 py-4 font-semibold">Progress Track</th>
-                                <th class="px-5 sm:px-6 py-4 font-semibold">Current Activity Status</th>
+                                <th class="px-5 sm:px-6 py-4 font-semibold">Current Progress</th>
                                 <th class="px-5 sm:px-6 py-4 font-semibold">Date Added</th>
                                 <th class="px-5 sm:px-6 py-4 text-right font-semibold">Action Buttons</th>
                             </tr>
@@ -127,53 +108,43 @@
                         <tbody class="divide-y divide-gray-100 bg-white">
                             @forelse ($students as $student)
                                 @php
-                                    $studentId = $student->student_id_number ?? $student->student_number ?? '';
-                                    $fullName = $student->full_name ?? trim(($student->first_name ?? '') . ' ' . ($student->middle_name ?? '') . ' ' . ($student->last_name ?? ''));
+                                    $studentId = $student->student_id_number ?? '';
+                                    $fullName = $student->full_name;
                                     $section = $student->section ?? '—';
-                                    $enrollmentStatus = $student->enrollment_status ?? ($student->verification_status ?? 'pending');
-                                    $moduleAccessStatus = $student->module_access_status ?? (($enrollmentStatus === 'verified_enrolled' || $enrollmentStatus === 'verified') ? 'ready_for_training' : 'locked');
-                                    $activityStatus = $student->current_activity_status ?? 'inactive';
                                     $dateAdded = $student->created_at ?? null;
                                     $isStudentActive = ($student->status ?? 'active') === 'active';
-                                    $currentModule = $student->latestTrainingSession?->module_key;
-                                    $progressTrack = $currentModule ? ucwords(str_replace(['module-', '_'], ['Module ', ' '], $currentModule)) : str_replace('_', ' ', $moduleAccessStatus);
-
-                                    $enrollmentClass = match ($enrollmentStatus) {
-                                        'verified_enrolled', 'verified' => 'bg-emerald-100 text-emerald-700',
-                                        'pending' => 'bg-amber-100 text-amber-700',
-                                        'rejected' => 'bg-red-100 text-red-700',
-                                        'archived' => 'bg-gray-200 text-gray-700',
-                                        default => 'bg-slate-100 text-slate-700',
-                                    };
-                                    $moduleClass = match ($moduleAccessStatus) {
-                                        'ready_for_training' => 'bg-violet-100 text-violet-700',
-                                        'locked' => 'bg-slate-100 text-slate-700',
-                                        'active_in_firing_range' => 'bg-cyan-100 text-cyan-700',
-                                        'completed_session' => 'bg-emerald-100 text-emerald-700',
-                                        'archived' => 'bg-gray-200 text-gray-700',
-                                        default => 'bg-slate-100 text-slate-700',
-                                    };
-                                    $progressClass = $currentModule ? 'bg-violet-100 text-violet-700' : $moduleClass;
+                                    $progress = $student->current_progress;
+                                    $currentModule = $progress['module_key'] ?? $student->latestTrainingSession?->module_key;
+                                    $currentLesson = $progress['lesson_key'] ?? null;
+                                    $currentPage = $progress['page_index'] ?? null;
+                                    $totalPages = $progress['total_pages'] ?? null;
+                                    if ($currentModule) {
+                                        $progressLabel = ucwords(str_replace(['module-', '_'], ['Module ', ' '], $currentModule));
+                                        if ($currentLesson) {
+                                            $progressLabel .= ' - ' . str_replace('_', ' ', $currentLesson);
+                                            if ($currentPage) {
+                                                $progressLabel .= ' (Page ' . $currentPage . ($totalPages ? ' of ' . $totalPages : '') . ')';
+                                            }
+                                        }
+                                    } elseif ($student->trainingSessions()->where('status', 'completed')->exists()) {
+                                        $progressLabel = 'All modules completed';
+                                    } else {
+                                        $progressLabel = 'No progress yet';
+                                    }
+                                    $progressClass = $currentModule ? 'bg-violet-100 text-violet-700' : 'bg-slate-100 text-slate-700';
                                     $studentPayload = [
                                         'id' => $student->id,
                                         'student_id_number' => $studentId,
                                         'full_name' => $fullName,
                                         'section' => $section,
                                         'status' => $isStudentActive ? 'Active' : 'Inactive',
-                                        'enrollment_status' => $enrollmentStatus,
-                                        'module_access_status' => $progressTrack,
-                                        'current_activity_status' => $activityStatus,
-                                        'date_added' => $dateAdded ? $dateAdded->format('Y-m-d H:i') : null,
+                                        'progress' => $progressLabel,
                                         'current_module' => $currentModule,
+                                        'current_lesson' => $currentLesson,
+                                        'current_page' => $currentPage,
+                                        'total_pages' => $totalPages,
+                                        'date_added' => $dateAdded ? $dateAdded->format('Y-m-d H:i') : null,
                                     ];
-                                    $activityClass = match ($activityStatus) {
-                                        'inactive' => 'bg-slate-100 text-slate-700',
-                                        'active_in_firing_range' => 'bg-cyan-100 text-cyan-700',
-                                        'active_in_assembly' => 'bg-violet-100 text-violet-700',
-                                        'completed_session' => 'bg-emerald-100 text-emerald-700',
-                                        'archived' => 'bg-gray-200 text-gray-700',
-                                        default => 'bg-slate-100 text-slate-700',
-                                    };
                                 @endphp
                                 <tr class="even:bg-gray-50/60 hover:bg-violet-50/50 transition-colors">
                                     <td class="px-5 sm:px-6 py-4 font-semibold text-gray-900">{{ $studentId }}</td>
@@ -181,8 +152,7 @@
                                         <div class="font-medium text-gray-900">{{ $fullName }}</div>
                                     </td>
                                     <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $section }}</td>
-                                    <td class="px-5 sm:px-6 py-4"><span class="status-pill {{ $progressClass }}">{{ $progressTrack }}</span></td>
-                                    <td class="px-5 sm:px-6 py-4"><span class="status-pill {{ $activityClass }}">{{ str_replace('_', ' ', $activityStatus) }}</span></td>
+                                    <td class="px-5 sm:px-6 py-4"><span class="status-pill {{ $progressClass }}">{{ $progressLabel }}</span></td>
                                     <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $dateAdded ? $dateAdded->format('M d, Y') : '—' }}</td>
                                     <td class="px-5 sm:px-6 py-4">
                                         <div class="flex items-center justify-end gap-2">
@@ -197,7 +167,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="px-6 py-16 text-center text-gray-500">
+                                    <td colspan="6" class="px-6 py-16 text-center text-gray-500">
                                         <div class="max-w-md mx-auto">
                                             <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-violet-100 text-violet-700 flex items-center justify-center text-2xl">
                                                 <i class="fas fa-user-graduate"></i>
@@ -226,8 +196,7 @@
                                 <th class="px-5 sm:px-6 py-4 font-semibold">Student ID</th>
                                 <th class="px-5 sm:px-6 py-4 font-semibold">Full Name</th>
                                 <th class="px-5 sm:px-6 py-4 font-semibold">Section</th>
-                                <th class="px-5 sm:px-6 py-4 font-semibold">Progress Track</th>
-                                <th class="px-5 sm:px-6 py-4 font-semibold">Current Activity Status</th>
+                                <th class="px-5 sm:px-6 py-4 font-semibold">Current Progress</th>
                                 <th class="px-5 sm:px-6 py-4 font-semibold">Date Added</th>
                                 <th class="px-5 sm:px-6 py-4 text-right font-semibold">Action Buttons</th>
                             </tr>
@@ -239,27 +208,23 @@
                                     $name = $student->full_name ?? '';
                                     $sec = $student->section ?? '—';
                                     $moved = $student->archived_at;
-                                    $moduleAccessStatus = $student->module_access_status ?? 'locked';
-                                    $activityStatus = $student->current_activity_status ?? 'inactive';
-                                    $enrollmentStatus = $student->enrollment_status ?? 'archived';
-                                    $currentModule = $student->latestTrainingSession?->module_key;
-                                    $progressTrack = $currentModule ? ucwords(str_replace(['module-', '_'], ['Module ', ' '], $currentModule)) : str_replace('_', ' ', $moduleAccessStatus);
-                                    $progressClass = $currentModule ? 'bg-violet-100 text-violet-700' : (match ($moduleAccessStatus) {
-                                        'ready_for_training' => 'bg-violet-100 text-violet-700',
-                                        'locked' => 'bg-slate-100 text-slate-700',
-                                        'active_in_firing_range' => 'bg-cyan-100 text-cyan-700',
-                                        'completed_session' => 'bg-emerald-100 text-emerald-700',
-                                        'archived' => 'bg-gray-200 text-gray-700',
-                                        default => 'bg-slate-100 text-slate-700',
-                                    });
-                                    $activityClass = match ($activityStatus) {
-                                        'inactive' => 'bg-slate-100 text-slate-700',
-                                        'active_in_firing_range' => 'bg-cyan-100 text-cyan-700',
-                                        'active_in_assembly' => 'bg-violet-100 text-violet-700',
-                                        'completed_session' => 'bg-emerald-100 text-emerald-700',
-                                        'archived' => 'bg-gray-200 text-gray-700',
-                                        default => 'bg-slate-100 text-slate-700',
-                                    };
+                                    $progress = $student->current_progress;
+                                    $currentModule = $progress['module_key'] ?? $student->latestTrainingSession?->module_key;
+                                    $currentLesson = $progress['lesson_key'] ?? null;
+                                    $currentPage = $progress['page_index'] ?? null;
+                                    $totalPages = $progress['total_pages'] ?? null;
+                                    if ($currentModule) {
+                                        $progressTrack = ucwords(str_replace(['module-', '_'], ['Module ', ' '], $currentModule));
+                                        if ($currentLesson) {
+                                            $progressTrack .= ' - ' . str_replace('_', ' ', $currentLesson);
+                                            if ($currentPage) {
+                                                $progressTrack .= ' (Page ' . $currentPage . ($totalPages ? ' of ' . $totalPages : '') . ')';
+                                            }
+                                        }
+                                    } else {
+                                        $progressTrack = 'Archived';
+                                    }
+                                    $progressClass = $currentModule ? 'bg-violet-100 text-violet-700' : 'bg-gray-200 text-gray-700';
 
                                     $studentPayload = [
                                         'id' => $student->id,
@@ -267,11 +232,8 @@
                                         'full_name' => $name,
                                         'section' => $sec,
                                         'status' => 'Archived',
-                                        'enrollment_status' => $enrollmentStatus,
-                                        'module_access_status' => $progressTrack,
-                                        'current_activity_status' => $activityStatus,
+                                        'progress' => $progressTrack,
                                         'date_added' => $moved ? $moved->format('Y-m-d H:i') : null,
-                                        'current_module' => $currentModule,
                                     ];
                                 @endphp
                                 <tr class="hover:bg-amber-50/50 transition-colors">
@@ -281,7 +243,6 @@
                                     </td>
                                     <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $sec }}</td>
                                     <td class="px-5 sm:px-6 py-4"><span class="status-pill {{ $progressClass }}">{{ $progressTrack }}</span></td>
-                                    <td class="px-5 sm:px-6 py-4"><span class="status-pill {{ $activityClass }}">{{ str_replace('_', ' ', $activityStatus) }}</span></td>
                                     <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $moved ? $moved->format('M d, Y') : '—' }}</td>
                                     <td class="px-5 sm:px-6 py-4">
                                         <div class="flex items-center justify-end gap-2">
@@ -296,7 +257,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="px-6 py-16 text-center text-gray-500">
+                                    <td colspan="6" class="px-6 py-16 text-center text-gray-500">
                                         <div class="max-w-md mx-auto">
                                             <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-2xl">
                                                 <i class="fas fa-clock"></i>
@@ -416,9 +377,7 @@
                     <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Student ID</p><p id="view-id" class="text-lg font-semibold text-gray-900"></p></div>
                     <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Full Name</p><p id="view-name" class="text-lg font-semibold text-gray-900"></p></div>
                     <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Section</p><p id="view-section" class="text-gray-700"></p></div>
-                    <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Enrollment Status</p><p id="view-enrollment" class="text-gray-700"></p></div>
-                    <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Progress Track</p><p id="view-access" class="text-gray-700"></p></div>
-                    <div class="sm:col-span-2"><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Current Activity</p><p id="view-activity" class="text-gray-700"></p></div>
+                    <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Current Progress</p><p id="view-progress" class="text-gray-700"></p></div>
                 </div>
             </div>
         </div>
@@ -438,11 +397,19 @@
                 @csrf
                 @method('PATCH')
                 <input type="hidden" name="student_id" id="edit-id">
-                <div class="grid sm:grid-cols-2 gap-4">
-                    <div class="sm:col-span-2">
-                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Full Name</label>
-                        <input type="text" name="full_name" id="edit-full-name" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" required>
-                    </div>
+                                <div class="grid sm:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">First Name</label>
+                                        <input type="text" name="first_name" id="edit-first-name" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Middle Name</label>
+                                        <input type="text" name="middle_name" id="edit-middle-name" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Last Name</label>
+                                        <input type="text" name="last_name" id="edit-last-name" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" required>
+                                    </div>
                     <div>
                         <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Section</label>
                         <input type="text" name="section" id="edit-section" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
@@ -452,34 +419,12 @@
                         <input type="email" name="email" id="edit-email" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm" placeholder="student@example.com">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Enrollment Status</label>
-                        <select name="enrollment_status" id="edit-enrollment-status" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
-                            <option value="verified_enrolled">Verified Enrolled</option>
-                            <option value="ready_for_training">Ready for Training</option>
-                            <option value="pending">Pending</option>
-                            <option value="rejected">Rejected</option>
-                            <option value="archived">Archived</option>
-                        </select>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Current Progress</label>
+                        <p id="edit-progress-display" class="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm text-gray-700">—</p>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Progress Track</label>
-                        <select name="module_access_status" id="edit-module-access-status" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
-                            <option value="ready_for_training">Ready for Training</option>
-                            <option value="locked">Locked</option>
-                            <option value="active_in_firing_range">Active in Firing Range</option>
-                            <option value="completed_session">Completed Session</option>
-                            <option value="archived">Archived</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Current Activity Status</label>
-                        <select name="current_activity_status" id="edit-activity-status" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
-                            <option value="inactive">Inactive</option>
-                            <option value="active_in_firing_range">Active in Firing Range</option>
-                            <option value="active_in_assembly">Active in Assembly</option>
-                            <option value="completed_session">Completed Session</option>
-                            <option value="archived">Archived</option>
-                        </select>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Module Access</label>
+                        <p id="edit-module-access-display" class="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm text-gray-700">—</p>
                     </div>
                     <div class="sm:col-span-2">
                         <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Change Password</label>
@@ -551,9 +496,7 @@
                 document.getElementById('view-id').textContent = student.student_id_number;
                 document.getElementById('view-name').textContent = student.full_name;
                 document.getElementById('view-section').textContent = student.section || '—';
-                document.getElementById('view-enrollment').textContent = student.enrollment_status;
-                document.getElementById('view-access').textContent = student.module_access_status;
-                document.getElementById('view-activity').textContent = student.current_activity_status;
+                document.getElementById('view-progress').textContent = student.progress || '—';
                 openModal(viewModal);
             });
         });
@@ -563,12 +506,13 @@
                 const student = JSON.parse(button.dataset.student);
                 editForm.action = `{{ url('/instructor/manage-students') }}/${student.id}`;
                 document.getElementById('edit-id').value = student.id;
-                document.getElementById('edit-full-name').value = student.full_name;
+                document.getElementById('edit-first-name').value = student.full_name?.split(' ').slice(0, -1).join(' ') || '';
+                document.getElementById('edit-middle-name').value = '';
+                document.getElementById('edit-last-name').value = student.full_name?.split(' ').pop() || '';
                 document.getElementById('edit-section').value = student.section || '';
                 document.getElementById('edit-email').value = student.email || '';
-                document.getElementById('edit-enrollment-status').value = student.enrollment_status;
-                document.getElementById('edit-module-access-status').value = student.module_access_status;
-                document.getElementById('edit-activity-status').value = student.current_activity_status;
+                document.getElementById('edit-progress-display').textContent = student.progress || '—';
+                document.getElementById('edit-module-access-display').textContent = student.current_module ? 'Module ' + student.current_module.replace('module-', '') : '—';
                 document.getElementById('edit-password').value = '';
                 openModal(editModal);
             });
@@ -580,7 +524,7 @@
             searchTimer = setTimeout(() => filterForm.submit(), 250);
         });
 
-        document.querySelectorAll('select[name="enrollment_status"], select[name="activity_status"], select[name="section"]').forEach(select => {
+        document.querySelectorAll('select[name="section"]').forEach(select => {
             select.addEventListener('change', () => filterForm.submit());
         });
 

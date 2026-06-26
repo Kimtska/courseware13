@@ -30,4 +30,14 @@ class StudentTrainingSession extends Model
     {
         return $this->belongsTo(ManagedStudent::class, 'student_id');
     }
+
+    public function instructor()
+    {
+        return $this->belongsTo(User::class, 'instructor_user_id');
+    }
+
+    public function activityLogs()
+    {
+        return $this->hasMany(StudentActivityLog::class, 'student_training_session_id');
+    }
 }

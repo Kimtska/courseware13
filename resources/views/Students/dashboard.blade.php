@@ -76,19 +76,12 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        @php
-            $moduleStates = \App\Models\ModuleAccessControl::whereIn('module_key', ['module-1','module-3','module-4'])->get()->keyBy('module_key');
-        @endphp
         <div class="card p-6 sm:p-8 mb-6">
             <div class="flex flex-wrap items-start justify-between gap-5">
                 <div>
                     <p class="text-[10px] uppercase tracking-[0.28em] text-violet-500 font-bold">Student dashboard</p>
                     <h1 class="font-display font-bold text-3xl text-gray-900 mt-2">Welcome, {{ $name }}</h1>
                     <p class="text-sm text-gray-500 mt-1">Student ID: {{ $selectedStudent['student_id_number'] ?? '' }} • {{ $selectedStudent['year_level'] ?? 'N/A' }} • {{ $selectedStudent['section'] ?? 'Student Portal' }}</p>
-                </div>
-                <div class="flex gap-2 flex-wrap">
-                    <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-wider"><i class="fas fa-circle-check"></i> Verified Enrolled</span>
-                    <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-100 text-violet-700 text-xs font-bold uppercase tracking-wider"><i class="fas fa-bolt"></i> Ready For Training</span>
                 </div>
             </div>
         </div>

@@ -3,42 +3,26 @@
 namespace App\Http\Controllers;
 
 use App\Models\ManagedStudent;
-use App\Models\StudentProfile;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 
 class DepartmentHeadController extends Controller
 {
-    /**
-     * Show the department head dashboard.
-     */
     public function dashboard()
     {
         $user = Auth::user();
-        
-        // Verify user is a department head
+
         if ($user->role !== 'department_head') {
             return redirect('/')->with('error', 'Unauthorized access');
         }
 
-        // Get all managed students and instructor accounts when the workflow tables exist.
-        $students = Schema::hasTable('students')
-            ? ManagedStudent::latest()->get()
-            : (Schema::hasTable('student_profiles')
-                ? StudentProfile::with(['instructor', 'verifier'])->latest()->get()
-                : collect());
+        $students = ManagedStudent::latest()->get();
         $instructors = User::where('role', 'instructor')->get();
-        $recentRegistrations = Schema::hasTable('students')
-            ? ManagedStudent::latest()->take(10)->get()
-            : (Schema::hasTable('student_profiles')
-                ? StudentProfile::latest()->take(10)->get()
-                : collect());
+        $recentRegistrations = ManagedStudent::latest()->take(10)->get();
 
-        // Department head data
         $deptData = [
             'name' => $user->name,
             'email' => $user->email,
@@ -62,9 +46,6 @@ class DepartmentHeadController extends Controller
         return view('department-head.dashboard', $deptData);
     }
 
-    /**
-     * Show student performance for the department head.
-     */
     public function manageStudents(Request $request)
     {
         $user = Auth::user();
@@ -75,72 +56,42 @@ class DepartmentHeadController extends Controller
 
         $search = trim($request->input('q', ''));
         $section = trim($request->input('section', ''));
-        $activityStatus = trim($request->input('activity_status', ''));
 
-        if (Schema::hasTable('students')) {
-            ManagedStudent::query()
-                ->active()
-                ->where('created_at', '<', now()->subMonths(5))
-                ->update([
-                    'status' => 'archived',
-                    'archived_at' => now(),
-                ]);
+        ManagedStudent::query()
+            ->active()
+            ->where('created_at', '<', now()->subMonths(5))
+            ->update([
+                'status' => 'archived',
+                'archived_at' => now(),
+            ]);
 
-            $students = ManagedStudent::with('latestTrainingSession')
-                ->active()
-                ->when($search, fn ($query) => $query->where(function ($nested) use ($search) {
-                    $nested->where('student_id_number', 'like', '%' . $search . '%')
-                        ->orWhere('full_name', 'like', '%' . $search . '%');
-                }))
-                ->when($section, fn ($query) => $query->where('section', $section))
-                ->when($activityStatus, fn ($query) => $query->where('current_activity_status', $activityStatus))
-                ->latest()
-                ->paginate(6)
-                ->withQueryString();
+        $students = ManagedStudent::with('latestTrainingSession')
+            ->active()
+            ->when($search, fn ($query) => $query->where(function ($nested) use ($search) {
+                $nested->where('student_id_number', 'like', '%' . $search . '%')
+                    ->orWhere('first_name', 'like', '%' . $search . '%')
+                    ->orWhere('middle_name', 'like', '%' . $search . '%')
+                    ->orWhere('last_name', 'like', '%' . $search . '%');
+            }))
+            ->when($section, fn ($query) => $query->where('section', $section))
+            ->latest()
+            ->paginate(6)
+            ->withQueryString();
 
-            $archivedStudents = ManagedStudent::withArchived()->archived()->latest()->take(10)->get();
-            $fiveMonthOld = ManagedStudent::withArchived()
-                ->where('status', 'archived')
-                ->latest('archived_at')
-                ->get();
-            $sections = ManagedStudent::query()
-                ->whereNotNull('section')
-                ->where('section', '!=', '')
-                ->select('section')
-                ->distinct()
-                ->orderBy('section')
-                ->pluck('section')
-                ->all();
-            $totalStudents = ManagedStudent::query()->active()->count();
-        } elseif (Schema::hasTable('student_profiles')) {
-            $students = StudentProfile::query()
-                ->when($search, fn ($query) => $query->where(function ($nested) use ($search) {
-                    $nested->where('student_number', 'like', '%' . $search . '%')
-                        ->orWhere('first_name', 'like', '%' . $search . '%')
-                        ->orWhere('last_name', 'like', '%' . $search . '%');
-                }))
-                ->latest()
-                ->paginate(6)
-                ->withQueryString();
-
-            $archivedStudents = collect();
-            $fiveMonthOld = collect();
-            $sections = StudentProfile::query()
-                ->whereNotNull('section')
-                ->where('section', '!=', '')
-                ->select('section')
-                ->distinct()
-                ->orderBy('section')
-                ->pluck('section')
-                ->all();
-            $totalStudents = StudentProfile::count();
-        } else {
-            $students = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 6);
-            $archivedStudents = collect();
-            $fiveMonthOld = collect();
-            $sections = [];
-            $totalStudents = 0;
-        }
+        $archivedStudents = ManagedStudent::withArchived()->archived()->latest()->take(10)->get();
+        $fiveMonthOld = ManagedStudent::withArchived()
+            ->where('status', 'archived')
+            ->latest('archived_at')
+            ->get();
+        $sections = ManagedStudent::query()
+            ->whereNotNull('section')
+            ->where('section', '!=', '')
+            ->select('section')
+            ->distinct()
+            ->orderBy('section')
+            ->pluck('section')
+            ->all();
+        $totalStudents = ManagedStudent::query()->active()->count();
 
         return view('department-head.list-of-student', [
             'name' => $user->name,
@@ -152,16 +103,12 @@ class DepartmentHeadController extends Controller
             'filters' => [
                 'q' => $request->input('q', ''),
                 'section' => $request->input('section', ''),
-                'activity_status' => $request->input('activity_status', ''),
             ],
             'sections' => $sections,
             'totalStudents' => $totalStudents,
         ]);
     }
 
-    /**
-     * Show faculty accounts and allow creating instructor accounts.
-     */
     public function manageInstructors(Request $request)
     {
         $user = Auth::user();
@@ -209,9 +156,6 @@ class DepartmentHeadController extends Controller
         ]);
     }
 
-    /**
-     * Create a faculty instructor account.
-     */
     public function storeInstructorAccount(Request $request)
     {
         $user = Auth::user();
@@ -243,9 +187,6 @@ class DepartmentHeadController extends Controller
         ]);
     }
 
-    /**
-     * Toggle instructor active/inactive status.
-     */
     public function toggleInstructorStatus($instructorId)
     {
         $user = Auth::user();
@@ -267,34 +208,22 @@ class DepartmentHeadController extends Controller
         return redirect()->route('department-head.manage-instructors')->with('success', $message);
     }
 
-    /**
-     * Get all department heads.
-     */
     public static function getAllDepartmentHeads()
     {
         return User::where('role', 'department_head')->get();
     }
 
-    /**
-     * Get department head by ID.
-     */
     public static function getDepartmentHeadById($id)
     {
         return User::where('id', $id)->where('role', 'department_head')->first();
     }
 
-    /**
-     * Create a new department head.
-     */
     public static function createDepartmentHead($data)
     {
         $data['role'] = 'department_head';
         return User::create($data);
     }
 
-    /**
-     * Update department head information.
-     */
     public function updateDepartmentHead($id, $data)
     {
         $deptHead = User::where('id', $id)->where('role', 'department_head')->first();
@@ -305,9 +234,6 @@ class DepartmentHeadController extends Controller
         return null;
     }
 
-    /**
-     * Delete department head.
-     */
     public function deleteDepartmentHead($id)
     {
         $deptHead = User::where('id', $id)->where('role', 'department_head')->first();
@@ -318,13 +244,10 @@ class DepartmentHeadController extends Controller
         return false;
     }
 
-    /**
-     * Get system statistics.
-     */
     public function getSystemStats()
     {
         return [
-            'total_students' => Schema::hasTable('students') ? ManagedStudent::count() : (Schema::hasTable('student_profiles') ? StudentProfile::count() : 0),
+            'total_students' => ManagedStudent::count(),
             'total_instructors' => User::where('role', 'instructor')->count(),
             'total_department_heads' => User::where('role', 'department_head')->count(),
             'total_users' => User::whereIn('role', ['instructor', 'department_head'])->count(),
@@ -335,16 +258,11 @@ class DepartmentHeadController extends Controller
         ];
     }
 
-    /**
-     * Get all users with role filtering.
-     */
     public function getAllUsers($role = null)
     {
         if ($role) {
             if ($role === 'student') {
-                return Schema::hasTable('students')
-                    ? ManagedStudent::get()
-                    : (Schema::hasTable('student_profiles') ? StudentProfile::with(['instructor', 'verifier'])->get() : collect());
+                return ManagedStudent::get();
             }
 
             return User::where('role', $role)->get();
@@ -352,9 +270,6 @@ class DepartmentHeadController extends Controller
         return User::all();
     }
 
-    /**
-     * Update the authenticated department head's display name.
-     */
     public function updateProfileName(Request $request)
     {
         $request->validate([
@@ -368,9 +283,6 @@ class DepartmentHeadController extends Controller
         return back()->with('success', 'Profile name updated successfully.');
     }
 
-    /**
-     * Update the authenticated department head's password.
-     */
     public function updateProfilePassword(Request $request)
     {
         $request->validate([
@@ -390,9 +302,6 @@ class DepartmentHeadController extends Controller
         return back()->with('success', 'Password changed successfully.');
     }
 
-    /**
-     * Update the authenticated department head's profile photo.
-     */
     public function updateProfilePhoto(Request $request)
     {
         $request->validate([

@@ -78,8 +78,8 @@
                     <tbody class="divide-y divide-gray-100 bg-white">
                         @forelse ($students as $student)
                             @php
-                                $studentId = $student->student_id_number ?? $student->student_number ?? '';
-                                $fullName = $student->full_name ?? trim((($student->first_name ?? '') . ' ' . ($student->middle_name ?? '') . ' ' . ($student->last_name ?? '')));
+                                $studentId = $student->student_id_number ?? '';
+                                $fullName = $student->full_name;
                                 $section = $student->section ?? '—';
                             @endphp
                             <tr class="hover:bg-violet-50/50 transition-colors" data-search="{{ strtolower($studentId . ' ' . $fullName) }}" data-section="{{ $section }}">

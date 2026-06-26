@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LessonPage extends Model
 {
+    protected $table = 'lesson_details';
+
     protected $fillable = [
         'lesson_id',
         'lesson_index',

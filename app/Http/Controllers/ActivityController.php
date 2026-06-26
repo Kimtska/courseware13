@@ -7,9 +7,9 @@ use Illuminate\Http\Request;
 
 class ActivityController extends Controller
 {
-    public function index($module)
+    public function index($moduleId)
     {
-        $activities = Activity::where('module', $module)
+        $activities = Activity::where('module_id', $moduleId)
             ->orderBy('question_number')
             ->get();
         return response()->json($activities);
@@ -18,7 +18,7 @@ class ActivityController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'module' => 'required|integer|min:1|max:3',
+            'module_id' => 'required|integer|exists:modules,id',
             'question_number' => 'required|integer|min:1|max:99',
             'question_text' => 'required|string',
             'options' => 'required|array|size:4',
@@ -55,7 +55,7 @@ class ActivityController extends Controller
     public function reorder(Request $request)
     {
         $request->validate([
-            'module' => 'required|integer|min:1|max:3',
+            'module_id' => 'required|integer|exists:modules,id',
             'activities' => 'required|array',
             'activities.*.id' => 'required|exists:activity,id',
             'activities.*.question_number' => 'required|integer|min:1',

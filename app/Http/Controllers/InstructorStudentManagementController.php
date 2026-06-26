@@ -2,16 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\EnrollmentImportBatch;
 use App\Models\ManagedStudent;
-use App\Models\StudentProfile;
 use App\Models\StudentActivityLog;
 use App\Models\StudentTrainingSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class InstructorStudentManagementController extends Controller
@@ -30,30 +27,26 @@ class InstructorStudentManagementController extends Controller
     public function index(Request $request)
     {
         $user = $this->currentUser();
-        $archivedStudents = $user->role === 'department_head' && Schema::hasTable('students')
+        $archivedStudents = $user->role === 'department_head'
             ? ManagedStudent::withArchived()->archived()->latest()->take(10)->get()
             : collect();
 
         $sections = $this->availableSections($user);
 
-        if (Schema::hasTable('students')) {
-            ManagedStudent::query()
-                ->active()
-                ->when($user->role === 'instructor', fn ($q) => $q->where('instructor_user_id', $user->id))
-                ->where('created_at', '<', now()->subMonths(5))
-                ->update([
-                    'status' => 'archived',
-                    'archived_at' => now(),
-                ]);
-        }
+        ManagedStudent::query()
+            ->active()
+            ->when($user->role === 'instructor', fn ($q) => $q->where('instructor_user_id', $user->id))
+            ->where('created_at', '<', now()->subMonths(5))
+            ->update([
+                'status' => 'archived',
+                'archived_at' => now(),
+            ]);
 
-        $fiveMonthOld = Schema::hasTable('students')
-            ? ManagedStudent::withArchived()
-                ->where('status', 'archived')
-                ->when($user->role === 'instructor', fn ($q) => $q->where('instructor_user_id', $user->id))
-                ->latest('archived_at')
-                ->get()
-            : collect();
+        $fiveMonthOld = ManagedStudent::withArchived()
+            ->where('status', 'archived')
+            ->when($user->role === 'instructor', fn ($q) => $q->where('instructor_user_id', $user->id))
+            ->latest('archived_at')
+            ->get();
 
         $students = $this->queryStudents($user, $request)
             ->paginate(6)
@@ -68,8 +61,6 @@ class InstructorStudentManagementController extends Controller
             'filters' => [
                 'q' => $request->string('q')->toString(),
                 'section' => $request->string('section')->toString(),
-                'enrollment_status' => $request->string('enrollment_status')->toString(),
-                'activity_status' => $request->string('activity_status')->toString(),
             ],
             'sections' => $sections,
             'totalStudents' => $totalStudents,
@@ -81,10 +72,6 @@ class InstructorStudentManagementController extends Controller
 
     private function availableSections($user)
     {
-        if (!Schema::hasTable('students')) {
-            return [];
-        }
-
         $query = ManagedStudent::query()
             ->whereNotNull('section')
             ->where('section', '!=', '');
@@ -103,10 +90,6 @@ class InstructorStudentManagementController extends Controller
 
     private function totalActiveStudents($user)
     {
-        if (!Schema::hasTable('students')) {
-            return 0;
-        }
-
         $query = ManagedStudent::query()->active();
 
         if ($user->role === 'instructor') {
@@ -120,24 +103,15 @@ class InstructorStudentManagementController extends Controller
     {
         $user = $this->currentUser();
 
-        if (Schema::hasTable('students')) {
-            $students = ManagedStudent::query()
-                ->whereHas('trainingSessions', function ($query) {
-                    $query->where('module_key', 'module-1')
-                        ->where('status', 'completed');
-                })
-                ->when($user->role === 'instructor', fn ($query) => $query->where('instructor_user_id', $user->id))
-                ->latest('updated_at')
-                ->paginate(12)
-                ->withQueryString();
-        } else {
-            $students = StudentProfile::query()
-                ->where('verification_status', 'verified')
-                ->when($user->role === 'instructor', fn ($query) => $query->where('instructor_id', $user->id))
-                ->latest('created_at')
-                ->paginate(12)
-                ->withQueryString();
-        }
+        $students = ManagedStudent::query()
+            ->whereHas('trainingSessions', function ($query) {
+                $query->where('module_key', 'module-1')
+                    ->where('status', 'completed');
+            })
+            ->when($user->role === 'instructor', fn ($query) => $query->where('instructor_user_id', $user->id))
+            ->latest('updated_at')
+            ->paginate(12)
+            ->withQueryString();
 
         return view('Instructor.manage-marksmanship', [
             'students' => $students,
@@ -158,26 +132,19 @@ class InstructorStudentManagementController extends Controller
             'email' => ['nullable', 'email', 'max:255'],
         ]);
 
-        $fullName = trim(implode(' ', array_filter([
-            $data['first_name'],
-            $data['middle_name'] ?? null,
-            $data['last_name'],
-        ], fn ($value) => filled($value))));
-
         $plainPassword = $data['password'] ?? self::DEFAULT_STUDENT_PASSWORD;
 
-        DB::transaction(function () use ($user, $data, $fullName, $plainPassword) {
+        DB::transaction(function () use ($user, $data, $plainPassword) {
             ManagedStudent::create([
                 'instructor_user_id' => $user->id,
                 'student_id_number' => $data['student_id_number'],
                 'password' => Hash::make($plainPassword),
                 'status' => 'active',
-                'full_name' => $fullName,
+                'first_name' => $data['first_name'],
+                'middle_name' => $data['middle_name'] ?? null,
+                'last_name' => $data['last_name'],
                 'section' => $data['section'] ?? null,
                 'email' => $data['email'] ?? null,
-                'enrollment_status' => 'verified_enrolled',
-                'module_access_status' => 'ready_for_training',
-                'current_activity_status' => 'inactive',
                 'verified_at' => now(),
             ]);
         });
@@ -191,10 +158,6 @@ class InstructorStudentManagementController extends Controller
     public function bulkImport(Request $request)
     {
         $user = $this->currentUser();
-
-        if (! Schema::hasTable('students')) {
-            return back()->withErrors(['import_file' => 'Run the student management migration before importing enrolled lists.'])->withInput();
-        }
 
         $data = $request->validate([
             'import_file' => ['required', 'file', 'max:10240'],
@@ -217,9 +180,7 @@ class InstructorStudentManagementController extends Controller
             'details' => [],
         ];
 
-        $existingIds = Schema::hasTable('students')
-            ? ManagedStudent::where('instructor_user_id', $user->id)->pluck('student_id_number')->map(fn ($value) => Str::lower(trim($value)))->all()
-            : [];
+        $existingIds = ManagedStudent::where('instructor_user_id', $user->id)->pluck('student_id_number')->map(fn ($value) => Str::lower(trim($value)))->all();
 
         $seenIds = [];
 
@@ -227,7 +188,7 @@ class InstructorStudentManagementController extends Controller
             foreach ($rows as $index => $row) {
                 $normalized = $this->normalizeImportRow($row);
 
-                if (!$normalized['student_id_number'] || !$normalized['full_name']) {
+                if (!$normalized['student_id_number'] || !$normalized['last_name']) {
                     $summary['invalid_entries']++;
                     continue;
                 }
@@ -246,12 +207,11 @@ class InstructorStudentManagementController extends Controller
                     'student_id_number' => $normalized['student_id_number'],
                     'password' => Hash::make('password'),
                     'status' => 'active',
-                    'full_name' => $normalized['full_name'],
+                    'first_name' => $normalized['first_name'],
+                    'middle_name' => $normalized['middle_name'],
+                    'last_name' => $normalized['last_name'],
                     'section' => $normalized['section'],
                     'email' => $normalized['email'],
-                    'enrollment_status' => 'verified_enrolled',
-                    'module_access_status' => 'ready_for_training',
-                    'current_activity_status' => 'inactive',
                     'verified_at' => now(),
                     'metadata' => $normalized['metadata'],
                 ]);
@@ -259,22 +219,7 @@ class InstructorStudentManagementController extends Controller
                 $summary['successfully_imported']++;
             }
 
-            $status = $summary['duplicate_records'] || $summary['invalid_entries'] ? 'completed_with_errors' : 'completed';
-
-            $batch = EnrollmentImportBatch::create([
-                'instructor_user_id' => $user->id,
-                'file_name' => $file->getClientOriginalName(),
-                'file_type' => $ext,
-                'total_uploaded' => $summary['total_uploaded'],
-                'successfully_imported' => $summary['successfully_imported'],
-                'duplicate_records' => $summary['duplicate_records'],
-                'invalid_entries' => $summary['invalid_entries'],
-                'status' => $status,
-                'summary' => $summary,
-            ]);
-
             session()->flash('student_import_summary', $summary);
-            session()->flash('student_import_batch', $batch);
         });
 
         return redirect()->route('instructor.manage-students')->with('status', 'Enrollment list imported successfully.');
@@ -285,7 +230,7 @@ class InstructorStudentManagementController extends Controller
         $user = $this->currentUser();
 
         $headers = [
-            'student_id_number', 'first_name', 'middle_name', 'last_name', 'full_name', 'section', 'gender', 'metadata'
+            'student_id_number', 'first_name', 'middle_name', 'last_name', 'section', 'metadata'
         ];
 
         $filename = 'student_import_template.csv';
@@ -295,7 +240,7 @@ class InstructorStudentManagementController extends Controller
             fputcsv($out, $headers);
 
             // sample row
-            fputcsv($out, ['20260001', 'Juan', 'Dela', 'Cruz', 'Juan Dela Cruz', 'A', 'M', '']);
+            fputcsv($out, ['20260001', 'Juan', 'Dela', 'Cruz', 'A', '']);
 
             fclose($out);
         };
@@ -309,23 +254,18 @@ class InstructorStudentManagementController extends Controller
     public function update(Request $request, int $studentId)
     {
         $user = $this->currentUser();
-        abort_unless(Schema::hasTable('students'), 422, 'Student edit requires the new managed-student table.');
         $student = $this->findStudent($studentId, $user);
 
         $data = $request->validate([
-            'full_name' => ['required', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:80'],
+            'middle_name' => ['nullable', 'string', 'max:80'],
+            'last_name' => ['required', 'string', 'max:80'],
             'section' => ['nullable', 'string', 'max:50'],
             'email' => ['nullable', 'email', 'max:255'],
-            'enrollment_status' => ['required', 'in:verified_enrolled,pending,rejected,archived'],
-            'module_access_status' => ['required', 'in:ready_for_training,locked,active_in_firing_range,completed_session,archived'],
-            'current_activity_status' => ['required', 'in:inactive,active_in_firing_range,active_in_assembly,completed_session,archived'],
             'password' => ['nullable', 'string', 'min:8', 'max:255'],
         ]);
 
-        $updateData = $data + [
-            'status' => $data['enrollment_status'] === 'archived' ? 'archived' : 'active',
-            'archived_at' => $data['enrollment_status'] === 'archived' ? now() : null,
-        ];
+        $updateData = $data;
 
         if (filled($data['password'])) {
             $updateData['password'] = Hash::make($data['password']);
@@ -339,14 +279,10 @@ class InstructorStudentManagementController extends Controller
     public function archive(int $studentId)
     {
         $user = $this->currentUser();
-        abort_unless(Schema::hasTable('students'), 422, 'Student archive requires the new managed-student table.');
         $student = $this->findStudent($studentId, $user);
 
         $student->update([
             'status' => 'archived',
-            'enrollment_status' => 'archived',
-            'module_access_status' => 'archived',
-            'current_activity_status' => 'archived',
             'archived_at' => now(),
         ]);
 
@@ -356,7 +292,6 @@ class InstructorStudentManagementController extends Controller
     public function toggleStatus(int $studentId)
     {
         $user = $this->currentUser();
-        abort_unless(Schema::hasTable('students'), 422, 'Student management table required.');
         $student = $this->findStudent($studentId, $user);
 
         $isActive = ($student->status ?? 'active') === 'active';
@@ -364,17 +299,11 @@ class InstructorStudentManagementController extends Controller
         if ($isActive) {
             $student->update([
                 'status' => 'archived',
-                'enrollment_status' => 'archived',
-                'module_access_status' => 'archived',
-                'current_activity_status' => 'archived',
                 'archived_at' => now(),
             ]);
         } else {
             $student->update([
                 'status' => 'active',
-                'enrollment_status' => 'verified_enrolled',
-                'module_access_status' => 'ready_for_training',
-                'current_activity_status' => 'inactive',
                 'archived_at' => null,
             ]);
         }
@@ -386,48 +315,25 @@ class InstructorStudentManagementController extends Controller
     {
         $search = trim($request->string('q')->toString());
         $section = trim($request->string('section')->toString());
-        $enrollmentStatus = trim($request->string('enrollment_status')->toString());
-        $activityStatus = trim($request->string('activity_status')->toString());
 
-        if (Schema::hasTable('students')) {
-            return ManagedStudent::query()
-                ->active()
-                ->when($user->role === 'instructor', fn ($query) => $query->where('instructor_user_id', $user->id))
-                ->when($search, fn ($query) => $query->where(function ($nested) use ($search) {
-                    $nested->where('student_id_number', 'like', '%' . $search . '%')
-                        ->orWhere('full_name', 'like', '%' . $search . '%');
-                }))
-                ->when($section, fn ($query) => $query->where('section', $section))
-                ->when($enrollmentStatus, fn ($query) => $query->where('enrollment_status', $enrollmentStatus))
-                ->when($activityStatus, fn ($query) => $query->where('current_activity_status', $activityStatus))
-                ->latest();
-        }
-
-        return StudentProfile::query()
-            ->when($user->role === 'instructor', fn ($query) => $query->where('instructor_id', $user->id))
+        return ManagedStudent::query()
+            ->active()
+            ->when($user->role === 'instructor', fn ($query) => $query->where('instructor_user_id', $user->id))
             ->when($search, fn ($query) => $query->where(function ($nested) use ($search) {
-                $nested->where('student_number', 'like', '%' . $search . '%')
+                $nested->where('student_id_number', 'like', '%' . $search . '%')
                     ->orWhere('first_name', 'like', '%' . $search . '%')
+                    ->orWhere('middle_name', 'like', '%' . $search . '%')
                     ->orWhere('last_name', 'like', '%' . $search . '%');
             }))
+            ->when($section, fn ($query) => $query->where('section', $section))
             ->latest();
     }
 
     private function findStudent(int $studentId, $user)
     {
-        if (Schema::hasTable('students')) {
-            $student = ManagedStudent::withArchived()->findOrFail($studentId);
+        $student = ManagedStudent::withArchived()->findOrFail($studentId);
 
-            if ($user->role === 'instructor' && $student->instructor_user_id !== $user->id) {
-                abort(403);
-            }
-
-            return $student;
-        }
-
-        $student = StudentProfile::findOrFail($studentId);
-
-        if ($user->role === 'instructor' && $student->instructor_id !== $user->id) {
+        if ($user->role === 'instructor' && $student->instructor_user_id !== $user->id) {
             abort(403);
         }
 
@@ -443,15 +349,19 @@ class InstructorStudentManagementController extends Controller
         }
 
         $studentId = $normalized['student_id_number'] ?? $normalized['student_id'] ?? $normalized['student_number'] ?? '';
-        $fullName = $normalized['full_name'] ?? trim(implode(' ', array_filter([
-            $normalized['first_name'] ?? '',
-            $normalized['middle_name'] ?? '',
-            $normalized['last_name'] ?? '',
-        ])));
+
+        if (!isset($normalized['first_name']) && isset($normalized['full_name'])) {
+            $parts = array_filter(explode(' ', $normalized['full_name']));
+            $normalized['first_name'] = count($parts) > 0 ? array_shift($parts) : '';
+            $normalized['last_name'] = count($parts) > 0 ? array_pop($parts) : '';
+            $normalized['middle_name'] = count($parts) > 0 ? implode(' ', $parts) : null;
+        }
 
         return [
             'student_id_number' => $studentId,
-            'full_name' => $fullName,
+            'first_name' => $normalized['first_name'] ?? '',
+            'middle_name' => $normalized['middle_name'] ?? null,
+            'last_name' => $normalized['last_name'] ?? '',
             'section' => $normalized['section'] ?? null,
             'email' => $normalized['email'] ?? null,
             'metadata' => [
@@ -561,37 +471,18 @@ class InstructorStudentManagementController extends Controller
 
         $term = trim($request->string('q')->toString());
 
-        if (Schema::hasTable('students')) {
-            $query = ManagedStudent::query()
-                ->where('enrollment_status', 'verified_enrolled')
-                ->when($user->role === 'instructor', fn ($builder) => $builder->where('instructor_user_id', $user->id))
-                ->when($term, fn ($builder) => $builder->where(function ($nested) use ($term) {
-                    $nested->where('student_id_number', 'like', '%' . $term . '%')
-                        ->orWhere('full_name', 'like', '%' . $term . '%');
-                }))
-                ->limit(10)
-                ->get();
-
-            return response()->json(['data' => $query]);
-        }
-
-        $profiles = StudentProfile::with(['instructor'])
-            ->where('verification_status', 'verified')
-            ->when($user->role === 'instructor', function ($query) use ($user) {
-                $query->where('instructor_id', $user->id);
-            })
-            ->when($term, function ($query) use ($term) {
-                $query->where(function ($nested) use ($term) {
-                    $nested->where('student_number', 'like', '%' . $term . '%')
-                        ->orWhere('first_name', 'like', '%' . $term . '%')
-                        ->orWhere('middle_name', 'like', '%' . $term . '%')
-                        ->orWhere('last_name', 'like', '%' . $term . '%');
-                });
-            })
+        $query = ManagedStudent::query()
+            ->when($user->role === 'instructor', fn ($builder) => $builder->where('instructor_user_id', $user->id))
+            ->when($term, fn ($builder) => $builder->where(function ($nested) use ($term) {
+                $nested->where('student_id_number', 'like', '%' . $term . '%')
+                    ->orWhere('first_name', 'like', '%' . $term . '%')
+                    ->orWhere('middle_name', 'like', '%' . $term . '%')
+                    ->orWhere('last_name', 'like', '%' . $term . '%');
+            }))
             ->limit(10)
             ->get();
 
-        return response()->json(['data' => $profiles]);
+        return response()->json(['data' => $query]);
     }
 
     public function selectStudent(Request $request)
@@ -604,25 +495,13 @@ class InstructorStudentManagementController extends Controller
 
         $student = $this->findStudent($data['student_profile_id'], $user);
 
-        if (Schema::hasTable('students')) {
-            $request->session()->put('student_portal.selected_student', [
-                'id' => $student->id,
-                'student_id_number' => $student->student_id_number,
-                'full_name' => $student->full_name,
-                'section' => $student->section,
-                'enrollment_status' => $student->enrollment_status,
-            ]);
-            $request->session()->put('student_portal.selected_name', $student->full_name);
-        } else {
-            $request->session()->put('student_portal.selected_student', [
-                'id' => $student->id,
-                'student_id_number' => $student->student_number,
-                'full_name' => $student->full_name,
-                'section' => $student->section,
-                'enrollment_status' => $student->verification_status,
-            ]);
-            $request->session()->put('student_portal.selected_name', $student->full_name);
-        }
+        $request->session()->put('student_portal.selected_student', [
+            'id' => $student->id,
+            'student_id_number' => $student->student_id_number,
+            'full_name' => $student->full_name,
+            'section' => $student->section,
+        ]);
+        $request->session()->put('student_portal.selected_name', $student->full_name);
 
         return response()->json(['message' => 'Student selected for the active portal session.']);
     }
@@ -634,29 +513,27 @@ class InstructorStudentManagementController extends Controller
 
         abort_unless($selectedStudent, 403, 'Select a verified student to continue.');
 
-        if (Schema::hasTable('students')) {
-            $session = StudentTrainingSession::create([
-                'student_id' => $selectedStudent['id'],
-                'instructor_user_id' => $user->id,
-                'module_key' => $module,
-                'session_type' => $module,
-                'status' => 'active',
-                'started_at' => now(),
-                'metadata' => [
-                    'portal_session' => true,
-                ],
-            ]);
+        $session = StudentTrainingSession::create([
+            'student_id' => $selectedStudent['id'],
+            'instructor_user_id' => $user->id,
+            'module_key' => $module,
+            'session_type' => $module,
+            'status' => 'active',
+            'started_at' => now(),
+            'metadata' => [
+                'portal_session' => true,
+            ],
+        ]);
 
-            StudentActivityLog::create([
-                'student_id' => $selectedStudent['id'],
-                'student_training_session_id' => $session->id,
-                'instructor_user_id' => $user->id,
-                'module_key' => $module,
-                'activity_type' => 'portal_bound',
-                'activity_status' => 'active',
-                'payload' => ['student_id_number' => $selectedStudent['student_id_number'] ?? null],
-            ]);
-        }
+        StudentActivityLog::create([
+            'student_id' => $selectedStudent['id'],
+            'student_training_session_id' => $session->id,
+            'instructor_user_id' => $user->id,
+            'module_key' => $module,
+            'activity_type' => 'portal_bound',
+            'activity_status' => 'active',
+            'payload' => ['student_id_number' => $selectedStudent['student_id_number'] ?? null],
+        ]);
 
         return response()->json(['message' => 'Portal session bound.']);
     }

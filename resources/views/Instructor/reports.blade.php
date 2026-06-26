@@ -29,8 +29,8 @@
                 @forelse ($leaderboard as $rank => $entry)
                     @php
                         $student = $entry['student'];
-                        $fullName = $student->full_name ?? trim((($student->first_name ?? '') . ' ' . ($student->middle_name ?? '') . ' ' . ($student->last_name ?? '')));
-                        $studentId = $student->student_id_number ?? $student->student_number ?? '';
+                                $fullName = $student->full_name;
+                        $studentId = $student->student_id_number ?? '';
                         $rankClass = $rank === 0 ? 'rank-1' : ($rank === 1 ? 'rank-2' : ($rank === 2 ? 'rank-3' : 'rank-default'));
                     @endphp
                     <div class="px-5 sm:px-6 py-3.5 flex items-center gap-3 hover:bg-violet-50/50 transition-colors">
@@ -83,8 +83,8 @@
                         @forelse ($studentReports as $report)
                             @php
                                 $student = $report['student'];
-                                $fullName = $student->full_name ?? trim((($student->first_name ?? '') . ' ' . ($student->middle_name ?? '') . ' ' . ($student->last_name ?? '')));
-                                $studentId = $student->student_id_number ?? $student->student_number ?? '';
+                        $fullName = $student->full_name;
+                                $studentId = $student->student_id_number ?? '';
                                 $section = $student->section ?? '—';
 
                                 $m1 = $report['module_1'];

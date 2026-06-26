@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Lesson;
 use App\Models\ManagedStudent;
-use App\Models\StudentProfile;
 use App\Models\StudentScore;
 use App\Models\StudentTrainingSession;
 use Illuminate\Http\Request;
@@ -12,33 +11,23 @@ use Illuminate\Support\Facades\Auth;
 
 class StudentController extends Controller
 {
-    /**
-     * Show the student dashboard.
-     */
     public function dashboard()
     {
         return view('Students.dashboard', $this->studentViewData());
     }
 
-    /**
-     * Firing range is now instructor-managed.
-     */
     public function firingRange()
     {
         return redirect()->route('student.dashboard');
     }
 
-    /**
-     * Show the student assembly courseware.
-     */
     public function assembly()
     {
-        return view('Students.assembly', $this->studentViewData());
+        return view('Students.assembly', array_merge($this->studentViewData(), [
+            'firearms' => \App\Models\Firearm::with('parts')->get(),
+        ]));
     }
 
-    /**
-     * Show the student gun parts courseware.
-     */
     public function gunParts()
     {
         $modules = \App\Models\Module::with(['lessons' => function ($q) {
@@ -52,53 +41,43 @@ class StudentController extends Controller
 
         $activeModule = $modules->firstWhere('module_key', $moduleKey);
 
+        $student = Auth::guard('student')->user();
+        if (!$student && Auth::guard('web')->check()) {
+            $user = Auth::guard('web')->user();
+            if ($user && $user->role === 'student') {
+                $student = ManagedStudent::withArchived()->where('student_id_number', $user->email)->first();
+            }
+        }
         return view('Students.module-checkpoint-node', array_merge($this->studentViewData(), [
             'modules' => $modules,
             'activeModule' => $activeModule,
             'moduleKey' => $moduleKey,
+            'student' => $student,
         ]));
     }
 
-    /**
-     * Show the student progress page.
-     */
     public function progress()
     {
         return view('Students.progress', $this->studentViewData());
     }
 
-    /**
-     * Show the student leaderboard page.
-     */
     public function leaderboard()
     {
         return view('Students.leaderboard', $this->studentViewData());
     }
 
-    /**
-     * Show the student reports page (assessment summaries).
-     */
     public function reports()
     {
         $data = $this->studentViewData();
 
-        // Determine the managed student id number from the current context
         $studentIdNumber = $data['selectedStudent']['student_id_number'] ?? null;
 
-        $profile = null;
-        if ($studentIdNumber) {
-            $profile = StudentProfile::where('student_number', $studentIdNumber)->first();
-        }
-
-        $scores = [];
-        if ($profile) {
-            $scores = \App\Models\StudentScore::where('student_profile_id', $profile->id)->orderBy('recorded_at', 'desc')->get();
-        } elseif ($student = Auth::guard('student')->user()) {
-            $scores = \App\Models\StudentScore::where('student_id', $student->id)->orderBy('recorded_at', 'desc')->get();
+        $scores = collect();
+        if ($student = Auth::guard('student')->user()) {
+            $scores = StudentScore::where('student_id', $student->id)->orderBy('recorded_at', 'desc')->get();
         }
 
         return view('Students.Assessment-report', array_merge($data, [
-            'profile' => $profile,
             'scores' => $scores,
         ]));
     }
@@ -130,36 +109,24 @@ class StudentController extends Controller
         ];
     }
 
-    /**
-     * Get all students (for admin purposes).
-     */
     public static function getAllStudents()
     {
-        return StudentProfile::with(['instructor', 'verifier'])->latest()->get();
+        return ManagedStudent::get();
     }
 
-    /**
-     * Get student by ID.
-     */
     public static function getStudentById($id)
     {
-        return StudentProfile::with(['instructor', 'verifier'])->find($id);
+        return ManagedStudent::find($id);
     }
 
-    /**
-     * Create a new student.
-     */
     public static function createStudent($data)
     {
-        return StudentProfile::create($data);
+        return ManagedStudent::create($data);
     }
 
-    /**
-     * Update student information.
-     */
     public function updateStudent($id, $data)
     {
-        $student = StudentProfile::find($id);
+        $student = ManagedStudent::find($id);
         if ($student) {
             $student->update($data);
             return $student;
@@ -167,12 +134,9 @@ class StudentController extends Controller
         return null;
     }
 
-    /**
-     * Delete student.
-     */
     public function deleteStudent($id)
     {
-        $student = StudentProfile::find($id);
+        $student = ManagedStudent::find($id);
         if ($student) {
             $student->delete();
             return true;
@@ -184,7 +148,6 @@ class StudentController extends Controller
     {
         $data = $request->validate([
             'module_key' => ['required', 'string', 'max:80'],
-            'student_profile_id' => ['nullable', 'exists:student_profiles,id'],
             'student_id' => ['nullable', 'exists:students,id'],
             'score' => ['required', 'numeric', 'min:0'],
             'max_score' => ['required', 'numeric', 'min:1'],
@@ -195,7 +158,6 @@ class StudentController extends Controller
         $user = Auth::guard('web')->user();
 
         $score = StudentScore::create([
-            'student_profile_id' => $data['student_profile_id'] ?? null,
             'student_id' => $data['student_id'] ?? $student?->id,
             'recorded_by_user_id' => $user?->id,
             'module_key' => $data['module_key'],
@@ -252,6 +214,16 @@ class StudentController extends Controller
         $metadata['current_page_index'] = (int) $request->current_page;
         $metadata['total_pages'] = (int) $request->total_pages;
         $session->update(['metadata' => $metadata]);
+
+        $student->update([
+            'current_progress' => [
+                'module_key' => $request->module_key,
+                'lesson_key' => $request->lesson_key,
+                'page_index' => (int) $request->current_page,
+                'total_pages' => (int) $request->total_pages,
+                'activity_type' => 'viewing_lesson',
+            ],
+        ]);
 
         return response()->json(['success' => true]);
     }

@@ -192,47 +192,53 @@ body.simulation-locked{overflow:hidden}
 
 <div class="toast" id="toast"></div>
 
+@php
+    $asFirearmsData = [];
+    foreach ($firearms as $asF) {
+        $asPartsData = [];
+        foreach ($asF->parts as $asP) {
+            $asPartsData[] = [
+                'id' => strtoupper($asP->slug),
+                'name' => $asP->name,
+                'desc' => $asP->description ?? '',
+                'slug' => $asP->slug,
+                'sort_order' => $asP->sort_order,
+                'zOrder' => $asP->z_order,
+                'img' => $asP->image_path ? asset($asP->image_path) : null,
+                'glow' => $asP->glow_image_path ? asset($asP->glow_image_path) : null,
+                'zone' => [
+                    'x' => (int)$asP->zone_x,
+                    'y' => (int)$asP->zone_y,
+                    'w' => (int)$asP->zone_w,
+                    'h' => (int)$asP->zone_h,
+                ],
+            ];
+        }
+        $asFirearmsData[$asF->slug] = [
+            'label' => $asF->name,
+            'parts' => $asPartsData,
+        ];
+    }
+@endphp
+
 <script>
-const IMGS = {
-  FRAME: @json(asset('images/assemble/FRAME.png')),
-  SLIDE: @json(asset('images/assemble/SLIDE.png')),
-  BARREL: @json(asset('images/assemble/BARREL.png')),
-  MAGAZINE: @json(asset('images/assemble/MAGAZINE.png'))
-};
+const FIREARMS_DATA = @json($asFirearmsData);
 
-const GLOW_IMGS = {
-  FRAME: @json(asset('images/assemble/glow guide/FRAME-GLOW.png')),
-  SLIDE: @json(asset('images/assemble/glow guide/SLIDE-GLOW.png')),
-  BARREL: @json(asset('images/assemble/glow guide/BARREL-GLOW.png')),
-  MAGAZINE: @json(asset('images/assemble/glow guide/MAGAZINE-GLOW.png'))
-};
+function getFirearmParts() {
+    return FIREARMS_DATA[selectedFirearm]?.parts || [];
+}
 
-// Image / stage sizing - original images are 1408x768, stage renders to 660x360
-const IMAGE_SIZE = { width: 1408, height: 768 };
-const STAGE_SIZE = { width: 660, height: 360 };
-const IMAGE_SCALE = STAGE_SIZE.width / IMAGE_SIZE.width;
-// Visible opaque bounds (measured from PNGs) — used to position full-image glow at correct place
-const IMAGE_BOUNDS = {
-  FRAME: { x: 242, y: 155, w: 965, h: 596 },
-  SLIDE: { x: 234, y: 52, w: 894, h: 509 },
-  BARREL: { x: 240, y: 226, w: 564, h: 245 },
-  MAGAZINE: { x: 825, y: 319, w: 358, h: 388 }
-};
+function getFirearmLabel() {
+    return FIREARMS_DATA[selectedFirearm]?.label || '9mm Pistol';
+}
 
-const PARTS = [
-  // Order here controls the assembly sequence (getNextPart) — Frame first
-  { id:'FRAME', name:'Frame / Lower Receiver', desc:'<b>Frame / Lower Receiver</b> - Polymer lower. Houses trigger group, mag well, and grip. The serialized component.', zone:{x:55,y:30,w:420,h:310}, zOrder:1 },
-  { id:'BARREL', name:'Barrel', desc:'<b>Barrel</b> - Rifled steel barrel. Drops into the slide from the top.', zone:{x:112,y:106,w:270,h:120}, zOrder:2 },
-  { id:'SLIDE', name:'Slide', desc:'<b>Slide</b> - Steel slide with rear serrations. Rides on the frame rails.', zone:{x:42,y:20,w:510,h:145}, zOrder:3 },
-  // Magazine assembled last and rendered behind other parts (back layer)
-  { id:'MAGAZINE', name:'Magazine', desc:'<b>Magazine</b> - Double-stack 9mm mag, 15-17 round capacity. Slides up into the grip from below.', zone:{x:230,y:160,w:130,h:195}, zOrder:0 }
-];
+function getFirearmImg(part) {
+    return part.img || '';
+}
 
-const FIREARM_LABELS = {
-  '9mm': '9mm Pistol',
-  '45': '.45 Caliber',
-  '38': '.38 Pistol Revolver'
-};
+function getFirearmGlow(part) {
+    return part.glow || part.img || '';
+}
 
 let mode = 'asm';
 let placed = {};
@@ -245,7 +251,7 @@ function setInfo(html){ document.getElementById('info').innerHTML = html; }
 
 function updateMenuSummary(){
   const timeText = selectedTimeLimit + 's';
-  const firearmText = FIREARM_LABELS[selectedFirearm] || FIREARM_LABELS['9mm'];
+  const firearmText = getFirearmLabel();
   document.getElementById('menu-summary-time').textContent = timeText;
   document.getElementById('menu-summary-firearm').textContent = firearmText;
   document.getElementById('session-time-pill').textContent = 'Time: ' + timeText;
@@ -270,6 +276,7 @@ function selectFirearm(firearm, element){
   selectedFirearm = firearm;
   document.querySelectorAll('[data-firearm]').forEach(el => el.classList.remove('active'));
   element.classList.add('active');
+  reset();
   updateMenuSummary();
 }
 
@@ -277,11 +284,11 @@ function startSimulation(){
   simulationStarted = true;
   document.body.classList.remove('simulation-locked');
   setInfo('Drag each part from the tray onto the pistol to assemble it layer by layer.');
-  toast('Simulation started: ' + FIREARM_LABELS[selectedFirearm] + ' · ' + selectedTimeLimit + 's', 'ok');
+  toast('Simulation started: ' + getFirearmLabel() + ' · ' + selectedTimeLimit + 's', 'ok');
 }
 
 function getNextPart(){
-  return PARTS.find(part => !placed[part.id]) || null;
+  return getFirearmParts().find(part => !placed[part.id]) || null;
 }
 
 function pulseStage(){
@@ -306,7 +313,7 @@ function setMode(nextMode){
   document.getElementById('badge').textContent = nextMode === 'asm' ? 'ASSEMBLY MODE' : 'DISASSEMBLY MODE';
   reset();
   if(nextMode === 'dis'){
-    PARTS.forEach(part => placed[part.id] = true);
+    getFirearmParts().forEach(part => placed[part.id] = true);
     render();
     setInfo('Drag each part off the pistol back to the tray to disassemble it.');
   }
@@ -330,7 +337,7 @@ function render(){
 function renderLayers(){
   document.querySelectorAll('.layer').forEach(node => node.remove());
   const stage = document.getElementById('stage');
-  [...PARTS].sort((a,b) => a.zOrder - b.zOrder).forEach(part => {
+  [...getFirearmParts()].sort((a,b) => a.zOrder - b.zOrder).forEach(part => {
     if(!placed[part.id]) return;
     const layer = document.createElement('div');
     layer.className = 'layer';
@@ -338,7 +345,7 @@ function renderLayers(){
     layer.style.zIndex = part.zOrder + 1;
 
     const img = document.createElement('img');
-    img.src = IMGS[part.id];
+    img.src = getFirearmImg(part);
     img.alt = part.name;
     img.style.cssText = 'opacity:1;filter:drop-shadow(0 10px 16px rgba(0,0,0,.28))';
     layer.appendChild(img);
@@ -361,27 +368,22 @@ function renderZones(){
   if(mode !== 'asm') return;
   const nextPart = getNextPart();
   const stage = document.getElementById('stage');
-  // remove previous guide layers
   document.querySelectorAll('.guide-layer').forEach(n => n.remove());
-  PARTS.forEach(part => {
+  getFirearmParts().forEach(part => {
     if(placed[part.id]) return;
     const z = part.zone;
     const zone = document.createElement('div');
     zone.className = 'dzone empty';
     if(nextPart && nextPart.id === part.id){
       zone.classList.add('next');
-      // Render guide as a full-size layer (same logic as part layers) so the glow image
-      // appears at the same scale/stacking as the actual part image.
       const guideLayer = document.createElement('div');
       guideLayer.className = 'layer guide-layer';
       guideLayer.id = 'guide-' + part.id;
-      // place guide below the placed layer (placed layers use zIndex = part.zOrder + 1)
       guideLayer.style.zIndex = part.zOrder;
 
       const guideImg = document.createElement('img');
-      guideImg.src = GLOW_IMGS[part.id] || IMGS[part.id];
+      guideImg.src = getFirearmGlow(part);
       guideImg.alt = part.name + ' guide';
-      // match the same sizing used for part layers
       guideImg.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 10px 16px rgba(34,197,94,.45))';
 
       guideLayer.appendChild(guideImg);
@@ -406,7 +408,7 @@ function renderZones(){
 function renderTray(){
   const tray = document.getElementById('tray');
   tray.innerHTML = '';
-  const items = PARTS.filter(part => mode === 'asm' ? !placed[part.id] : placed[part.id]);
+  const items = getFirearmParts().filter(part => mode === 'asm' ? !placed[part.id] : placed[part.id]);
   if(!items.length){
     tray.innerHTML = `<div style="font-size:11px;color:#555;padding:20px;text-align:center">${mode === 'asm' ? 'All parts assembled!' : 'All parts removed!'}</div>`;
     return;
@@ -418,7 +420,7 @@ function renderTray(){
     card.setAttribute('draggable', 'true');
 
     const img = document.createElement('img');
-    img.src = IMGS[part.id];
+    img.src = getFirearmImg(part);
     img.alt = part.name;
     img.style.cssText = 'filter:drop-shadow(0 8px 12px rgba(0,0,0,.12))';
 
@@ -439,7 +441,7 @@ function dropZone(pid){
   if(!simulationStarted) return;
   if(!dragId) return;
   if(dragId !== pid){
-    const correct = PARTS.find(part => part.id === pid);
+    const correct = getFirearmParts().find(part => part.id === pid);
     toast('Wrong spot! That slot is for the ' + correct.name, 'err');
     return;
   }
@@ -448,7 +450,7 @@ function dropZone(pid){
   render();
   prog();
   pulseStage();
-  toast(PARTS.find(part => part.id === pid).name + ' installed', 'ok');
+  toast(getFirearmParts().find(part => part.id === pid).name + ' installed', 'ok');
   checkDone();
 }
 
@@ -458,7 +460,7 @@ function dropTray(e){
   if(!simulationStarted) return;
   if(!dragId) return;
   if(mode === 'dis' && placed[dragId]){
-    const partName = PARTS.find(part => part.id === dragId)?.name || 'Part';
+    const partName = getFirearmParts().find(part => part.id === dragId)?.name || 'Part';
     placed[dragId] = false;
     render();
     prog();
@@ -468,7 +470,8 @@ function dropTray(e){
 }
 
 function checkDone(){
-  if(Object.keys(placed).length === PARTS.length){
+  const parts = getFirearmParts();
+  if(Object.keys(placed).length === parts.length && parts.length > 0){
     document.getElementById('stage').classList.add('done');
     toast('Pistol fully assembled!', 'ok');
   }
@@ -476,8 +479,8 @@ function checkDone(){
 
 function prog(){
   const n = Object.values(placed).filter(Boolean).length;
-  const t = PARTS.length;
-  document.getElementById('pfill').style.width = (n / t * 100) + '%';
+  const t = getFirearmParts().length;
+  document.getElementById('pfill').style.width = (t > 0 ? (n / t * 100) : 0) + '%';
   document.getElementById('ptxt').textContent = n + ' / ' + t;
 }
 
@@ -498,7 +501,6 @@ document.getElementById('assembly-range-custom-time')?.addEventListener('input',
 document.body.classList.add('simulation-locked');
 updateMenuSummary();
 
-// Auto-start the simulation so the assembly is directly accessible (unlocked)
 startSimulation();
 
 document.body.classList.remove('simulation-locked');

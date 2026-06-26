@@ -39,14 +39,12 @@ class CoursewareSeeder extends Seeder
         ], [
             'instructor_user_id' => $instructor->id,
             'password' => Hash::make('password'),
-            'full_name' => 'Juan Dela Cruz',
-            'course' => 'BS Criminology',
-            'year_level' => '3rd',
+            'first_name' => 'Juan',
+            'middle_name' => null,
+            'last_name' => 'Dela Cruz',
             'section' => 'CRIM 3-1',
-            'enrollment_status' => 'verified_enrolled',
-            'module_access_status' => 'ready_for_training',
-            'current_activity_status' => 'inactive',
             'verified_at' => now(),
+            'current_progress' => ['module_key' => null, 'activity_type' => 'not_started'],
             'metadata' => [
                 'sample' => true,
             ],

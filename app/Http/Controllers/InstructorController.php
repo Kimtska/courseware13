@@ -2,51 +2,42 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Lesson;
-use App\Models\LessonPage;
 use App\Models\ManagedStudent;
-use App\Models\StudentProfile;
+use App\Models\StudentScore;
+use App\Models\Lesson;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 class InstructorController extends Controller
 {
-    /**
-     * Show the instructor dashboard.
-     */
     public function dashboard()
     {
         $user = Auth::user();
-        
-        // Verify user is an instructor
+
         if ($user->role !== 'instructor') {
             return redirect('/')->with('error', 'Unauthorized access');
         }
 
-        // Get all managed student profiles for this instructor's classes when the new schema is available.
-        $students = Schema::hasTable('student_profiles')
-            ? StudentProfile::with(['verifier', 'scores'])->where('instructor_id', $user->id)->latest()->get()
-            : collect();
+        $students = ManagedStudent::with('scores')
+            ->where('instructor_user_id', $user->id)
+            ->latest()
+            ->get();
 
         $completedActivities = $students->filter(fn($s) => $s->scores->isNotEmpty())->count();
 
-        $sections = Schema::hasTable('students')
-            ? ManagedStudent::query()
-                ->whereNotNull('section')
-                ->where('section', '!=', '')
-                ->where('instructor_user_id', $user->id)
-                ->select('section')
-                ->distinct()
-                ->orderBy('section')
-                ->pluck('section')
-                ->all()
-            : [];
+        $sections = ManagedStudent::query()
+            ->whereNotNull('section')
+            ->where('section', '!=', '')
+            ->where('instructor_user_id', $user->id)
+            ->select('section')
+            ->distinct()
+            ->orderBy('section')
+            ->pluck('section')
+            ->all();
 
-        // Instructor data
         $instructorData = [
             'name' => $user->name,
             'email' => $user->email,
@@ -70,34 +61,22 @@ class InstructorController extends Controller
         return view('Instructor.dashboard', $instructorData);
     }
 
-    /**
-     * Get all instructors.
-     */
     public static function getAllInstructors()
     {
         return User::where('role', 'instructor')->get();
     }
 
-    /**
-     * Get instructor by ID.
-     */
     public static function getInstructorById($id)
     {
         return User::where('id', $id)->where('role', 'instructor')->first();
     }
 
-    /**
-     * Create a new instructor.
-     */
     public static function createInstructor($data)
     {
         $data['role'] = 'instructor';
         return User::create($data);
     }
 
-    /**
-     * Update instructor information.
-     */
     public function updateInstructor($id, $data)
     {
         $instructor = User::where('id', $id)->where('role', 'instructor')->first();
@@ -108,9 +87,6 @@ class InstructorController extends Controller
         return null;
     }
 
-    /**
-     * Delete instructor.
-     */
     public function deleteInstructor($id)
     {
         $instructor = User::where('id', $id)->where('role', 'instructor')->first();
@@ -121,16 +97,9 @@ class InstructorController extends Controller
         return false;
     }
 
-    /**
-     * Get students for instructor's classes.
-     */
     public function getStudents()
     {
-        if (! Schema::hasTable('student_profiles')) {
-            return collect();
-        }
-
-        return StudentProfile::with(['verifier'])->where('instructor_id', Auth::id())->latest()->get();
+        return ManagedStudent::where('instructor_user_id', Auth::id())->latest()->get();
     }
 
     public function reports()
@@ -140,13 +109,13 @@ class InstructorController extends Controller
             return redirect('/')->with('error', 'Unauthorized access');
         }
 
-        $students = StudentProfile::where('instructor_id', $user->id)
-            ->with(['scores'])
+        $students = ManagedStudent::with('scores')
+            ->where('instructor_user_id', $user->id)
             ->get();
 
         $studentReports = $students->map(function ($student) {
             $scores = $student->scores->keyBy('module_key');
-            
+
             $module1Score = $scores->get('module-1');
             $module2Score = $scores->get('module-2');
             $module3Score = $scores->get('module-3');

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <circle cx="100" cy="100" r="98" fill="#1a1a1a" stroke="#000" stroke-width="3"/>
+  <circle cx="100" cy="100" r="15" fill="rgba(220,38,38,0.2)" stroke="#dc2626" stroke-width="2"/>
+  <circle cx="100" cy="100" r="6" fill="#dc2626" stroke="#b91c1c" stroke-width="1.5"/>
+  <text x="100" y="75" font-family="'Space Grotesk',sans-serif" font-size="12" font-weight="700" fill="#ef4444" text-anchor="middle">BULLSEYE</text>
+  <text x="100" y="95" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#fca5a5" text-anchor="middle">20 POINTS</text>
+</svg>

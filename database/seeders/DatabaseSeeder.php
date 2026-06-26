@@ -15,5 +15,8 @@ class DatabaseSeeder extends Seeder
         // Seed courseware test data
         $this->call(CoursewareSeeder::class);
         $this->call(ModuleContentSeeder::class);
+        $this->call(TargetSeeder::class);
+        $this->call(GunPartSeeder::class);
+        $this->call(ModuleFirearmSeeder::class);
     }
 }

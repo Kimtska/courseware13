@@ -11,7 +11,6 @@ class MarksmanshipScore extends Model
 
     protected $fillable = [
         'score_id',
-        'student_profile_id',
         'student_id',
         'instructor_id',
         'weapon',
@@ -40,11 +39,6 @@ class MarksmanshipScore extends Model
     public function score()
     {
         return $this->belongsTo(StudentScore::class, 'score_id');
-    }
-
-    public function studentProfile()
-    {
-        return $this->belongsTo(StudentProfile::class);
     }
 
     public function student()

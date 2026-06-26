@@ -12,7 +12,6 @@ class StudentScore extends Model
     protected $table = 'scores';
 
     protected $fillable = [
-        'student_profile_id',
         'student_id',
         'recorded_by_user_id',
         'module_key',
@@ -26,11 +25,6 @@ class StudentScore extends Model
         'recorded_at' => 'datetime',
         'metadata' => 'array',
     ];
-
-    public function studentProfile()
-    {
-        return $this->belongsTo(StudentProfile::class);
-    }
 
     public function student()
     {

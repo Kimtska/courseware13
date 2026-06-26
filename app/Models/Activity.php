@@ -9,7 +9,7 @@ class Activity extends Model
     protected $table = 'activity';
 
     protected $fillable = [
-        'module',
+        'module_id',
         'question_number',
         'question_text',
         'options',
@@ -20,4 +20,9 @@ class Activity extends Model
         'options' => 'array',
         'correct_answer' => 'integer',
     ];
+
+    public function module()
+    {
+        return $this->belongsTo(Module::class, 'module_id');
+    }
 }

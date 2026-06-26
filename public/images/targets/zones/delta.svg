@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <circle cx="100" cy="100" r="98" fill="#1a1a1a" stroke="#000" stroke-width="3"/>
+  <circle cx="100" cy="100" r="85" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="4 3"/>
+  <circle cx="100" cy="100" r="70" fill="rgba(255,255,255,0.08)" stroke="#fff" stroke-width="2"/>
+  <text x="100" y="80" font-family="'Space Grotesk',sans-serif" font-size="14" font-weight="700" fill="#aaa" text-anchor="middle">DELTA</text>
+  <text x="100" y="100" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#888" text-anchor="middle">1 POINT</text>
+</svg>

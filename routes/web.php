@@ -60,12 +60,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/instructor/profile/name', [InstructorController::class, 'updateProfileName'])->name('instructor.profile.name');
     Route::patch('/instructor/profile/password', [InstructorController::class, 'updateProfilePassword'])->name('instructor.profile.password');
     Route::post('/instructor/profile/photo', [InstructorController::class, 'updateProfilePhoto'])->name('instructor.profile.photo');
-    Route::get('/instructor/student-profiles', [InstructorStudentProfileController::class, 'index'])->name('instructor.student-profiles.index');
-    Route::post('/instructor/student-profiles', [InstructorStudentProfileController::class, 'store'])->name('instructor.student-profiles.store');
-    Route::get('/instructor/student-profiles/search', [InstructorStudentProfileController::class, 'search'])->name('instructor.student-profiles.search');
-    Route::patch('/instructor/student-profiles/{studentProfile}/verify', [InstructorStudentProfileController::class, 'verify'])->name('instructor.student-profiles.verify');
-
-
     // Activity Management
     Route::get('/instructor/activity/{module}', [ActivityController::class, 'index'])->name('instructor.activity.index');
     Route::post('/instructor/activity', [ActivityController::class, 'store'])->name('instructor.activity.store');
@@ -82,8 +76,7 @@ Route::middleware(['auth:web,student', 'student.active'])->group(function () {
     Route::get('/student/progress', [StudentController::class, 'progress'])->name('student.progress')->middleware('module.unlocked:module-2');
     Route::get('/student/leaderboard', [StudentController::class, 'leaderboard'])->name('student.leaderboard');
     // AJAX endpoint for student pages to poll module unlock states
-    Route::get('/student/module-states', [\App\Http\Controllers\ModuleAccessController::class, 'index'])->name('student.module-states');
-    // Lesson activity presence (heartbeat + leave)
+    // Module states route removed — access determined by student progress    // Lesson activity presence (heartbeat + leave)
     Route::post('/api/lesson/heartbeat', [LessonActivityController::class, 'heartbeat'])->name('api.lesson.heartbeat');
     Route::post('/api/lesson/leave', [LessonActivityController::class, 'leave'])->name('api.lesson.leave');
     Route::post('/student/assessment/save-score', [StudentController::class, 'saveAssessmentScore'])->name('student.assessment.save-score');

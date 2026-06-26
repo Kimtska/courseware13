@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <circle cx="100" cy="100" r="98" fill="#1a1a1a" stroke="#000" stroke-width="3"/>
+  <circle cx="100" cy="100" r="25" fill="none" stroke="#dc2626" stroke-width="2" stroke-dasharray="4 3"/>
+  <circle cx="100" cy="100" r="15" fill="rgba(220,38,38,0.15)" stroke="#dc2626" stroke-width="2"/>
+  <text x="100" y="80" font-family="'Space Grotesk',sans-serif" font-size="14" font-weight="700" fill="#ef4444" text-anchor="middle">ALPHA</text>
+  <text x="100" y="100" font-family="'Space Grotesk',sans-serif" font-size="10" fill="#fca5a5" text-anchor="middle">10 POINTS</text>
+</svg>

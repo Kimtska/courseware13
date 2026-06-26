@@ -103,14 +103,10 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-bold uppercase tracking-[0.28em] text-gray-500 mb-2">Session Activity</label>
-                        <select name="activity_status" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
-                            <option value="">All Activity</option>
-                            <option value="inactive" @selected(($filters['activity_status'] ?? '') === 'inactive')>Inactive</option>
-                            <option value="active_in_firing_range" @selected(($filters['activity_status'] ?? '') === 'active_in_firing_range')>Active in Firing Range</option>
-                            <option value="active_in_assembly" @selected(($filters['activity_status'] ?? '') === 'active_in_assembly')>Active in Assembly</option>
-                            <option value="completed_session" @selected(($filters['activity_status'] ?? '') === 'completed_session')>Completed Session</option>
-                        </select>
+                        <label class="block text-[10px] font-bold uppercase tracking-[0.28em] text-gray-500 mb-2">&nbsp;</label>
+                        <button type="submit" class="w-full px-4 py-3 rounded-xl bg-violet-700 text-white text-xs font-bold hover:bg-violet-800 transition-colors">
+                            <i class="fas fa-filter mr-1"></i> Apply Filters
+                        </button>
                     </div>
                 </form>
             </section>
@@ -142,8 +138,7 @@
                                     <th class="px-5 sm:px-6 py-4 font-semibold">Student ID</th>
                                     <th class="px-5 sm:px-6 py-4 font-semibold">Full Name</th>
                                     <th class="px-5 sm:px-6 py-4 font-semibold">Section</th>
-                                    <th class="px-5 sm:px-6 py-4 font-semibold">Progress Track</th>
-                                    <th class="px-5 sm:px-6 py-4 font-semibold">Current Activity Status</th>
+                                    <th class="px-5 sm:px-6 py-4 font-semibold">Current Progress</th>
                                     <th class="px-5 sm:px-6 py-4 font-semibold">Date Added</th>
                                     <th class="px-5 sm:px-6 py-4 text-right font-semibold">Action Buttons</th>
                                 </tr>
@@ -151,70 +146,36 @@
                             <tbody class="divide-y divide-gray-100 bg-white">
                                 @forelse ($students as $student)
                                     @php
-                                        $studentId = $student->student_id_number ?? $student->student_number ?? '';
-                                        $fullName = $student->full_name ?? trim(($student->first_name ?? '') . ' ' . ($student->middle_name ?? '') . ' ' . ($student->last_name ?? ''));
+                                        $studentId = $student->student_id_number ?? '';
+                                        $fullName = $student->full_name;
                                         $section = $student->section ?? '—';
-                                        $enrollmentStatus = $student->enrollment_status ?? ($student->verification_status ?? 'pending');
-                                        $moduleAccessStatus = $student->module_access_status ?? (($enrollmentStatus === 'verified_enrolled' || $enrollmentStatus === 'verified') ? 'ready_for_training' : 'locked');
-                                        $activityStatus = $student->current_activity_status ?? 'inactive';
                                         $dateAdded = $student->created_at ?? null;
-                                        $latestSession = $student->latestTrainingSession;
-                                        $currentModule = $latestSession?->module_key;
+                                        $progress = $student->current_progress;
+                                        $currentModule = $progress['module_key'] ?? $student->latestTrainingSession?->module_key;
+                                        $currentLesson = $progress['lesson_key'] ?? null;
+                                        $currentPage = $progress['page_index'] ?? null;
+                                        $totalPages = $progress['total_pages'] ?? null;
                                         if ($currentModule) {
-                                            $moduleLabel = ucwords(str_replace(['module-', '_'], ['Module ', ' '], $currentModule));
-                                            $meta = $latestSession->metadata ?? [];
-                                            $lessonKey = $meta['current_lesson'] ?? null;
-                                            $pageIdx = $meta['current_page_index'] ?? null;
-                                            $totalPgs = $meta['total_pages'] ?? null;
-                                            $progressTrack = $moduleLabel;
-                                            if ($lessonKey && $lessonKey !== 'assessment' && $lessonKey !== 'result') {
-                                                $lessonLabel = ucwords(str_replace(['module-', '_', '-'], ['Module ', ' ', ' '], $lessonKey));
-                                                $progressTrack .= ' - ' . $lessonLabel;
-                                            }
-                                            if ($pageIdx !== null) {
-                                                $progressTrack .= ' (Page ' . ((int)$pageIdx + 1);
-                                                $progressTrack .= $totalPgs ? ' of ' . $totalPgs : '';
-                                                $progressTrack .= ')';
+                                            $progressTrack = ucwords(str_replace(['module-', '_'], ['Module ', ' '], $currentModule));
+                                            if ($currentLesson) {
+                                                $progressTrack .= ' - ' . str_replace('_', ' ', $currentLesson);
+                                                if ($currentPage !== null) {
+                                                    $progressTrack .= ' (Page ' . ($currentPage + 1) . ($totalPages ? ' of ' . $totalPages : '') . ')';
+                                                }
                                             }
                                         } else {
                                             $progressTrack = '—';
                                         }
 
-                                        $enrollmentClass = match ($enrollmentStatus) {
-                                            'verified_enrolled', 'verified' => 'bg-emerald-100 text-emerald-700',
-                                            'pending' => 'bg-amber-100 text-amber-700',
-                                            'rejected' => 'bg-red-100 text-red-700',
-                                            'archived' => 'bg-gray-200 text-gray-700',
-                                            default => 'bg-slate-100 text-slate-700',
-                                        };
-                                        $moduleClass = match ($moduleAccessStatus) {
-                                            'ready_for_training' => 'bg-violet-100 text-violet-700',
-                                            'locked' => 'bg-slate-100 text-slate-700',
-                                            'active_in_firing_range' => 'bg-cyan-100 text-cyan-700',
-                                            'completed_session' => 'bg-emerald-100 text-emerald-700',
-                                            'archived' => 'bg-gray-200 text-gray-700',
-                                            default => 'bg-slate-100 text-slate-700',
-                                        };
-                                        $progressClass = $currentModule ? 'bg-violet-100 text-violet-700' : $moduleClass;
+                                        $progressClass = $currentModule ? 'bg-violet-100 text-violet-700' : 'bg-slate-100 text-slate-700';
                                         $studentPayload = [
                                             'id' => $student->id,
                                             'student_id_number' => $studentId,
                                             'full_name' => $fullName,
                                             'section' => $section,
-                                            'enrollment_status' => $enrollmentStatus,
-                                            'module_access_status' => $progressTrack,
-                                            'current_activity_status' => $activityStatus,
+                                            'progress' => $progressTrack,
                                             'date_added' => $dateAdded ? $dateAdded->format('Y-m-d H:i') : null,
-                                            'current_module' => $currentModule,
                                         ];
-                                        $activityClass = match ($activityStatus) {
-                                            'inactive' => 'bg-slate-100 text-slate-700',
-                                            'active_in_firing_range' => 'bg-cyan-100 text-cyan-700',
-                                            'active_in_assembly' => 'bg-violet-100 text-violet-700',
-                                            'completed_session' => 'bg-emerald-100 text-emerald-700',
-                                            'archived' => 'bg-gray-200 text-gray-700',
-                                            default => 'bg-slate-100 text-slate-700',
-                                        };
                                     @endphp
                                     <tr class="even:bg-gray-50/60 hover:bg-violet-50/50 transition-colors">
                                         <td class="px-5 sm:px-6 py-4 font-semibold text-gray-900">{{ $studentId }}</td>
@@ -223,7 +184,6 @@
                                         </td>
                                         <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $section }}</td>
                                         <td class="px-5 sm:px-6 py-4"><span class="status-pill {{ $progressClass }}">{{ $progressTrack }}</span></td>
-                                        <td class="px-5 sm:px-6 py-4"><span class="status-pill {{ $activityClass }}">{{ $activityStatus === 'inactive' ? 'Offline' : 'Active' }}</span></td>
                                         <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $dateAdded ? $dateAdded->format('M d, Y') : '—' }}</td>
                                         <td class="px-5 sm:px-6 py-4">
                                             <div class="flex items-center justify-end gap-2">
@@ -235,7 +195,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="px-6 py-16 text-center text-gray-500">
+                                        <td colspan="6" class="px-6 py-16 text-center text-gray-500">
                                             <div class="max-w-md mx-auto">
                                                 <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-violet-100 text-violet-700 flex items-center justify-center text-2xl">
                                                     <i class="fas fa-user-graduate"></i>
@@ -264,8 +224,7 @@
                                     <th class="px-5 sm:px-6 py-4 font-semibold">Student ID</th>
                                     <th class="px-5 sm:px-6 py-4 font-semibold">Full Name</th>
                                     <th class="px-5 sm:px-6 py-4 font-semibold">Section</th>
-                                    <th class="px-5 sm:px-6 py-4 font-semibold">Progress Track</th>
-                                    <th class="px-5 sm:px-6 py-4 font-semibold">Current Activity Status</th>
+                                    <th class="px-5 sm:px-6 py-4 font-semibold">Current Progress</th>
                                     <th class="px-5 sm:px-6 py-4 font-semibold">Archived At</th>
                                     <th class="px-5 sm:px-6 py-4 text-right font-semibold">Action Buttons</th>
                                 </tr>
@@ -277,46 +236,23 @@
                                         $name = $student->full_name ?? '';
                                         $sec = $student->section ?? '—';
                                         $moved = $student->archived_at;
-                                        $moduleAccessStatus = $student->module_access_status ?? 'locked';
-                                        $activityStatus = $student->current_activity_status ?? 'inactive';
-                                        $enrollmentStatus = $student->enrollment_status ?? 'archived';
-                                        $latestSession = $student->latestTrainingSession;
-                                        $currentModule = $latestSession?->module_key;
+                                        $progress = $student->current_progress;
+                                        $currentModule = $progress['module_key'] ?? $student->latestTrainingSession?->module_key;
+                                        $currentLesson = $progress['lesson_key'] ?? null;
+                                        $currentPage = $progress['page_index'] ?? null;
+                                        $totalPages = $progress['total_pages'] ?? null;
                                         if ($currentModule) {
-                                            $moduleLabel = ucwords(str_replace(['module-', '_'], ['Module ', ' '], $currentModule));
-                                            $meta = $latestSession->metadata ?? [];
-                                            $lessonKey = $meta['current_lesson'] ?? null;
-                                            $pageIdx = $meta['current_page_index'] ?? null;
-                                            $totalPgs = $meta['total_pages'] ?? null;
-                                            $progressTrack = $moduleLabel;
-                                            if ($lessonKey && $lessonKey !== 'assessment' && $lessonKey !== 'result') {
-                                                $lessonLabel = ucwords(str_replace(['module-', '_', '-'], ['Module ', ' ', ' '], $lessonKey));
-                                                $progressTrack .= ' - ' . $lessonLabel;
-                                            }
-                                            if ($pageIdx !== null) {
-                                                $progressTrack .= ' (Page ' . ((int)$pageIdx + 1);
-                                                $progressTrack .= $totalPgs ? ' of ' . $totalPgs : '';
-                                                $progressTrack .= ')';
+                                            $progressTrack = ucwords(str_replace(['module-', '_'], ['Module ', ' '], $currentModule));
+                                            if ($currentLesson) {
+                                                $progressTrack .= ' - ' . str_replace('_', ' ', $currentLesson);
+                                                if ($currentPage !== null) {
+                                                    $progressTrack .= ' (Page ' . ($currentPage + 1) . ($totalPages ? ' of ' . $totalPages : '') . ')';
+                                                }
                                             }
                                         } else {
                                             $progressTrack = '—';
                                         }
-                                        $progressClass = $currentModule ? 'bg-violet-100 text-violet-700' : (match ($moduleAccessStatus) {
-                                            'ready_for_training' => 'bg-violet-100 text-violet-700',
-                                            'locked' => 'bg-slate-100 text-slate-700',
-                                            'active_in_firing_range' => 'bg-cyan-100 text-cyan-700',
-                                            'completed_session' => 'bg-emerald-100 text-emerald-700',
-                                            'archived' => 'bg-gray-200 text-gray-700',
-                                            default => 'bg-slate-100 text-slate-700',
-                                        });
-                                        $activityClass = match ($activityStatus) {
-                                            'inactive' => 'bg-slate-100 text-slate-700',
-                                            'active_in_firing_range' => 'bg-cyan-100 text-cyan-700',
-                                            'active_in_assembly' => 'bg-violet-100 text-violet-700',
-                                            'completed_session' => 'bg-emerald-100 text-emerald-700',
-                                            'archived' => 'bg-gray-200 text-gray-700',
-                                            default => 'bg-slate-100 text-slate-700',
-                                        };
+                                        $progressClass = $currentModule ? 'bg-violet-100 text-violet-700' : 'bg-gray-200 text-gray-700';
 
                                         $studentPayload = [
                                             'id' => $student->id,
@@ -324,11 +260,8 @@
                                             'full_name' => $name,
                                             'section' => $sec,
                                             'status' => 'Archived',
-                                            'enrollment_status' => $enrollmentStatus,
-                                            'module_access_status' => $progressTrack,
-                                            'current_activity_status' => $activityStatus,
+                                            'progress' => $progressTrack,
                                             'date_added' => $moved ? $moved->format('Y-m-d H:i') : null,
-                                            'current_module' => $currentModule,
                                         ];
                                     @endphp
                                     <tr class="hover:bg-amber-50/50 transition-colors">
@@ -338,7 +271,6 @@
                                         </td>
                                         <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $sec }}</td>
                                         <td class="px-5 sm:px-6 py-4"><span class="status-pill {{ $progressClass }}">{{ $progressTrack }}</span></td>
-                                        <td class="px-5 sm:px-6 py-4"><span class="status-pill {{ $activityClass }}">{{ $activityStatus === 'inactive' ? 'Offline' : 'Active' }}</span></td>
                                         <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $moved ? $moved->format('M d, Y') : '—' }}</td>
                                         <td class="px-5 sm:px-6 py-4">
                                             <div class="flex items-center justify-end gap-2">
@@ -350,7 +282,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="px-6 py-16 text-center text-gray-500">
+                                        <td colspan="6" class="px-6 py-16 text-center text-gray-500">
                                             <div class="max-w-md mx-auto">
                                                 <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-2xl">
                                                     <i class="fas fa-clock"></i>
@@ -386,9 +318,7 @@
                         <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Student ID</p><p id="view-id" class="text-lg font-semibold text-gray-900"></p></div>
                         <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Full Name</p><p id="view-name" class="text-lg font-semibold text-gray-900"></p></div>
                         <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Section</p><p id="view-section" class="text-gray-700"></p></div>
-                        <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Enrollment Status</p><p id="view-enrollment" class="text-gray-700"></p></div>
-                        <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Progress Track</p><p id="view-access" class="text-gray-700"></p></div>
-                        <div class="sm:col-span-2"><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Current Activity</p><p id="view-activity" class="text-gray-700"></p></div>
+                        <div><p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Current Progress</p><p id="view-progress" class="text-gray-700"></p></div>
                     </div>
                 </div>
             </div>
@@ -584,9 +514,7 @@
                 document.getElementById('view-id').textContent = student.student_id_number;
                 document.getElementById('view-name').textContent = student.full_name;
                 document.getElementById('view-section').textContent = student.section || '—';
-                document.getElementById('view-enrollment').textContent = student.enrollment_status;
-                document.getElementById('view-access').textContent = student.module_access_status;
-                document.getElementById('view-activity').textContent = student.current_activity_status;
+                document.getElementById('view-progress').textContent = student.progress || '—';
                 openModal(viewModal);
             });
         });

@@ -27,4 +27,14 @@ class StudentActivityLog extends Model
     {
         return $this->belongsTo(ManagedStudent::class, 'student_id');
     }
+
+    public function instructor()
+    {
+        return $this->belongsTo(User::class, 'instructor_user_id');
+    }
+
+    public function trainingSession()
+    {
+        return $this->belongsTo(StudentTrainingSession::class, 'student_training_session_id');
+    }
 }
