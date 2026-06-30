@@ -212,12 +212,11 @@
         const TARGET_IMG = { width: 1200, height: 2000 };
         const TARGET_CENTER = { x: 600, y: 1000 };
         const TARGET_RADII = { bullseye: 58, alpha: 118, bravo: 270, charlie: 420, delta: 535 };
-        const TARGET_DISPLAY_WIDTH = 200;
+        const TARGET_DISPLAY_WIDTH = 260;
 
         const weaponStats = {
-            '9mm': { name: '9mm Pistol', magSize: 15, totalAmmo: 45, reloadTime: 1500, recoil: 8, flashColor: 'rgba(255,200,50,0.4)', flashSize: '40%' },
-            '.45': { name: '.45 Caliber', magSize: 7, totalAmmo: 28, reloadTime: 2200, recoil: 15, flashColor: 'rgba(255,150,50,0.5)', flashSize: '50%' },
-            '38': { name: '.38 Pistol Revolver', magSize: 6, totalAmmo: 24, reloadTime: 1800, recoil: 12, flashColor: 'rgba(255,215,140,0.55)', flashSize: '45%' }
+            '9mm': { name: '9mm Pistol', magSize: 15, totalAmmo: 45, reloadTime: 1500, recoilKick: 14, recoilRecovery: 0.82, recoilSway: 3, flashColor: 'rgba(255,200,50,0.4)', flashSize: '40%' },
+            '.45': { name: '.45 Caliber', magSize: 7, totalAmmo: 28, reloadTime: 2200, recoilKick: 28, recoilRecovery: 0.90, recoilSway: 5, flashColor: 'rgba(255,150,50,0.5)', flashSize: '50%' }
         };
 
         const state = {
@@ -267,6 +266,38 @@
         const reloadUI = document.getElementById('reload-ui');
         const reloadFill = document.getElementById('reload-fill');
         const timerControls = document.getElementById('timer-controls');
+
+        let lastMouseX = 0, lastMouseY = 0;
+        let recoilOffsetX = 0, recoilOffsetY = 0;
+        let recoilRecoveryId = null;
+
+        function updateCrosshairPosition() {
+            crosshair.style.left = (lastMouseX + recoilOffsetX) + 'px';
+            crosshair.style.top = (lastMouseY + recoilOffsetY) + 'px';
+        }
+
+        function applyRecoil() {
+            const wStats = weaponStats[state.selectedWeapon];
+            recoilOffsetY -= wStats.recoilKick;
+            recoilOffsetX += (Math.random() - 0.5) * 2 * wStats.recoilSway;
+            updateCrosshairPosition();
+            if (recoilRecoveryId) cancelAnimationFrame(recoilRecoveryId);
+            const recovery = wStats.recoilRecovery;
+            function recover() {
+                recoilOffsetY *= recovery;
+                recoilOffsetX *= recovery;
+                if (Math.abs(recoilOffsetY) < 0.5 && Math.abs(recoilOffsetX) < 0.5) {
+                    recoilOffsetY = 0;
+                    recoilOffsetX = 0;
+                    updateCrosshairPosition();
+                    recoilRecoveryId = null;
+                    return;
+                }
+                updateCrosshairPosition();
+                recoilRecoveryId = requestAnimationFrame(recover);
+            }
+            recoilRecoveryId = requestAnimationFrame(recover);
+        }
 
         let audioCtx = null;
         let noiseBuffer = null;
@@ -712,6 +743,7 @@
             }
             state.totalShots++; updateHUD();
             playGunshot();
+            applyRecoil();
 
             muzzleFlash.classList.add('active');
             setTimeout(() => muzzleFlash.classList.remove('active'), 80);
@@ -801,7 +833,7 @@
         }
 
         var frListeners = [
-            { el: document, type: 'mousemove', fn: function(e) { crosshair.style.left = e.clientX + 'px'; crosshair.style.top = e.clientY + 'px'; } },
+            { el: document, type: 'mousemove', fn: function(e) { lastMouseX = e.clientX; lastMouseY = e.clientY; updateCrosshairPosition(); } },
             { el: gameArea, type: 'mouseenter', fn: function() { if (state.isPlaying) crosshair.style.display = 'block'; } },
             { el: gameArea, type: 'mouseleave', fn: function() { crosshair.style.display = 'none'; } },
             { el: gameArea, type: 'mousedown', fn: handleShot },
