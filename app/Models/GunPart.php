@@ -8,14 +8,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class GunPart extends Model
 {
     protected $fillable = [
-        'firearm_id', 'slug', 'name', 'description',
+        'assessment_simulation_id', 'slug', 'name', 'description',
         'sort_order', 'z_order',
         'image_path', 'glow_image_path',
         'zone_x', 'zone_y', 'zone_w', 'zone_h',
     ];
 
-    public function firearm(): BelongsTo
+    public function assessmentSimulation(): BelongsTo
     {
-        return $this->belongsTo(Firearm::class);
+        return $this->belongsTo(AssessmentSimulation::class, 'assessment_simulation_id');
     }
 }

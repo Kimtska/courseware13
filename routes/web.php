@@ -53,7 +53,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/instructor/manage-module/module-1', [InstructorStudentProfileController::class, 'moduleOne'])->name('instructor.manage-module.module-1');
     Route::get('/instructor/manage-module/module-3', [InstructorStudentProfileController::class, 'moduleThree'])->name('instructor.manage-module.module-3');
     Route::get('/instructor/manage-module/module-4', [InstructorStudentProfileController::class, 'moduleFour'])->name('instructor.manage-module.module-4');
-    Route::post('/instructor/firing-range/save-score', [InstructorStudentProfileController::class, 'saveFiringRangeScore'])->name('instructor.firing-range.save-score');
+    Route::post('/instructor/firing-range/save-score', [InstructorStudentProfileController::class, 'saveFiringRangeScore'])->name('instructor.firing-range.save-score')->middleware('throttle:scores');
     Route::get('/instructor/lesson-activity', [LessonActivityController::class, 'index'])->name('instructor.lesson-activity');
     Route::get('/instructor/lesson-activity/active', [LessonActivityController::class, 'activeStudents'])->name('instructor.lesson-activity.active');
     Route::get('/instructor/reports', [InstructorController::class, 'reports'])->name('instructor.reports');
@@ -79,7 +79,8 @@ Route::middleware(['auth:web,student', 'student.active'])->group(function () {
     // Module states route removed — access determined by student progress    // Lesson activity presence (heartbeat + leave)
     Route::post('/api/lesson/heartbeat', [LessonActivityController::class, 'heartbeat'])->name('api.lesson.heartbeat');
     Route::post('/api/lesson/leave', [LessonActivityController::class, 'leave'])->name('api.lesson.leave');
-    Route::post('/student/assessment/save-score', [StudentController::class, 'saveAssessmentScore'])->name('student.assessment.save-score');
+    Route::post('/student/assessment/save-score', [StudentController::class, 'saveAssessmentScore'])->name('student.assessment.save-score')->middleware('throttle:scores');
+    Route::post('/student/assembly/save-score', [StudentController::class, 'saveAssemblyScore'])->name('student.assembly.save-score')->middleware('throttle:scores');
     Route::post('/student/progress/update', [StudentController::class, 'updateProgress'])->name('student.progress.update');
 });
 

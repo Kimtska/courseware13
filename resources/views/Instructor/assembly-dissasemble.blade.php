@@ -111,7 +111,7 @@
                         <div class="menu-hero px-6 sm:px-8 py-6 text-left">
                             <p class="text-[10px] uppercase tracking-[0.28em] text-violet-200 font-bold">Simulation Setup</p>
                             <h1 class="font-display font-bold text-3xl md:text-4xl mt-2">Assembly Menu</h1>
-                            <p class="text-violet-100 text-sm mt-2 max-w-2xl">Choose a time limit and firearm profile before starting the assembly simulation.</p>
+                            <p class="text-violet-100 text-sm mt-2 max-w-2xl">Choose a time limit and simulation profile before starting the assembly simulation.</p>
                         </div>
                         <div class="p-6 sm:p-8 text-left space-y-6">
                             <div>
@@ -130,25 +130,25 @@
                                 </div>
                             </div>
                             <div>
-                                <h3 class="text-xs text-violet-700 uppercase tracking-widest font-bold mb-3 flex items-center gap-2"><i class="fas fa-gun text-violet-500"></i> Select Firearm</h3>
+                                <h3 class="text-xs text-violet-700 uppercase tracking-widest font-bold mb-3 flex items-center gap-2"><i class="fas fa-gun text-violet-500"></i> Select Simulation</h3>
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    @foreach ($firearms as $fIndex => $firearm)
-                                    <div class="sel-card {{ $fIndex === 0 ? 'active' : '' }} {{ $firearm->parts->isEmpty() ? 'opacity-40 pointer-events-none' : '' }}" data-firearm="{{ $firearm->slug }}" onclick="{{ $firearm->parts->isNotEmpty() ? "selectFirearm('{$firearm->slug}', this)" : '' }}">
-                                        <div class="flex items-center gap-3 mb-2"><div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700"><i class="fas fa-gun"></i></div><h4 class="font-display font-bold text-gray-900">{{ $firearm->name }}</h4></div>
-                                        <p class="text-[10px] text-gray-500 leading-relaxed">{{ $firearm->description ? Str::limit($firearm->description, 80) : ($firearm->parts->isEmpty() ? 'No parts available for this firearm yet.' : 'Assembly-ready profile.') }}</p>
+                                    @foreach ($simulations as $fIndex => $simulation)
+                                    <div class="sel-card {{ $fIndex === 0 ? 'active' : '' }} {{ $simulation->parts->isEmpty() ? 'opacity-40 pointer-events-none' : '' }}" data-simulation="{{ $simulation->slug }}" onclick="{{ $simulation->parts->isNotEmpty() ? "selectSimulation('{$simulation->slug}', this)" : '' }}">
+                                        <div class="flex items-center gap-3 mb-2"><div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700"><i class="fas fa-gun"></i></div><h4 class="font-display font-bold text-gray-900">{{ $simulation->name }}</h4></div>
+                                        <p class="text-[10px] text-gray-500 leading-relaxed">{{ $simulation->description ? Str::limit($simulation->description, 80) : ($simulation->parts->isEmpty() ? 'No parts available for this simulation yet.' : 'Assembly-ready profile.') }}</p>
                                     </div>
                                     @endforeach
                                 </div>
                             </div>
                             <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-violet-100">
                                 <div class="menu-summary">
-                                    Selected: <strong id="menu-summary-time">30s</strong> · <strong id="menu-summary-firearm">9mm Pistol</strong>
+                                    Selected: <strong id="menu-summary-time">30s</strong> ·             <strong id="menu-summary-simulation">9mm Pistol</strong>
                                 </div>
                                 <button onclick="startSimulation()" class="start-sim-btn">
                                     <i class="fas fa-play"></i> Start Simulation
                                 </button>
                             </div>
-                            <p class="menu-footnote">The chosen firearm updates the session label only. The assembly workflow remains the same once the simulation starts.</p>
+                            <p class="menu-footnote">The chosen simulation updates the session label only. The assembly workflow remains the same once the simulation starts.</p>
                         </div>
                     </div>
                 </div>
@@ -159,7 +159,7 @@
                     </div>
                     <div class="session-strip">
                         <div class="session-pill" id="session-time-pill">Time: 30s</div>
-                        <div class="session-pill" id="session-firearm-pill">Firearm: 9mm Pistol</div>
+                        <div class="session-pill" id="session-simulation-pill">Simulation: 9mm Pistol</div>
                     </div>
                     <div class="mode-row">
                         <button class="mbtn on" id="btn-asm" type="button">▲ Assemble</button>
@@ -174,7 +174,7 @@
                     <div class="layout">
                         <div class="tray-wrap">
                             <div class="tray-lbl">Parts Tray</div>
-                            <div class="tray" id="tray" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="dropTray(event)"></div>
+                            <div class="tray" id="tray"></div>
                         </div>
                         <div class="canvas-wrap">
                             <div class="canvas-lbl">Assembly View - drag parts onto their position</div>
@@ -215,10 +215,10 @@
     </div>
 
     @php
-        $adFirearmsData = [];
-        foreach ($firearms as $adF) {
+        $adSimulationsData = [];
+        foreach ($simulations as $adS) {
             $adPartsData = [];
-            foreach ($adF->parts as $adP) {
+            foreach ($adS->parts as $adP) {
                 $adPartsData[] = [
                     'id' => strtoupper($adP->slug),
                     'name' => $adP->name,
@@ -236,29 +236,29 @@
                     ],
                 ];
             }
-            $adFirearmsData[$adF->slug] = [
-                'label' => $adF->name,
+            $adSimulationsData[$adS->slug] = [
+                'label' => $adS->name,
                 'parts' => $adPartsData,
             ];
         }
     @endphp
 
     <script>
-        const FIREARMS_DATA = @json($adFirearmsData);
+        const SIMULATIONS_DATA = @json($adSimulationsData);
 
-        function getFirearmParts() {
-            return FIREARMS_DATA[selectedFirearm]?.parts || [];
+        function getSimulationParts() {
+            return SIMULATIONS_DATA[selectedSimulation]?.parts || [];
         }
 
-        function getFirearmLabel() {
-            return FIREARMS_DATA[selectedFirearm]?.label || '9mm Pistol';
+        function getSimulationLabel() {
+            return SIMULATIONS_DATA[selectedSimulation]?.label || '9mm Pistol';
         }
 
-        function getFirearmImg(part) {
+        function getSimulationImg(part) {
             return part.img || '';
         }
 
-        function getFirearmGlow(part) {
+        function getSimulationGlow(part) {
             return part.glow || part.img || '';
         }
 
@@ -266,18 +266,18 @@
         let placed = {};
         let dragId = null;
         let selectedTimeLimit = 30;
-        let selectedFirearm = '9mm';
+        let selectedSimulation = '9mm';
         let simulationStarted = false;
 
         function setInfo(html){ document.getElementById('info').innerHTML = html; }
 
         function updateMenuSummary(){
             const timeText = selectedTimeLimit + 's';
-            const firearmText = getFirearmLabel();
+            const simulationText = getSimulationLabel();
             document.getElementById('menu-summary-time').textContent = timeText;
-            document.getElementById('menu-summary-firearm').textContent = firearmText;
+            document.getElementById('menu-summary-simulation').textContent = simulationText;
             document.getElementById('session-time-pill').textContent = 'Time: ' + timeText;
-            document.getElementById('session-firearm-pill').textContent = 'Firearm: ' + firearmText;
+            document.getElementById('session-simulation-pill').textContent = 'Simulation: ' + simulationText;
         }
 
         function selectTime(time, element){
@@ -294,9 +294,9 @@
             selectTime(customValue, element);
         }
 
-        function selectFirearm(firearm, element){
-            selectedFirearm = firearm;
-            document.querySelectorAll('[data-firearm]').forEach(el => el.classList.remove('active'));
+        function selectSimulation(simulation, element){
+            selectedSimulation = simulation;
+            document.querySelectorAll('[data-simulation]').forEach(el => el.classList.remove('active'));
             element.classList.add('active');
             reset();
             updateMenuSummary();
@@ -306,7 +306,7 @@
             simulationStarted = true;
             document.getElementById('start-overlay').classList.add('hidden');
             setInfo('Drag each part from the tray onto the pistol to assemble it layer by layer.');
-            toast('Simulation started: ' + getFirearmLabel() + ' · ' + selectedTimeLimit + 's', 'ok');
+            toast('Simulation started: ' + getSimulationLabel() + ' · ' + selectedTimeLimit + 's', 'ok');
             pageTimerRemaining = selectedTimeLimit;
             updatePageTimerDisplay();
             showPageTimerWidget();
@@ -389,7 +389,7 @@
         }
 
         function getNextPart(){
-            return getFirearmParts().find(part => !placed[part.id]) || null;
+            return getSimulationParts().find(part => !placed[part.id]) || null;
         }
 
         function pulseStage(){
@@ -414,7 +414,7 @@
             document.getElementById('badge').textContent = nextMode === 'asm' ? 'ASSEMBLY MODE' : 'DISASSEMBLY MODE';
             reset();
             if(nextMode === 'dis'){
-                getFirearmParts().forEach(part => placed[part.id] = true);
+                getSimulationParts().forEach(part => placed[part.id] = true);
                 render();
                 setInfo('Drag each part off the pistol back to the tray to disassemble it.');
             }
@@ -438,14 +438,14 @@
         function renderLayers(){
             document.querySelectorAll('#assembly-shell .layer').forEach(node => node.remove());
             const stage = document.getElementById('stage');
-            [...getFirearmParts()].sort((a,b) => a.zOrder - b.zOrder).forEach(part => {
+            [...getSimulationParts()].sort((a,b) => a.zOrder - b.zOrder).forEach(part => {
                 if(!placed[part.id]) return;
                 const layer = document.createElement('div');
                 layer.className = 'layer';
-                layer.id = 'layer-' + part.id;
+                layer.dataset.pid = part.id;
                 layer.style.zIndex = part.zOrder + 1;
                 const img = document.createElement('img');
-                img.src = getFirearmImg(part);
+                img.src = getSimulationImg(part);
                 img.alt = part.name;
                 img.style.cssText = 'opacity:1;filter:drop-shadow(0 10px 16px rgba(0,0,0,.28))';
                 layer.appendChild(img);
@@ -453,9 +453,6 @@
                     layer.style.cursor = 'grab';
                     layer.style.pointerEvents = 'auto';
                     layer.setAttribute('draggable', 'true');
-                    layer.addEventListener('dragstart', e => { dragId = part.id; e.dataTransfer.effectAllowed = 'move'; layer.style.opacity = '.3'; });
-                    layer.addEventListener('dragend', () => { layer.style.opacity = '1'; dragId = null; });
-                    layer.addEventListener('mouseenter', () => setInfo(part.desc));
                 }
                 stage.appendChild(layer);
             });
@@ -467,11 +464,12 @@
             const nextPart = getNextPart();
             const stage = document.getElementById('stage');
             document.querySelectorAll('#assembly-shell .guide-layer').forEach(n => n.remove());
-            getFirearmParts().forEach(part => {
+            getSimulationParts().forEach(part => {
                 if(placed[part.id]) return;
                 const z = part.zone;
                 const zone = document.createElement('div');
                 zone.className = 'dzone empty';
+                zone.dataset.pid = part.id;
                 if(nextPart && nextPart.id === part.id){
                     zone.classList.add('next');
                     const guideLayer = document.createElement('div');
@@ -479,7 +477,7 @@
                     guideLayer.id = 'guide-' + part.id;
                     guideLayer.style.zIndex = part.zOrder;
                     const guideImg = document.createElement('img');
-                    guideImg.src = getFirearmGlow(part);
+                    guideImg.src = getSimulationGlow(part);
                     guideImg.alt = part.name + ' guide';
                     guideImg.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 10px 16px rgba(34,197,94,.45))';
                     guideLayer.appendChild(guideImg);
@@ -493,10 +491,6 @@
                 hint.className = 'hint';
                 hint.textContent = part.name;
                 zone.appendChild(hint);
-                zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('over'); });
-                zone.addEventListener('dragleave', () => zone.classList.remove('over'));
-                zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('over'); dropZone(part.id); });
-                zone.addEventListener('mouseenter', () => setInfo(part.desc));
                 stage.appendChild(zone);
             });
         }
@@ -504,7 +498,7 @@
         function renderTray(){
             const tray = document.getElementById('tray');
             tray.innerHTML = '';
-            const items = getFirearmParts().filter(part => mode === 'asm' ? !placed[part.id] : placed[part.id]);
+            const items = getSimulationParts().filter(part => mode === 'asm' ? !placed[part.id] : placed[part.id]);
             if(!items.length){
                 tray.innerHTML = `<div style="font-size:11px;color:#555;padding:20px;text-align:center">${mode === 'asm' ? 'All parts assembled!' : 'All parts removed!'}</div>`;
                 return;
@@ -515,7 +509,7 @@
                 card.dataset.pid = part.id;
                 card.setAttribute('draggable', 'true');
                 const img = document.createElement('img');
-                img.src = getFirearmImg(part);
+                img.src = getSimulationImg(part);
                 img.alt = part.name;
                 img.style.cssText = 'filter:drop-shadow(0 8px 12px rgba(0,0,0,.12))';
                 const label = document.createElement('div');
@@ -523,9 +517,6 @@
                 label.textContent = part.name;
                 card.appendChild(img);
                 card.appendChild(label);
-                card.addEventListener('dragstart', e => { dragId = part.id; e.dataTransfer.effectAllowed = 'move'; card.classList.add('ghost'); });
-                card.addEventListener('dragend', () => { card.classList.remove('ghost'); dragId = null; });
-                card.addEventListener('mouseenter', () => setInfo(part.desc));
                 tray.appendChild(card);
             });
         }
@@ -534,7 +525,7 @@
             if(!simulationStarted) return;
             if(!dragId) return;
             if(dragId !== pid){
-                const correct = getFirearmParts().find(part => part.id === pid);
+                const correct = getSimulationParts().find(part => part.id === pid);
                 toast('Wrong spot! That slot is for the ' + correct.name, 'err');
                 return;
             }
@@ -543,27 +534,12 @@
             render();
             prog();
             pulseStage();
-            toast(getFirearmParts().find(part => part.id === pid).name + ' installed', 'ok');
+            toast(getSimulationParts().find(part => part.id === pid).name + ' installed', 'ok');
             checkDone();
         }
 
-        function dropTray(e){
-            e.preventDefault();
-            document.getElementById('tray').classList.remove('over');
-            if(!simulationStarted) return;
-            if(!dragId) return;
-            if(mode === 'dis' && placed[dragId]){
-                const partName = getFirearmParts().find(part => part.id === dragId)?.name || 'Part';
-                placed[dragId] = false;
-                render();
-                prog();
-                toast(partName + ' removed', 'ok');
-                dragId = null;
-            }
-        }
-
         function checkDone(){
-            const parts = getFirearmParts();
+            const parts = getSimulationParts();
             if(Object.keys(placed).length === parts.length && parts.length > 0){
                 document.getElementById('stage').classList.add('done');
                 toast('Pistol fully assembled!', 'ok');
@@ -572,17 +548,73 @@
 
         function prog(){
             const n = Object.values(placed).filter(Boolean).length;
-            const t = getFirearmParts().length;
+            const t = getSimulationParts().length;
             document.getElementById('pfill').style.width = (t > 0 ? (n / t * 100) : 0) + '%';
             document.getElementById('ptxt').textContent = n + ' / ' + t;
         }
 
+        function adHandleDragStart(e) {
+            var target = e.target.closest('.pcard, .layer');
+            if (!target) return;
+            dragId = target.dataset.pid;
+            if (!dragId) return;
+            e.dataTransfer.effectAllowed = 'move';
+            target.classList.add('ghost');
+        }
+        function adHandleDragEnd(e) {
+            var target = e.target.closest('.pcard, .layer');
+            if (target) target.classList.remove('ghost');
+            dragId = null;
+        }
+        function adHandleDragOver(e) {
+            var zone = e.target.closest('.dzone, #tray');
+            if (zone) { e.preventDefault(); zone.classList.add('over'); }
+        }
+        function adHandleDragLeave(e) {
+            var zone = e.target.closest('.dzone, #tray');
+            if (zone) zone.classList.remove('over');
+        }
+        function adHandleDrop(e) {
+            e.preventDefault();
+            var zone = e.target.closest('.dzone');
+            var tray = e.target.closest('#tray');
+            if (zone) {
+                zone.classList.remove('over');
+                if (simulationStarted && dragId) dropZone(zone.dataset.pid);
+            } else if (tray) {
+                tray.classList.remove('over');
+                if (simulationStarted && dragId && mode === 'dis' && placed[dragId]) {
+                    var partName = getSimulationParts().find(function(p) { return p.id === dragId; })?.name || 'Part';
+                    placed[dragId] = false;
+                    render();
+                    prog();
+                    toast(partName + ' removed', 'ok');
+                    dragId = null;
+                }
+            }
+        }
+        function adHandleMouseEnter(e) {
+            var target = e.target.closest('.pcard, .dzone');
+            if (target) {
+                var pid = target.dataset.pid;
+                if (pid) {
+                    var part = getSimulationParts().find(function(p) { return p.id === pid; });
+                    if (part) setInfo(part.desc);
+                }
+            }
+        }
+
+        var adShell = document.getElementById('assembly-shell');
+        adShell.addEventListener('dragstart', adHandleDragStart);
+        adShell.addEventListener('dragend', adHandleDragEnd);
+        adShell.addEventListener('dragover', adHandleDragOver);
+        adShell.addEventListener('dragleave', adHandleDragLeave);
+        adShell.addEventListener('drop', adHandleDrop);
+        adShell.addEventListener('mouseenter', adHandleMouseEnter, true);
+
         document.getElementById('btn-asm').addEventListener('click', () => setMode('asm'));
         document.getElementById('btn-dis').addEventListener('click', () => setMode('dis'));
         document.getElementById('btn-reset').addEventListener('click', () => reset());
-        document.getElementById('tray').addEventListener('dragover', e => { e.preventDefault(); document.getElementById('tray').classList.add('over'); });
-        document.getElementById('tray').addEventListener('dragleave', () => document.getElementById('tray').classList.remove('over'));
-        document.getElementById('tray').addEventListener('drop', dropTray);
         document.getElementById('assembly-range-custom-time')?.addEventListener('input', function () {
             const customValue = Math.max(5, parseInt(this.value || '30', 10) || 30);
             this.value = customValue;

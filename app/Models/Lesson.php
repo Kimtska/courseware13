@@ -10,7 +10,7 @@ class Lesson extends Model
 {
     protected $fillable = [
         'key',
-        'module_key',
+        'module_id',
         'title',
         'description',
         'sort_order',
@@ -23,6 +23,6 @@ class Lesson extends Model
 
     public function module(): BelongsTo
     {
-        return $this->belongsTo(Module::class, 'module_key', 'module_key');
+        return $this->belongsTo(Module::class, 'module_id');
     }
 }

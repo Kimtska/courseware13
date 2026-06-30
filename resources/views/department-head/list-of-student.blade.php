@@ -151,7 +151,7 @@
                                         $section = $student->section ?? '—';
                                         $dateAdded = $student->created_at ?? null;
                                         $progress = $student->current_progress;
-                                        $currentModule = $progress['module_key'] ?? $student->latestTrainingSession?->module_key;
+                                        $currentModule = $progress['module_key'] ?? $student->latestModule?->module_key;
                                         $currentLesson = $progress['lesson_key'] ?? null;
                                         $currentPage = $progress['page_index'] ?? null;
                                         $totalPages = $progress['total_pages'] ?? null;
@@ -237,7 +237,7 @@
                                         $sec = $student->section ?? '—';
                                         $moved = $student->archived_at;
                                         $progress = $student->current_progress;
-                                        $currentModule = $progress['module_key'] ?? $student->latestTrainingSession?->module_key;
+                                        $currentModule = $progress['module_key'] ?? $student->latestModule?->module_key;
                                         $currentLesson = $progress['lesson_key'] ?? null;
                                         $currentPage = $progress['page_index'] ?? null;
                                         $totalPages = $progress['total_pages'] ?? null;

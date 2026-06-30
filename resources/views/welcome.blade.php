@@ -60,13 +60,15 @@
     .start-btn-start:hover{background:linear-gradient(135deg,#15803d,#16a34a);box-shadow:0 6px 20px -3px rgba(34,197,94,0.5);transform:translateY(-1px)}
     .start-btn-start:active{transform:translateY(0) scale(0.96)}
     .start-bg-shape{position:absolute;pointer-events:none;opacity:0.04}
-    @media(prefers-reduced-motion:reduce){.start-modal,.start-modal-overlay{transition:none!important}.start-icon-ring::before,.start-dot{animation:none!important}}
+    .scroll-dot{animation:scrollBounce 1.5s ease-in-out infinite}
+    @keyframes scrollBounce{0%,100%{transform:translateY(0);opacity:1}50%{transform:translateY(10px);opacity:0.15}}
+    @media(prefers-reduced-motion:reduce){.start-modal,.start-modal-overlay{transition:none!important}.start-icon-ring::before,.start-dot,.scroll-indicator,.scroll-dot{animation:none!important}}
     </style>
 </head>
 <body>
 
     <!-- NAVBAR -->
-    <nav id="navbar" class="fixed top-0 left-0 w-full z-50 transition-all duration-500">
+    <nav id="navbar" class="fixed top-0 left-0 w-full z-50 transition-all duration-500 bg-white">
         <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
             <a href="#" class="flex items-center gap-3">
                 <img src="{{ asset('images/assets/Marksmanship innovatech.png') }}" alt="SPC" class="h-12 w-auto">
@@ -108,7 +110,7 @@
             <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-100/60 rounded-full blur-[120px]"></div>
             <div class="absolute bottom-1/4 right-1/4 w-80 h-80 bg-violet-50/80 rounded-full blur-[100px]"></div>
         </div>
-        <div class="relative z-10 max-w-7xl mx-auto px-6 pt-32 pb-20 w-full">
+        <div class="relative z-10 max-w-7xl mx-auto px-6 pt-4 pb-10 w-full">
             <div class="flex flex-col lg:flex-row items-center gap-16">
                 <div class="lg:w-3/5 text-center lg:text-left">
                     <h1 class="font-display font-bold tracking-tight leading-[.95]">
@@ -117,7 +119,7 @@
                     </h1>
                     <p class="mt-4 text-base md:text-lg font-medium text-violet-700 tracking-wide">TRAINING SIMULATOR FOR SPC CRIMINOLOGY</p>
                     <p class="mt-4 text-lg md:text-xl font-light text-gray-600 leading-relaxed max-w-xl mx-auto lg:mx-0">
-                        Master firearm knowledge — from <span class="text-black font-medium">parts identification</span> to <span class="text-black font-medium">assembly & disassembly</span>, then test your aim in a <span class="text-black font-medium">virtual firing range</span>.
+                        Master firearm knowledge - from <span class="text-black font-medium">parts identification</span> to <span class="text-black font-medium">assembly & disassembly</span>, then test your aim in a <span class="text-black font-medium">virtual firing range</span>.
                     </p>
                     <div class="flex flex-wrap items-center gap-3 mt-8 justify-center lg:justify-start">
                         <span class="px-4 py-2 rounded-full bg-violet-100 border border-violet-200 text-xs font-semibold text-violet-700 flex items-center gap-2"><i class="fas fa-gun text-[10px]"></i> 9mm Pistol</span>
@@ -169,9 +171,11 @@
                 </div>
             </div>
         </div>
-        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-            <span class="text-[10px] uppercase tracking-[.3em] text-gray-400">Scroll</span>
-            <div class="w-5 h-8 border-2 border-violet-300 rounded-full flex justify-center pt-1.5"><div class="w-1 h-2 bg-violet-600 rounded-full animate-bounce"></div></div>
+        <div class="scroll-indicator absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+            <span class="text-[10px] uppercase tracking-[.3em] text-violet-600 font-semibold">Scroll</span>
+            <div class="w-6 h-10 border-2 border-violet-500 rounded-full flex justify-center pt-2">
+                <div class="scroll-dot w-1.5 h-3 bg-violet-600 rounded-full"></div>
+            </div>
         </div>
     </section>
 
@@ -238,7 +242,7 @@
                 <div class="lg:w-2/5 lg:sticky lg:top-28 fade-in-up">
                     <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-violet-200 bg-violet-50 mb-6"><i class="fas fa-book-open text-violet-600 text-[10px]"></i><span class="text-[10px] font-mono font-medium tracking-[.3em] uppercase text-violet-700">Module 01</span></div>
                     <h2 class="font-display font-bold text-3xl md:text-4xl lg:text-5xl tracking-tight text-black mb-6">Firearm Parts <span class="text-highlight">Education</span></h2>
-                    <p class="text-gray-500 text-lg font-light leading-relaxed mb-8">Before holding a firearm, criminology students must understand every component — its name, location, purpose, and how it contributes to the weapon's operation.</p>
+                    <p class="text-gray-500 text-lg font-light leading-relaxed mb-8">Before holding a firearm, criminology students must understand every component - its name, location, purpose, and how it contributes to the weapon's operation.</p>
                 </div>
                 <div class="lg:w-3/5 fade-in-up" style="transition-delay:.2s">
                     <div class="flex gap-3 mb-8 flex-wrap">
@@ -528,7 +532,7 @@
                 </div>
                 <div class="lg:w-1/2 fade-in-up" style="transition-delay:.2s">
                     <div class="rounded-2xl overflow-hidden glow-border shadow-lg bg-gradient-to-br from-violet-50 to-white p-8 flex flex-col items-center">
-                        <img src="{{ asset('images/assets/Marksmanship innovatech.png') }}" alt="SPC Logo" class="h-48 w-auto mb-6">
+                        <img src="{{ asset('images/assets/logo.png') }}" alt="SPC Logo" class="h-48 w-auto mb-6">
                         <h3 class="font-display font-bold text-xl text-black text-center">Southern de Oro Philippines College</h3>
                         <p class="text-sm text-violet-700 font-medium mt-1">SPC Criminology</p>
                         <p class="text-xs text-gray-400 mt-3 text-center">Julio Pacana St., Licuan, Cagayan de Oro City<br>Misamis Oriental, 9000</p>

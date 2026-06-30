@@ -16,6 +16,8 @@
         .presentation-content{display:flex;flex-direction:column;justify-content:flex-start;gap:1rem;min-height:0;flex:1;overflow:hidden;position:relative}
         .presentation-content .layer-delete-zone,
         .presentation-content .layer-handle{display:none!important}
+        section.presentation-page[data-lesson="result"]{overflow:hidden auto!important}
+        section.presentation-page[data-lesson="result"] .presentation-content{overflow:hidden auto!important}
         .presentation-body{display:flex;flex-direction:column;gap:1.25rem;min-height:0;flex:1;overflow-y:auto;padding-right:6px}
         .presentation-kicker{font-size:11px;letter-spacing:.28em;text-transform:uppercase;font-weight:800;color:#7c3aed}
         .presentation-title{font-family:'Space Grotesk',sans-serif;font-weight:800}
@@ -85,6 +87,12 @@
         .cp-badge-yellow{background:#fef7e6;color:#d97706}
         .cp-badge-green{background:#dcfce7;color:#16a34a}
 
+        .cp-assessment-node{width:28px;height:28px;min-width:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;font-family:'Rajdhani','Inter',sans-serif;flex-shrink:0;line-height:1;transition:all .35s cubic-bezier(.4,0,.2,1);position:relative}
+        .cp-assessment-node.completed{background:#dcfce7;border:2px solid #16a34a;color:#16a34a}
+        .cp-assessment-node.available{background:#fef7e6;border:2px dashed #d97706;color:#d97706}
+        .cp-assessment-node.completed::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:2px solid rgba(22,163,74,.2);animation:cpPulseRing 2s ease-in-out infinite;pointer-events:none}
+        .cp-assessment-node .cp-assessment-label{display:none}
+        .cp-assessment-node:hover .cp-assessment-label{display:block;position:absolute;top:-22px;left:50%;transform:translateX(-50%);background:#2d1b69;color:#fff;font-size:9px;padding:2px 8px;border-radius:6px;white-space:nowrap;font-family:'Inter',sans-serif;z-index:10}
         .cp-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);background:#2d1b69;color:#fff;padding:14px 24px;border-radius:14px;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;box-shadow:0 8px 32px -8px rgba(45,27,105,.35);z-index:9999;opacity:0;transition:all .35s cubic-bezier(.16,1,.3,1);pointer-events:none}
         .cp-toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
         .cp-toast i{color:#c4b5fd;font-size:16px}
@@ -164,11 +172,18 @@
                     $modNum = $mIdx + 1;
                     $lessonCount = $mod->lessons->count();
                     $isActive = $modKey === $moduleKey;
-                    // Check module access via student progress
                     $canAccess = $student && $student->isModuleUnlocked($modKey);
+                    $result = $assessmentResults[$modKey] ?? null;
+                    $assessmentDone = $result && $result['completed'];
                     $stateClass = $isActive ? 'active' : ($canAccess && !$isActive ? 'completed' : 'locked');
                     $icon = $moduleIcons[$modKey] ?? 'fa-book';
-                    $nodeState = $isActive ? 'in-progress' : ($canAccess ? 'completed' : 'locked');
+                    if ($isActive && $assessmentDone) {
+                        $nodeState = 'completed';
+                    } elseif ($isActive && !$assessmentDone) {
+                        $nodeState = 'in-progress';
+                    } else {
+                        $nodeState = $canAccess ? 'completed' : 'locked';
+                    }
                 @endphp
                 <div class="cp-module {{ $stateClass }}" data-cp="{{ $mIdx }}" data-module-key="{{ $modKey }}">
                     <div class="cp-node {{ $nodeState }}" data-state="{{ $nodeState }}">
@@ -200,10 +215,43 @@
                                 <span class="cp-badge cp-badge-lavender">Lesson</span>
                             </div>
                             @endforeach
-                            <div class="cp-lesson {{ $canAccess ? '' : 'locked' }}" data-module="{{ $modKey }}" data-lesson-key="assessment">
-                                <span class="cp-lesson-icon"><i class="fa-solid {{ $canAccess ? 'fa-file-pen' : 'fa-lock' }}"></i></span>
-                                <span class="cp-lesson-title">Module {{ $modNum }} Assessment</span>
+                            <div class="cp-lesson {{ $canAccess ? ($assessmentDone ? 'completed' : '') : 'locked' }}" data-module="{{ $modKey }}" data-lesson-key="assessment">
+                                <div class="cp-assessment-node {{ $assessmentDone ? 'completed' : ($canAccess ? 'available' : 'locked') }}">
+                                    @if ($assessmentDone)
+                                    <span>{{ $result['percentage'] }}%</span>
+                                    <span class="cp-assessment-label">Score: {{ $result['label'] }}</span>
+                                    @elseif ($canAccess)
+                                    <span>?</span>
+                                    <span class="cp-assessment-label">Not yet taken</span>
+                                    @else
+                                    <i class="fa-solid fa-lock" style="font-size:9px;color:#d4d0db"></i>
+                                    @endif
+                                </div>
+                                <span class="cp-lesson-title">Module {{ $modNum }} Activity</span>
+                                @if ($result && $result['completed'])
+                                <span class="cp-badge cp-badge-green">{{ $result['label'] }}</span>
+                                @else
                                 <span class="cp-badge cp-badge-yellow">Assessment</span>
+                                @endif
+                            </div>
+                            <div class="cp-lesson {{ $canAccess ? ($assessmentDone ? 'completed' : '') : 'locked' }}" data-module="{{ $modKey }}" data-lesson-key="result">
+                                <div class="cp-assessment-node {{ $assessmentDone ? 'completed' : ($canAccess ? 'available' : 'locked') }}">
+                                    @if ($assessmentDone)
+                                    <span>{{ $result['percentage'] }}%</span>
+                                    <span class="cp-assessment-label">Score: {{ $result['label'] }}</span>
+                                    @elseif ($canAccess)
+                                    <span>?</span>
+                                    <span class="cp-assessment-label">Not yet taken</span>
+                                    @else
+                                    <i class="fa-solid fa-lock" style="font-size:9px;color:#d4d0db"></i>
+                                    @endif
+                                </div>
+                                <span class="cp-lesson-title">Result</span>
+                                @if ($result && $result['completed'])
+                                <span class="cp-badge cp-badge-green">{{ $result['label'] }}</span>
+                                @else
+                                <span class="cp-badge cp-badge-yellow">Assessment</span>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -303,6 +351,8 @@
                 if (modKey && !mod.classList.contains('active')) {
                     switchModule(modKey);
                 } else if (lessonKey && typeof window.jumpToLessonPage === 'function') {
+                    document.querySelectorAll('.cp-lesson.active').forEach(el => el.classList.remove('active'));
+                    lesson.classList.add('active');
                     window.jumpToLessonPage(lessonKey);
                 }
             }

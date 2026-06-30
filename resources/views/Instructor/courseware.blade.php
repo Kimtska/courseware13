@@ -28,6 +28,8 @@
         .presentation-content{display:flex;flex-direction:column;justify-content:flex-start;gap:1rem;min-height:0;flex:1;overflow:hidden;position:relative}
         .presentation-content .layer-delete-zone,
         .presentation-content .layer-handle{display:none!important}
+        section.presentation-page[data-lesson="result"]{overflow:hidden auto!important}
+        section.presentation-page[data-lesson="result"] .presentation-content{overflow:hidden auto!important}
         .presentation-body{display:flex;flex-direction:column;gap:1.25rem;min-height:0;flex:1;overflow-y:auto;padding-right:6px}
         .presentation-kicker{font-size:11px;letter-spacing:.28em;text-transform:uppercase;font-weight:800;color:#7c3aed}
         .presentation-title{font-family:'Space Grotesk',sans-serif;font-weight:800;color:#111827}

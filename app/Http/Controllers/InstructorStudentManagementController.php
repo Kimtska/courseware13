@@ -33,15 +33,6 @@ class InstructorStudentManagementController extends Controller
 
         $sections = $this->availableSections($user);
 
-        ManagedStudent::query()
-            ->active()
-            ->when($user->role === 'instructor', fn ($q) => $q->where('instructor_user_id', $user->id))
-            ->where('created_at', '<', now()->subMonths(5))
-            ->update([
-                'status' => 'archived',
-                'archived_at' => now(),
-            ]);
-
         $fiveMonthOld = ManagedStudent::withArchived()
             ->where('status', 'archived')
             ->when($user->role === 'instructor', fn ($q) => $q->where('instructor_user_id', $user->id))
@@ -104,7 +95,7 @@ class InstructorStudentManagementController extends Controller
         $user = $this->currentUser();
 
         $students = ManagedStudent::query()
-            ->whereHas('trainingSessions', function ($query) {
+            ->whereHas('modules', function ($query) {
                 $query->where('module_key', 'module-1')
                     ->where('status', 'completed');
             })
@@ -320,10 +311,15 @@ class InstructorStudentManagementController extends Controller
             ->active()
             ->when($user->role === 'instructor', fn ($query) => $query->where('instructor_user_id', $user->id))
             ->when($search, fn ($query) => $query->where(function ($nested) use ($search) {
-                $nested->where('student_id_number', 'like', '%' . $search . '%')
-                    ->orWhere('first_name', 'like', '%' . $search . '%')
-                    ->orWhere('middle_name', 'like', '%' . $search . '%')
-                    ->orWhere('last_name', 'like', '%' . $search . '%');
+                $terms = explode(' ', $search);
+                if (count($terms) === 1 && strlen($search) > 2) {
+                    $nested->whereRaw('MATCH(first_name, middle_name, last_name, student_id_number) AGAINST(? IN BOOLEAN MODE)', [$search . '*']);
+                } else {
+                    $nested->where('student_id_number', 'like', '%' . $search . '%')
+                        ->orWhere('first_name', 'like', '%' . $search . '%')
+                        ->orWhere('middle_name', 'like', '%' . $search . '%')
+                        ->orWhere('last_name', 'like', '%' . $search . '%');
+                }
             }))
             ->when($section, fn ($query) => $query->where('section', $section))
             ->latest();
@@ -474,10 +470,15 @@ class InstructorStudentManagementController extends Controller
         $query = ManagedStudent::query()
             ->when($user->role === 'instructor', fn ($builder) => $builder->where('instructor_user_id', $user->id))
             ->when($term, fn ($builder) => $builder->where(function ($nested) use ($term) {
-                $nested->where('student_id_number', 'like', '%' . $term . '%')
-                    ->orWhere('first_name', 'like', '%' . $term . '%')
-                    ->orWhere('middle_name', 'like', '%' . $term . '%')
-                    ->orWhere('last_name', 'like', '%' . $term . '%');
+                $terms = explode(' ', $term);
+                if (count($terms) === 1 && strlen($term) > 2) {
+                    $nested->whereRaw('MATCH(first_name, middle_name, last_name, student_id_number) AGAINST(? IN BOOLEAN MODE)', [$term . '*']);
+                } else {
+                    $nested->where('student_id_number', 'like', '%' . $term . '%')
+                        ->orWhere('first_name', 'like', '%' . $term . '%')
+                        ->orWhere('middle_name', 'like', '%' . $term . '%')
+                        ->orWhere('last_name', 'like', '%' . $term . '%');
+                }
             }))
             ->limit(10)
             ->get();

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class LessonPage extends Model
 {
@@ -20,5 +21,10 @@ class LessonPage extends Model
     public function lesson(): BelongsTo
     {
         return $this->belongsTo(Lesson::class);
+    }
+
+    public function activities(): HasMany
+    {
+        return $this->hasMany(Activity::class, 'lesson_detail_id');
     }
 }

@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Firearm;
+use App\Models\AssessmentSimulation;
 use Illuminate\Database\Seeder;
 
 class FirearmSeeder extends Seeder
@@ -49,7 +49,7 @@ class FirearmSeeder extends Seeder
         ];
 
         foreach ($firearms as $data) {
-            Firearm::create($data);
+            AssessmentSimulation::create($data);
         }
     }
 }

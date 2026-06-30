@@ -3,8 +3,10 @@
     $currentModule = \App\Models\Module::where('module_key', $moduleKey)
         ->with(['lessons' => function ($q) {
             $q->orderBy('sort_order');
-        }, 'lessons.pages', 'firearms'])
+        }, 'lessons.pages'])
         ->first();
+
+    $simulations = $simulations ?? \App\Models\AssessmentSimulation::with('parts')->get();
 
     $allLessonPages = $currentModule?->lessons->flatMap(function ($lesson) {
         return $lesson->pages->map(function ($page) use ($lesson) {
@@ -56,25 +58,28 @@
 
         {{-- Assessment pages --}}
         @php
-            $questions = \App\Models\Activity::where('module_id', $moduleNum)->orderBy('question_number')->get();
+            $questions = $currentModule
+            ? \App\Models\Activity::whereHas('lessonDetail.lesson', function ($q) use ($currentModule) {
+                $q->where('module_id', $currentModule->id);
+            })->orderBy('question_number')->get()
+            : collect();
         @endphp
         @if ($questions->isNotEmpty())
         @foreach ($questions as $i => $question)
         <section class="presentation-page" data-page="{{ $pageCounter }}" data-lesson="assessment" data-correct-answer="{{ $question->correct_answer }}" data-qnum="{{ $i + 1 }}">
             <div class="presentation-content">
-                <div class="flex flex-col items-center justify-center h-full px-6 sm:px-8 py-12">
-                    <div class="max-w-2xl w-full">
-                        <div class="text-center mb-6">
-                            <span class="text-violet-600 text-sm font-semibold uppercase tracking-wide">Module {{ $moduleNum }} Assessment</span>
-                            <p class="text-gray-400 text-xs mt-1">Question {{ $i + 1 }} of {{ count($questions) }}</p>
+                <div class="flex flex-col items-stretch justify-start h-full px-6 sm:px-8 pt-6 pb-2">
+                    <div class="w-full flex-1 flex flex-col min-h-0">
+                        <div class="text-center mb-3 flex-shrink-0">
+                            <p class="text-gray-400 text-xs">Question {{ $i + 1 }} of {{ count($questions) }}</p>
                         </div>
-                        <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                            <p class="font-semibold text-gray-900 mb-4 text-lg">{{ $i + 1 }}. {{ $question->question_text }}</p>
-                            <div class="space-y-3">
+                        <div class="bg-white border border-gray-200 rounded-xl p-8 shadow-sm flex-1 flex flex-col min-h-0">
+                            <p class="font-bold text-gray-900 mb-5 text-2xl flex-shrink-0 text-justify">{{ $i + 1 }}. {{ $question->question_text }}</p>
+                            <div class="space-y-4 flex-1 flex flex-col justify-center min-h-0">
                                 @foreach ($question->options as $j => $opt)
-                                <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-violet-50 cursor-pointer">
-                                    <input type="radio" name="m{{ $moduleNum }}q{{ $i + 1 }}" value="{{ $j }}" class="accent-violet-600">
-                                    <span class="text-gray-700">{{ $opt }}</span>
+                                <label class="flex items-center gap-4 p-5 rounded-xl border border-gray-100 hover:bg-violet-50 cursor-pointer flex-shrink-0">
+                                    <input type="radio" name="m{{ $moduleNum }}q{{ $i + 1 }}" value="{{ $j }}" class="accent-violet-600 w-5 h-5 flex-shrink-0">
+                                    <span class="text-gray-700 text-lg flex-1 text-justify">{{ $opt }}</span>
                                 </label>
                                 @endforeach
                             </div>
@@ -86,17 +91,24 @@
         @php $pageCounter++; @endphp
         @endforeach
 
-        {{-- Assessment result page (dynamically populated by JS) --}}
+        {{-- Assessment checkpoint result (per-question review) --}}
         <section class="presentation-page" data-page="{{ $pageCounter }}" data-lesson="result" data-score-module="{{ $moduleKey }}" data-score-max="{{ $questions->count() }}">
             <div class="presentation-content">
-                <div id="assessment-result" class="flex flex-col items-center justify-center h-full px-6 sm:px-8 py-10 overflow-y-auto">
-                    <div class="max-w-2xl w-full text-center">
-                        <div class="result-icon-wrap w-24 h-24 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-                            <span class="result-percentage text-3xl font-bold text-gray-400">--%</span>
+                <div id="assessment-result" class="flex flex-col items-center px-4 sm:px-6 py-6 overflow-y-auto" style="flex:1 1 auto;min-height:0">
+                    <div class="max-w-2xl w-full">
+                        <div class="text-center mb-8">
+                            <div class="result-icon-wrap w-20 h-20 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center">
+                                <span class="result-percentage text-3xl font-bold text-gray-400">--%</span>
+                            </div>
+                            <h2 class="text-2xl font-bold text-gray-900">Module {{ $moduleNum }} — Checkpoint</h2>
+                            <p class="result-summary text-gray-500 text-sm mt-1">Calculating your score...</p>
                         </div>
-                        <h2 class="text-3xl font-bold text-gray-900 mb-1">Module {{ $moduleNum }} Assessment Result</h2>
-                        <p class="result-summary text-gray-500 mb-6">Calculating your score...</p>
-                        <div class="result-wrong-list text-left space-y-3 mb-8"></div>
+                        <div class="result-checkpoint-list space-y-4 mb-8"></div>
+                        <div class="text-center">
+                            <button type="button" id="review-wrong-btn" class="presentation-btn hidden" onclick="document.getElementById('presentation-prev')?.click()">
+                                <i class="fas fa-arrow-left text-sm"></i> Review Wrong Answers
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -158,24 +170,24 @@
         </section>
         @endif
 
-        {{-- Firearm profile pages (for modules with firearms in pivot) --}}
-        @if ($currentModule && $currentModule->firearms->isNotEmpty())
-        @foreach ($currentModule->firearms as $fi => $firearm)
+        {{-- Simulation profile pages (module 3 only) --}}
+        @if ($moduleKey === 'module-3' && count($simulations) > 0)
+        @foreach ($simulations as $fi => $simulation)
         @php $pageCounter++; @endphp
-        <section class="presentation-page" data-page="{{ $pageCounter }}" data-lesson="firearm-profile-{{ $fi }}" data-firearm-slug="{{ $firearm->slug }}">
+        <section class="presentation-page" data-page="{{ $pageCounter }}" data-lesson="simulation-profile-{{ $fi }}" data-simulation-slug="{{ $simulation->slug }}">
             <div class="presentation-content">
                 <div class="flex flex-col items-center justify-center min-h-full px-6 sm:px-8 py-10 overflow-y-auto">
                     <div class="max-w-3xl w-full">
-                        <p class="text-violet-600 text-sm font-semibold uppercase tracking-wide mb-1">Module {{ $moduleNum }} — Firearm Profile</p>
+                        <p class="text-violet-600 text-sm font-semibold uppercase tracking-wide mb-1">Module {{ $moduleNum }} — Simulation Profile</p>
                         <div class="bg-white border border-violet-100 rounded-2xl overflow-hidden shadow-sm">
                             <div class="bg-gradient-to-r from-violet-950 to-violet-800 px-6 py-5">
-                                <h2 class="text-2xl font-bold text-white">{{ $firearm->name }}</h2>
-                                <p class="text-violet-200 text-sm mt-1">{{ ucfirst($firearm->type ?? 'Firearm') }} · {{ $firearm->caliber ?? 'N/A' }}</p>
+                                <h2 class="text-2xl font-bold text-white">{{ $simulation->name }}</h2>
+                                <p class="text-violet-200 text-sm mt-1">{{ ucfirst($simulation->type ?? 'Simulation') }} · {{ $simulation->caliber ?? 'N/A' }}</p>
                             </div>
                             <div class="p-6 flex flex-col sm:flex-row gap-6">
                                 <div class="sm:w-1/3 flex-shrink-0">
-                                    @if ($firearm->image_url)
-                                    <img src="{{ asset($firearm->image_url) }}" alt="{{ $firearm->name }}" class="w-full rounded-xl border border-gray-100">
+                                    @if ($simulation->image_url)
+                                    <img src="{{ asset($simulation->image_url) }}" alt="{{ $simulation->name }}" class="w-full rounded-xl border border-gray-100">
                                     @else
                                     <div class="w-full aspect-square rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-300">
                                         <i class="fas fa-gun text-6xl"></i>
@@ -185,33 +197,33 @@
                                 <div class="sm:w-2/3 space-y-4">
                                     <div>
                                         <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">Description</h3>
-                                        <p class="text-gray-600 text-sm leading-relaxed mt-1">{{ $firearm->description ?? 'No description available.' }}</p>
+                                        <p class="text-gray-600 text-sm leading-relaxed mt-1">{{ $simulation->description ?? 'No description available.' }}</p>
                                     </div>
                                     <div class="grid grid-cols-2 gap-4">
                                         <div class="bg-violet-50 rounded-xl p-3">
                                             <p class="text-[10px] uppercase tracking-wider text-violet-600 font-bold">Caliber</p>
-                                            <p class="text-sm font-semibold text-gray-900 mt-0.5">{{ $firearm->caliber ?? 'N/A' }}</p>
+                                            <p class="text-sm font-semibold text-gray-900 mt-0.5">{{ $simulation->caliber ?? 'N/A' }}</p>
                                         </div>
                                         <div class="bg-violet-50 rounded-xl p-3">
                                             <p class="text-[10px] uppercase tracking-wider text-violet-600 font-bold">Type</p>
-                                            <p class="text-sm font-semibold text-gray-900 mt-0.5">{{ ucfirst($firearm->type ?? 'N/A') }}</p>
+                                            <p class="text-sm font-semibold text-gray-900 mt-0.5">{{ ucfirst($simulation->type ?? 'N/A') }}</p>
                                         </div>
-                                        @if ($firearm->mag_size)
+                                        @if ($simulation->mag_size)
                                         <div class="bg-violet-50 rounded-xl p-3">
                                             <p class="text-[10px] uppercase tracking-wider text-violet-600 font-bold">Mag Capacity</p>
-                                            <p class="text-sm font-semibold text-gray-900 mt-0.5">{{ $firearm->mag_size }} rounds</p>
+                                            <p class="text-sm font-semibold text-gray-900 mt-0.5">{{ $simulation->mag_size }} rounds</p>
                                         </div>
                                         @endif
                                         <div class="bg-violet-50 rounded-xl p-3">
                                             <p class="text-[10px] uppercase tracking-wider text-violet-600 font-bold">Part Count</p>
-                                            <p class="text-sm font-semibold text-gray-900 mt-0.5">{{ $firearm->parts->count() }} parts</p>
+                                            <p class="text-sm font-semibold text-gray-900 mt-0.5">{{ $simulation->parts->count() }} parts</p>
                                         </div>
                                     </div>
-                                    @if ($firearm->parts->isNotEmpty())
+                                    @if ($simulation->parts->isNotEmpty())
                                     <div>
                                         <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">Assembly Parts</h3>
                                         <ul class="mt-2 space-y-1">
-                                            @foreach ($firearm->parts as $part)
+                                            @foreach ($simulation->parts as $part)
                                             <li class="flex items-center gap-2 text-sm text-gray-600">
                                                 <span class="w-5 h-5 rounded-full bg-violet-100 flex items-center justify-center text-[10px] font-bold text-violet-700">{{ $part->sort_order }}</span>
                                                 {{ $part->name }} — <span class="text-gray-400 text-xs">{{ ucfirst($part->slug) }}</span>
@@ -315,16 +327,19 @@
         }
 
         function calculateScore(prefix) {
-            const radios = shell.querySelectorAll('input[type="radio"][name^="' + prefix + '"]');
+            const qPages = Array.from(shell.querySelectorAll('.presentation-page[data-lesson="assessment"]'));
             let correct = 0;
-            const total = radios.length / 4;
-            for (let i = 1; i <= total; i++) {
-                const selected = shell.querySelector('input[name="' + prefix + i + '"]:checked');
+            const total = qPages.length;
+            qPages.forEach(function(qp) {
+                var qnum = parseInt(qp.dataset.qnum, 10);
+                var correctAns = parseInt(qp.dataset.correctAnswer, 10);
+                var name = prefix + qnum;
+                var selected = shell.querySelector('input[name="' + name + '"]:checked');
                 if (selected) {
-                    const val = parseInt(selected.value, 10);
-                    if (val === 0) correct++;
+                    var val = parseInt(selected.value, 10);
+                    if (val === correctAns) correct++;
                 }
-            }
+            });
             return { score: correct, max: total };
         }
 
@@ -366,7 +381,8 @@
             var qPages = Array.from(shell.querySelectorAll('.presentation-page[data-lesson="assessment"]'));
             var totalQ = qPages.length;
             var correctCount = 0;
-            var wrongItems = [];
+            var wrongCount = 0;
+            var items = [];
 
             qPages.forEach(function(qp) {
                 var correctAns = parseInt(qp.dataset.correctAnswer, 10);
@@ -379,12 +395,25 @@
                 var correctRadio = qp.querySelector('input[type="radio"][value="' + correctAns + '"]');
                 var correctText = correctRadio ? correctRadio.closest('label').querySelector('span').textContent : '';
 
-                if (userAnswer === correctAns) {
-                    correctCount++;
-                } else {
-                    var userText = selected ? selected.closest('label').querySelector('span').textContent : 'No answer';
-                    wrongItems.push({ qnum: qnum, text: questionText, correct: correctText, user: userText });
+                var userText = 'No answer';
+                var userLabel = '';
+                if (selected) {
+                    userText = selected.closest('label').querySelector('span').textContent;
+                    userLabel = selected.closest('label').querySelector('span').textContent;
                 }
+
+                var isCorrect = userAnswer === correctAns;
+                if (isCorrect) { correctCount++; } else { wrongCount++; }
+
+                items.push({
+                    qnum: qnum,
+                    text: questionText,
+                    isCorrect: isCorrect,
+                    userAnswer: userAnswer,
+                    correctAnswer: correctAns,
+                    userLabel: userLabel || userText,
+                    correctLabel: correctText
+                });
             });
 
             var pct = totalQ > 0 ? Math.round((correctCount / totalQ) * 100) : 0;
@@ -395,26 +424,68 @@
             var bgColor = pct >= 70 ? 'bg-emerald-100' : (pct >= 40 ? 'bg-amber-100' : 'bg-red-100');
             container.querySelector('.result-percentage').textContent = pct + '%';
             container.querySelector('.result-percentage').className = 'result-percentage text-3xl font-bold ' + pctColor;
-            container.querySelector('.result-icon-wrap').className = 'result-icon-wrap w-24 h-24 mx-auto mb-4 rounded-full ' + bgColor + ' flex items-center justify-center';
-            container.querySelector('.result-summary').textContent = 'You answered ' + correctCount + ' of ' + totalQ + ' questions correctly.';
+            container.querySelector('.result-icon-wrap').className = 'result-icon-wrap w-20 h-20 mx-auto mb-3 rounded-full ' + bgColor + ' flex items-center justify-center';
+            container.querySelector('.result-summary').textContent = correctCount + ' of ' + totalQ + ' correct (' + wrongCount + ' wrong)';
 
-            var wrongHtml = '';
-            wrongItems.forEach(function(w) {
-                wrongHtml += '<div class="bg-red-50 border-l-4 border-red-400 rounded-lg p-4">' +
-                    '<div class="flex items-start gap-3">' +
-                    '<i class="fas fa-xmark text-red-500 mt-1"></i>' +
-                    '<div>' +
-                    '<p class="font-semibold text-gray-900 text-sm">' + w.text + ' — <span class="text-red-600">Incorrect</span></p>' +
-                    '<p class="text-sm text-gray-600 mt-1"><span class="font-medium">Your answer:</span> ' + w.user + '</p>' +
-                    '<p class="text-sm text-emerald-700 mt-1"><i class="fas fa-check mr-1"></i>Correct answer: <span class="font-medium">' + w.correct + '</span></p>' +
-                    '</div></div></div>';
+            var html = '';
+            items.forEach(function(it) {
+                var borderColor = it.isCorrect ? 'border-emerald-300 bg-emerald-50/60' : 'border-red-300 bg-red-50/60';
+                var iconColor = it.isCorrect ? 'text-emerald-500 bg-emerald-100' : 'text-red-500 bg-red-100';
+                var iconHtml = it.isCorrect
+                    ? '<i class="fas fa-check" style="font-size:11px"></i>'
+                    : '<i class="fas fa-xmark" style="font-size:11px"></i>';
+                var statusBadge = it.isCorrect
+                    ? '<span class="text-[10px] font-bold text-emerald-700">CORRECT</span>'
+                    : '<span class="text-[10px] font-bold text-red-700">WRONG</span>';
+
+                var optionsHtml = '';
+                var labels = qPages[parseInt(it.qnum) - 1].querySelectorAll('.space-y-3 label');
+                labels.forEach(function(lb) {
+                    var radio = lb.querySelector('input[type="radio"]');
+                    if (!radio) return;
+                    var val = parseInt(radio.value, 10);
+                    var txt = lb.querySelector('span').textContent;
+                    var isUser = (val === it.userAnswer);
+                    var isCorrectOpt = (val === it.correctAnswer);
+                    var optClass = isUser && isCorrectOpt ? 'ring-2 ring-emerald-400 bg-emerald-50 border-emerald-300' :
+                        isUser ? 'ring-2 ring-red-400 bg-red-50 border-red-300' :
+                        isCorrectOpt ? 'ring-2 ring-emerald-400 bg-emerald-50 border-emerald-300' :
+                        'border-gray-100';
+                    var marker = isUser && isCorrectOpt ? '<i class="fas fa-check text-emerald-500" style="font-size:10px"></i>' :
+                        isUser ? '<i class="fas fa-xmark text-red-500" style="font-size:10px"></i>' :
+                        isCorrectOpt ? '<i class="fas fa-check text-emerald-500" style="font-size:10px"></i>' :
+                        '';
+                    optionsHtml += '<div class="flex items-center gap-2 px-3 py-2 rounded-lg border ' + optClass + '" style="transition:all .15s">' +
+                        '<span style="width:14px;height:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + marker + '</span>' +
+                        '<span class="text-base ' + (isUser ? 'font-semibold' : '') + '" style="color:' + (isUser && !isCorrectOpt ? '#dc2626' : '#374151') + '">' + txt + '</span>' +
+                        (isUser && it.isCorrect ? '<span class="text-[9px] font-bold text-emerald-600 ml-auto">Your answer</span>' : '') +
+                        (isUser && !it.isCorrect ? '<span class="text-[9px] font-bold text-red-600 ml-auto">Your answer</span>' : '') +
+                        (!isUser && isCorrectOpt && !it.isCorrect ? '<span class="text-[9px] font-bold text-emerald-600 ml-auto">Correct answer</span>' : '') +
+                        '</div>';
+                });
+
+                html += '<div class="rounded-xl border ' + borderColor + ' overflow-hidden">' +
+                    '<div class="flex items-start gap-3 px-5 py-4">' +
+                    '<div class="w-7 h-7 rounded-full ' + iconColor + ' flex items-center justify-center flex-shrink-0" style="margin-top:2px">' + iconHtml + '</div>' +
+                    '<div class="flex-1 min-w-0">' +
+                    '<div class="flex items-center gap-2 mb-1">' +
+                    '<span class="text-[11px] font-bold text-gray-400">Q' + it.qnum + '</span>' +
+                    statusBadge +
+                    '</div>' +
+                    '<p class="text-base font-semibold text-gray-900 leading-snug">' + it.text + '</p>' +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="px-4 pb-4 space-y-2.5">' + optionsHtml + '</div>' +
+                    '</div>';
             });
 
-            if (wrongItems.length === 0) {
-                wrongHtml = '<div class="bg-emerald-50 border-l-4 border-emerald-400 rounded-lg p-4 text-center"><p class="text-emerald-700 font-semibold">Perfect score! All answers are correct.</p></div>';
-            }
+            container.querySelector('.result-checkpoint-list').innerHTML = html;
 
-            container.querySelector('.result-wrong-list').innerHTML = wrongHtml;
+            var reviewBtn = document.getElementById('review-wrong-btn');
+            if (reviewBtn && wrongCount > 0) {
+                reviewBtn.classList.remove('hidden');
+                reviewBtn.textContent = 'Review ' + wrongCount + ' Wrong Answer' + (wrongCount > 1 ? 's' : '');
+            }
         }
 
         window.jumpToLessonPage = function(lessonKey) {
@@ -445,5 +516,13 @@
     .presentation-content .layer-delete-zone,
     .presentation-content .layer-handle {
         display: none !important;
+    }
+
+    section.presentation-page[data-lesson="result"] {
+        overflow: hidden auto !important;
+    }
+
+    section.presentation-page[data-lesson="result"] .presentation-content {
+        overflow: hidden auto !important;
     }
 </style>

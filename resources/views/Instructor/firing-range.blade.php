@@ -16,6 +16,9 @@
     <input type="hidden" id="fr-config-mode" value="{{ $mode ?? 'steady' }}">
     <input type="hidden" id="fr-config-student" value="{{ $studentId ?? '' }}">
     <input type="hidden" id="fr-config-max-shots" value="{{ $maxShots ?? 0 }}">
+    <input type="hidden" id="fr-config-assessment-sim-id" value="{{ $assessmentSimulationId ?? '' }}">
+    <input type="hidden" id="fr-config-target-id" value="{{ $targetId ?? '' }}">
+    <input type="hidden" id="fr-config-target-mode-id" value="{{ $targetModeId ?? '' }}">
 
     <div id="game-area" style="height:100vh;overflow:hidden;background:#f8fafc;position:relative">
         <div style="position:absolute;inset:0;background:url('{{ asset('images/firing-range/firing-rangebg.jpg') }}') center center/cover no-repeat;filter:saturate(1.08) contrast(1.05)"></div>
@@ -100,6 +103,14 @@
                     <div><p style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:700">Accuracy</p><p id="res-accuracy" style="font-size:20px;font-weight:700;color:#7c3aed;font-family:'Space Grotesk',sans-serif">0%</p></div>
                     <div><p style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:700">Bullseyes</p><p id="res-bullseyes" style="font-size:20px;font-weight:700;color:#7c3aed;font-family:'Space Grotesk',sans-serif">0</p></div>
                 </div>
+                <div id="res-breakdown" style="margin:0 32px 20px;background:#f9fafb;border-radius:12px;padding:12px 16px;border:1px solid #f3f4f6;display:none">
+                    <p style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:700;letter-spacing:0.05em;margin-bottom:8px">Shot Breakdown</p>
+                    <div id="res-breakdown-rows" style="display:grid;gap:4px;font-size:12px"></div>
+                    <div style="margin-top:8px;padding-top:6px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:#374151">
+                        <span>Total Shots</span>
+                        <span id="res-total-shots">0</span>
+                    </div>
+                </div>
                 <div style="padding:0 32px 32px;display:flex;align-items:center;gap:12px">
                     <button onclick="restartGame()" style="flex:1;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-weight:700;font-size:13px;padding:12px 24px;border-radius:12px;background:linear-gradient(135deg,#5B21B6,#7C3AED);color:#fff;box-shadow:0 4px 14px -3px rgba(91,33,182,0.4);display:inline-flex;align-items:center;justify-content:center;gap:6px"><i class="fas fa-redo" style="font-size:12px"></i> Try Again</button>
                     <a href="{{ route('instructor.manage-marksmanship') }}" style="border:none;cursor:pointer;font-family:'Inter',sans-serif;font-weight:700;font-size:13px;padding:12px 24px;border-radius:12px;color:#7c3aed;border:1px solid #ede9fe;background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none"><i class="fas fa-sign-out-alt" style="font-size:12px"></i> Exit</a>
@@ -146,30 +157,8 @@
         @keyframes hitMarkerAnim{0%{opacity:1;transform:translate(-50%,-50%) scale(0.5)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.5)}}
         .target-container{position:absolute;transition:transform 0.2s ease-out, opacity 0.2s}
         .target-container.hit{animation:targetHit 0.4s ease-out forwards}
-        .target{width:160px;height:160px;position:relative;cursor:none;filter:drop-shadow(0 12px 24px rgba(0,0,0,0.4));transform-origin:center center}
-        .target-board{position:absolute;inset:0;border-radius:50%;background:#1a1a1a;border:3px solid #000;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.05), inset 0 -4px 20px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.4)}
-        .target-board::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 40% 40%, rgba(255,255,255,0.04) 0%, transparent 50%);opacity:0.5}
-        .target-board::after{content:'';position:absolute;inset:8px;border-radius:50%;border:1px solid rgba(255,255,255,0.03);box-shadow:inset 0 2px 8px rgba(255,255,255,0.01)}
-        .target-rings{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:100%;pointer-events:none}
-        .target-ring{position:absolute;left:50%;top:50%;border-radius:50%;transform:translate(-50%,-50%)}
-        .target-ring.delta{width:140px;height:140px;background:#000;border:2px solid #111}
-        .target-ring.charlie{width:106px;height:106px;background:#000;border:2px solid #111}
-        .target-ring.bravo{width:72px;height:72px;background:#fff;border:2px solid #ddd}
-        .target-ring.alpha{width:38px;height:38px;background:#dc2626;border:2px solid #b91c1c}
-        .target-bullseye{position:absolute;left:50%;top:50%;width:16px;height:16px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 35% 35%, #fff1 0%, #dc2626 40%, #7f1d1d 100%);box-shadow:0 0 16px rgba(220,38,38,0.9), inset 0 -2px 4px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.2);border:2px solid #b91c1c}
-        .target-bullseye::before{content:'';position:absolute;inset:-3px;border-radius:50%;background:conic-gradient(from 0deg, transparent, rgba(220,38,38,0.3), transparent);animation:bullseyePulse 2s ease-in-out infinite}
-        @keyframes bullseyePulse{0%,100%{opacity:0.3;transform:scale(1)}50%{opacity:0.6;transform:scale(1.15)}}
-        .target-zone-label{position:absolute;left:50%;transform:translateX(-50%);font-family:'Space Grotesk',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#555;text-shadow:0 1px 2px rgba(0,0,0,0.9);pointer-events:none;white-space:nowrap;text-align:center}
-        .target-zone-label.delta{top:74px;color:#444}
-        .target-zone-label.charlie{top:56px;color:#444}
-        .target-zone-label.bravo{top:39px;color:#888}
-        .target-zone-label.alpha{top:24px;color:#b91c1c}
-        .target-crosshair-lines{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:150px;height:150px;pointer-events:none;opacity:0.15}
-        .target-crosshair-lines::before,.target-crosshair-lines::after{content:'';position:absolute;background:#fff;opacity:0.3}
-        .target-crosshair-lines::before{width:1px;height:100%;left:50%;top:0;transform:translateX(-50%)}
-        .target-crosshair-lines::after{width:100%;height:1px;left:0;top:50%;transform:translateY(-50%)}
-        .target-indicator{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:100%;pointer-events:none}
-        .target-indicator::before{content:'';position:absolute;left:50%;top:50%;width:154px;height:154px;border:1px dashed rgba(255,255,255,0.06);border-radius:50%;transform:translate(-50%,-50%)}
+        .target{position:relative;cursor:none;filter:drop-shadow(0 12px 24px rgba(0,0,0,0.4));transform-origin:center center}
+        .target img{pointer-events:none;user-select:none;-webkit-user-drag:none}
         .bullet-hole{position:fixed;width:8px;height:8px;background:radial-gradient(circle, #111 0%, #333 60%, transparent 100%);border-radius:50%;pointer-events:none;z-index:5;box-shadow:0 0 2px rgba(0,0,0,0.8)}
         #game-area.cursor-hidden{cursor:none}
         #hit-marker.show{animation:hitMarkerAnim 0.2s ease-out forwards}
@@ -216,6 +205,14 @@
         const configMode = document.getElementById('fr-config-mode')?.value || 'steady';
         const configStudentId = document.getElementById('fr-config-student')?.value || '';
         const configMaxShots = parseInt(document.getElementById('fr-config-max-shots')?.value || '0', 10);
+        const configAssessmentSimId = parseInt(document.getElementById('fr-config-assessment-sim-id')?.value || '0', 10);
+        const configTargetId = parseInt(document.getElementById('fr-config-target-id')?.value || '0', 10);
+        const configTargetModeId = parseInt(document.getElementById('fr-config-target-mode-id')?.value || '0', 10);
+
+        const TARGET_IMG = { width: 1200, height: 2000 };
+        const TARGET_CENTER = { x: 600, y: 1000 };
+        const TARGET_RADII = { bullseye: 58, alpha: 118, bravo: 270, charlie: 420, delta: 535 };
+        const TARGET_DISPLAY_WIDTH = 200;
 
         const weaponStats = {
             '9mm': { name: '9mm Pistol', magSize: 15, totalAmmo: 45, reloadTime: 1500, recoil: 8, flashColor: 'rgba(255,200,50,0.4)', flashSize: '40%' },
@@ -248,6 +245,8 @@
         let countdownTimer = null;
         let activeTarget = null;
         let lastFrameTime = performance.now();
+        let cachedBounds = null;
+        let scoreFetchController = null;
 
         const gameArea = document.getElementById('game-area');
         const crosshair = document.getElementById('crosshair');
@@ -269,18 +268,27 @@
         const reloadFill = document.getElementById('reload-fill');
         const timerControls = document.getElementById('timer-controls');
 
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function createNoiseBuffer(duration) { const bufferSize = audioCtx.sampleRate * duration; const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate); const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; } return buffer; }
-        const noiseBuffer = createNoiseBuffer(0.5);
+        let audioCtx = null;
+        let noiseBuffer = null;
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            function createNoiseBuffer(duration) { const bufferSize = audioCtx.sampleRate * duration; const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate); const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; } return buffer; }
+            noiseBuffer = createNoiseBuffer(0.5);
+        }
+        function cleanupAudio() {
+            if (audioCtx) { audioCtx.close().catch(() => {}); audioCtx = null; noiseBuffer = null; }
+        }
 
         function playSound(filterType, frequency, q, duration, volume) {
+            if (!audioCtx) return;
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const source = audioCtx.createBufferSource(); source.buffer = noiseBuffer;
             const filter = audioCtx.createBiquadFilter(); filter.type = filterType; filter.frequency.setValueAtTime(frequency, audioCtx.currentTime); filter.Q.setValueAtTime(q, audioCtx.currentTime);
             const gainNode = audioCtx.createGain(); gainNode.gain.setValueAtTime(volume, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
             source.connect(filter); filter.connect(gainNode); gainNode.connect(audioCtx.destination); source.start(); source.stop(audioCtx.currentTime + duration);
         }
-        function addLowThump(freq, duration, volume) { const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.type = 'sine'; osc.frequency.setValueAtTime(freq, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + duration); gain.gain.setValueAtTime(volume, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + duration); }
+        function addLowThump(freq, duration, volume) { if (!audioCtx) return; const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.type = 'sine'; osc.frequency.setValueAtTime(freq, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + duration); gain.gain.setValueAtTime(volume, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + duration); }
 
         function playGunshot() {
             const w = state.selectedWeapon;
@@ -345,8 +353,10 @@
         function resetFiringRange() {
             if (gameTimer) { clearInterval(gameTimer); gameTimer = null; }
             if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+            if (scoreFetchController) { scoreFetchController.abort(); scoreFetchController = null; }
             hideCountInOverlay();
             hideEndOverlay();
+            cleanupBulletHoles();
 
             const wStats = weaponStats[state.selectedWeapon];
             state.score = 0;
@@ -357,6 +367,11 @@
             state.totalShots = 0;
             state.hits = 0;
             state.bullseyes = 0;
+            state.alphaCount = 0;
+            state.bravoCount = 0;
+            state.charlieCount = 0;
+            state.deltaCount = 0;
+            state.missCount = 0;
             state.isPlaying = false;
             state.hasStarted = false;
             targetContainer.innerHTML = '';
@@ -385,6 +400,7 @@
         function openStartModal() {
             if (state.hasStarted) return;
             if (startModalOpen) return;
+            initAudio();
             const overlay = document.getElementById('start-modal-overlay');
             const weaponEl = document.getElementById('start-modal-weapon');
             const timeEl = document.getElementById('start-modal-time');
@@ -425,20 +441,67 @@
             if (inner) inner.style.transform = 'scale(0.85) translateY(20px)';
         }
 
+        function cleanupBulletHoles() {
+            document.querySelectorAll('.bullet-hole').forEach(function(h) {
+                h.remove();
+            });
+        }
+
+        function cleanupEventListeners() {
+            var old = document.getElementById('fr-cleanup-marker');
+            if (old) old.remove();
+        }
+
         function endGame(reason) {
             state.isPlaying = false;
             clearInterval(gameTimer);
             gameTimer = null;
+
+            if (scoreFetchController) {
+                scoreFetchController.abort();
+                scoreFetchController = null;
+            }
+
             targetContainer.innerHTML = '';
             activeTarget = null;
             gameArea.classList.remove('cursor-hidden');
             crosshair.style.display = 'none';
             setTimerControlsVisible(true);
+            cleanupBulletHoles();
 
             document.getElementById('res-reason').innerText = reason || 'Simulation ended';
             document.getElementById('res-score').innerText = state.score;
             document.getElementById('res-accuracy').innerText = state.totalShots > 0 ? Math.round((state.hits / state.totalShots) * 100) + '%' : '0%';
             document.getElementById('res-bullseyes').innerText = state.bullseyes;
+
+            var breakdownEl = document.getElementById('res-breakdown');
+            var rowsEl = document.getElementById('res-breakdown-rows');
+            var totalShotsEl = document.getElementById('res-total-shots');
+            if (breakdownEl && rowsEl && totalShotsEl) {
+                var zones = [
+                    { label: 'Bullseye', count: state.bullseyes, icon: '🎯' },
+                    { label: 'Alpha', count: state.alphaCount, icon: '⭐' },
+                    { label: 'Bravo', count: state.bravoCount, icon: '▣' },
+                    { label: 'Charlie', count: state.charlieCount, icon: '◉' },
+                    { label: 'Delta', count: state.deltaCount, icon: '○' },
+                    { label: 'Miss', count: state.missCount, icon: '✕' },
+                ];
+                var maxCount = Math.max(1, state.totalShots);
+                rowsEl.innerHTML = zones.map(function(z) {
+                    var pct = maxCount > 0 ? Math.round((z.count / maxCount) * 100) : 0;
+                    var barW = Math.max(2, pct);
+                    return '<div style="display:flex;align-items:center;gap:8px">' +
+                        '<span style="width:60px;font-weight:600;color:#374151">' + z.label + '</span>' +
+                        '<span style="width:28px;text-align:right;font-weight:700;color:#7c3aed">' + z.count + '</span>' +
+                        '<div style="flex:1;height:8px;border-radius:4px;background:#e5e7eb;overflow:hidden">' +
+                        '<div style="height:100%;width:' + barW + '%;border-radius:4px;' +
+                        (z.label === 'Bullseye' ? 'background:#dc2626' : z.label === 'Miss' ? 'background:#9ca3af' : 'background:#7c3aed') + '"></div></div>' +
+                        '<span style="width:36px;text-align:right;font-size:11px;color:#9ca3af">' + pct + '%</span>' +
+                        '</div>';
+                }).join('');
+                totalShotsEl.innerText = state.totalShots;
+                breakdownEl.style.display = 'block';
+            }
 
             if (configStudentId) {
                 var body = {
@@ -459,13 +522,22 @@
                     miss_count: state.missCount,
                     max_shots: configMaxShots > 0 ? configMaxShots : state.totalShots,
                     started_at: state._startedAt || null,
-                    completed_at: new Date().toISOString()
+                    completed_at: new Date().toISOString(),
+                    assessment_simulation_id: configAssessmentSimId,
+                    target_id: configTargetId,
+                    target_mode_id: configTargetModeId
                 };
+                scoreFetchController = new AbortController();
+                var timeoutId = setTimeout(function() { scoreFetchController.abort(); }, 10000);
                 fetch('{{ route('instructor.firing-range.save-score') }}', {
                     method: 'POST',
+                    signal: scoreFetchController.signal,
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                     body: JSON.stringify(body)
-                }).catch(function(err) { console.error('Score save failed', err); });
+                }).then(function() { clearTimeout(timeoutId); }).catch(function(err) {
+                    if (err.name !== 'AbortError') { console.error('Score save failed', err); }
+                    clearTimeout(timeoutId);
+                }).finally(function() { scoreFetchController = null; });
             }
 
             setTimeout(() => {
@@ -478,14 +550,17 @@
         function restartGame() {
             if (gameTimer) { clearInterval(gameTimer); gameTimer = null; }
             if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+            if (scoreFetchController) { scoreFetchController.abort(); scoreFetchController = null; }
             hideCountInOverlay();
             hideEndOverlay();
+            cleanupBulletHoles();
+            initAudio();
 
             const wStats = weaponStats[state.selectedWeapon];
             state.score = 0;
             state.timeLeft = state.selectedTime;
-            state.currentAmmo = configMaxShots > 0 ? configMaxShots : wStats.magSize;
-            state.reserveAmmo = configMaxShots > 0 ? configMaxShots : wStats.totalAmmo;
+            state.currentAmmo = wStats.magSize;
+            state.reserveAmmo = wStats.totalAmmo;
             state.isReloading = false;
             state.totalShots = 0;
             state.hits = 0;
@@ -511,54 +586,66 @@
 
             const targetEl = document.createElement('div');
             targetEl.classList.add('target-container');
+            const targetDisplayH = Math.round(TARGET_DISPLAY_WIDTH * TARGET_IMG.height / TARGET_IMG.width);
             targetEl.innerHTML = `
-                <div class="target" data-points="2">
-                    <div class="target-board"></div>
-                    <div class="target-indicator"></div>
-                    <div class="target-crosshair-lines"></div>
-                    <div class="target-rings">
-                        <div class="target-ring delta" data-zone="delta" data-points="1"></div>
-                        <div class="target-zone-label delta">Delta</div>
-                        <div class="target-ring charlie" data-zone="charlie" data-points="3"></div>
-                        <div class="target-zone-label charlie">Charlie</div>
-                        <div class="target-ring bravo" data-zone="bravo" data-points="5"></div>
-                        <div class="target-zone-label bravo">Bravo</div>
-                        <div class="target-ring alpha" data-zone="alpha" data-points="10"></div>
-                        <div class="target-zone-label alpha">Alpha</div>
-                        <div class="target-bullseye" data-zone="bullseye" data-points="20"></div>
-                    </div>
+                <div class="target" data-points="2" style="width:${TARGET_DISPLAY_WIDTH}px;height:${targetDisplayH}px">
+                    <img src="{{ asset('images/firing-range/TARGET FOR FIRING RANGE.png') }}"
+                         style="width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none;pointer-events:none"
+                         draggable="false"
+                         alt="Firing Range Target">
                 </div>
             `;
 
-            const bounds = gameArea.getBoundingClientRect();
-            const targetWidth = 160;
-            const targetHeight = 160;
+            if (!cachedBounds) updateBounds();
+            const bounds = cachedBounds;
+            const targetWidth = TARGET_DISPLAY_WIDTH;
+            const targetHeight = targetDisplayH;
+
+            targetEl.dataset.tx = '0';
+            targetEl.dataset.ty = '0';
 
             if (state.targetMode === 'steady') {
                 const x = (bounds.width / 2) - (targetWidth / 2);
                 const y = (bounds.height / 2) - (targetHeight / 2);
-                targetEl.style.left = x + 'px'; targetEl.style.top = y + 'px';
+                targetEl.dataset.tx = x;
+                targetEl.dataset.ty = y;
+                targetEl.style.left = x + 'px';
+                targetEl.style.top = y + 'px';
+                targetEl.style.transform = 'scale(var(--target-scale, 1))';
                 targetEl.timeoutId = setTimeout(() => removeTarget(targetEl, false), 4000);
             } else if (state.targetMode === 'sideways') {
                 const y = (bounds.height / 2) - (targetHeight / 2);
                 const startX = Math.random() > 0.5 ? -targetWidth : bounds.width;
-                targetEl.style.left = startX + 'px'; targetEl.style.top = y + 'px';
+                targetEl.dataset.tx = startX;
+                targetEl.dataset.ty = y;
+                targetEl.style.left = startX + 'px';
+                targetEl.style.top = y + 'px';
+                targetEl.style.transform = 'scale(var(--target-scale, 1))';
                 const dirX = startX < 0 ? 1 : -1;
                 targetEl.dataset.vx = (3 + Math.random() * 4) * dirX;
                 targetEl.dataset.vy = 0;
             } else if (state.targetMode === 'around') {
                 const x = Math.random() * (bounds.width - targetWidth - 200) + 100;
                 const y = Math.random() * (bounds.height - targetHeight - 200) + 80;
-                targetEl.style.left = x + 'px'; targetEl.style.top = y + 'px';
+                targetEl.dataset.tx = x;
+                targetEl.dataset.ty = y;
+                targetEl.style.left = x + 'px';
+                targetEl.style.top = y + 'px';
+                targetEl.style.transform = 'scale(var(--target-scale, 1))';
                 targetEl.dataset.vx = (2.5 + Math.random() * 3) * (Math.random() > 0.5 ? 1 : -1);
                 targetEl.dataset.vy = (1.5 + Math.random() * 2) * (Math.random() > 0.5 ? 1 : -1);
             }
 
-            targetEl.style.transform = 'scale(0)';
+            targetEl.style.setProperty('--target-scale', '0');
             targetContainer.appendChild(targetEl);
-            setTimeout(() => { targetEl.style.transform = 'scale(1)'; }, 50);
+            requestAnimationFrame(() => { targetEl.style.setProperty('--target-scale', '1'); });
             activeTarget = targetEl;
         }
+
+        function updateBounds() {
+            cachedBounds = gameArea.getBoundingClientRect();
+        }
+        window.addEventListener('resize', updateBounds);
 
         function moveTargets(currentTime) {
             if (!state.isPlaying) return;
@@ -566,32 +653,36 @@
             lastFrameTime = currentTime;
 
             if (activeTarget && state.targetMode !== 'steady') {
-                const bounds = gameArea.getBoundingClientRect();
-                const targetWidth = 160;
-                const targetHeight = 160;
+                if (!cachedBounds) updateBounds();
+                const bounds = cachedBounds;
+                const targetWidth = TARGET_DISPLAY_WIDTH;
+                const targetHeight = Math.round(TARGET_DISPLAY_WIDTH * TARGET_IMG.height / TARGET_IMG.width);
                 const bufferBottom = 120;
 
-                let vx = parseFloat(activeTarget.dataset.vx);
-                let vy = parseFloat(activeTarget.dataset.vy);
-                let currentLeft = parseFloat(activeTarget.style.left);
-                let currentTop = parseFloat(activeTarget.style.top);
+                let vx = parseFloat(activeTarget.dataset.vx) || 0;
+                let vy = parseFloat(activeTarget.dataset.vy) || 0;
+                let tx = parseFloat(activeTarget.dataset.tx) || 0;
+                let ty = parseFloat(activeTarget.dataset.ty) || 0;
 
-                currentLeft += vx * deltaTime;
-                currentTop += vy * deltaTime;
+                tx += vx * deltaTime;
+                ty += vy * deltaTime;
 
                 if (state.targetMode === 'sideways') {
-                    currentTop = (bounds.height / 2) - (targetHeight / 2);
-                    if (currentLeft <= 0) { currentLeft = 0; activeTarget.dataset.vx = Math.abs(vx); }
-                    else if (currentLeft >= bounds.width - targetWidth) { currentLeft = bounds.width - targetWidth; activeTarget.dataset.vx = -Math.abs(vx); }
+                    ty = (bounds.height / 2) - (targetHeight / 2);
+                    if (tx <= 0) { tx = 0; activeTarget.dataset.vx = Math.abs(vx); }
+                    else if (tx >= bounds.width - targetWidth) { tx = bounds.width - targetWidth; activeTarget.dataset.vx = -Math.abs(vx); }
                 } else if (state.targetMode === 'around') {
-                    if (currentLeft <= 0) { currentLeft = 0; activeTarget.dataset.vx = Math.abs(vx); }
-                    else if (currentLeft >= bounds.width - targetWidth) { currentLeft = bounds.width - targetWidth; activeTarget.dataset.vx = -Math.abs(vx); }
-                    if (currentTop <= 0) { currentTop = 0; activeTarget.dataset.vy = Math.abs(vy); }
-                    else if (currentTop >= bounds.height - targetHeight - bufferBottom) { currentTop = bounds.height - targetHeight - bufferBottom; activeTarget.dataset.vy = -Math.abs(vy); }
+                    if (tx <= 0) { tx = 0; activeTarget.dataset.vx = Math.abs(vx); }
+                    else if (tx >= bounds.width - targetWidth) { tx = bounds.width - targetWidth; activeTarget.dataset.vx = -Math.abs(vx); }
+                    if (ty <= 0) { ty = 0; activeTarget.dataset.vy = Math.abs(vy); }
+                    else if (ty >= bounds.height - targetHeight - bufferBottom) { ty = bounds.height - targetHeight - bufferBottom; activeTarget.dataset.vy = -Math.abs(vy); }
                 }
 
-                activeTarget.style.left = currentLeft + 'px';
-                activeTarget.style.top = currentTop + 'px';
+                activeTarget.dataset.tx = tx;
+                activeTarget.dataset.ty = ty;
+                activeTarget.style.left = tx + 'px';
+                activeTarget.style.top = ty + 'px';
+                activeTarget.style.transform = 'scale(var(--target-scale, 1))';
             }
             requestAnimationFrame(moveTargets);
         }
@@ -610,13 +701,16 @@
         }
 
         function handleShot(e) {
+            if (e.button !== 0) return;
             if (!state.isPlaying || state.isReloading) return;
             if (audioCtx.state === 'suspended') audioCtx.resume();
 
             if (configMaxShots > 0 && state.totalShots >= configMaxShots) { return; }
-            if (state.currentAmmo <= 0) { playEmptyClickSound(); initiateReload(); return; }
-
-            state.currentAmmo--; state.totalShots++; updateHUD();
+            if (configMaxShots <= 0) {
+                if (state.currentAmmo <= 0) { playEmptyClickSound(); initiateReload(); return; }
+                state.currentAmmo--;
+            }
+            state.totalShots++; updateHUD();
             playGunshot();
 
             muzzleFlash.classList.add('active');
@@ -625,26 +719,34 @@
             const targetCheck = e.target.closest('.target');
             if (targetCheck) {
                 state.hits++;
-                let points = 2;
+                const img = targetCheck.querySelector('img');
+                const imgRect = img.getBoundingClientRect();
+                const scale = imgRect.width / TARGET_IMG.width;
+                const clickX = (e.clientX - imgRect.left) / scale;
+                const clickY = (e.clientY - imgRect.top) / scale;
+                const dist = Math.sqrt(
+                    Math.pow(clickX - TARGET_CENTER.x, 2) +
+                    Math.pow(clickY - TARGET_CENTER.y, 2)
+                );
+
                 let zoneName = 'body';
-                const hitElement = e.target.closest('[data-zone]');
-                if (hitElement) {
-                    points = parseInt(hitElement.dataset.points || '2', 10);
-                    zoneName = hitElement.dataset.zone || 'body';
-                    if (zoneName === 'bullseye') { state.bullseyes++; state.alphaCount++; }
-                    else if (zoneName === 'alpha') state.alphaCount++;
-                    else if (zoneName === 'bravo') state.bravoCount++;
-                    else if (zoneName === 'charlie') state.charlieCount++;
-                    else if (zoneName === 'delta') state.deltaCount++;
-                } else if (e.target.classList.contains('target-bullseye')) {
-                    points = 20; state.bullseyes++; state.alphaCount++; zoneName = 'bullseye';
-                } else if (e.target.classList.contains('target-ring')) {
-                    if (e.target.classList.contains('alpha')) { points = 10; state.alphaCount++; zoneName = 'alpha'; }
-                    else if (e.target.classList.contains('bravo')) { points = 5; state.bravoCount++; zoneName = 'bravo'; }
-                    else if (e.target.classList.contains('charlie')) { points = 3; state.charlieCount++; zoneName = 'charlie'; }
-                    else if (e.target.classList.contains('delta')) { points = 1; state.deltaCount++; zoneName = 'delta'; }
-                } else if (e.target.classList.contains('target-head-zone')) {
-                    points = 15; zoneName = 'head';
+                let points = 2;
+
+                if (dist <= TARGET_RADII.bullseye) {
+                    zoneName = 'bullseye'; points = 20;
+                    state.bullseyes++; state.alphaCount++;
+                } else if (dist <= TARGET_RADII.alpha) {
+                    zoneName = 'alpha'; points = 10;
+                    state.alphaCount++;
+                } else if (dist <= TARGET_RADII.bravo) {
+                    zoneName = 'bravo'; points = 5;
+                    state.bravoCount++;
+                } else if (dist <= TARGET_RADII.charlie) {
+                    zoneName = 'charlie'; points = 3;
+                    state.charlieCount++;
+                } else if (dist <= TARGET_RADII.delta) {
+                    zoneName = 'delta'; points = 1;
+                    state.deltaCount++;
                 }
 
                 state.score += points; playHitSound();
@@ -653,8 +755,12 @@
             } else { state.missCount++; createBulletHole(e.clientX, e.clientY); }
 
             updateHUD();
-            if (state.currentAmmo <= 0 && state.reserveAmmo <= 0) { setTimeout(() => endGame("Out of ammunition!"), 1000); }
-            else if (state.currentAmmo <= 0) { initiateReload(); }
+            if (configMaxShots > 0) {
+                if (state.totalShots >= configMaxShots) { setTimeout(() => endGame("Out of ammunition!"), 1000); }
+            } else {
+                if (state.currentAmmo <= 0 && state.reserveAmmo <= 0) { setTimeout(() => endGame("Out of ammunition!"), 1000); }
+                else if (state.currentAmmo <= 0) { initiateReload(); }
+            }
         }
 
         function createBulletHole(x, y) {
@@ -694,15 +800,21 @@
             btnReload.disabled = configMaxShots > 0 || state.isReloading || state.currentAmmo === weaponStats[state.selectedWeapon].magSize || state.reserveAmmo <= 0;
         }
 
-        document.addEventListener('mousemove', (e) => { crosshair.style.left = e.clientX + 'px'; crosshair.style.top = e.clientY + 'px'; });
-        gameArea.addEventListener('mouseenter', () => { if (state.isPlaying) crosshair.style.display = 'block'; });
-        gameArea.addEventListener('mouseleave', () => { crosshair.style.display = 'none'; });
-        gameArea.addEventListener('mousedown', handleShot);
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'r' || e.key === 'R') initiateReload();
-            if (e.key === 'Escape' && startModalOpen) cancelStartModal();
-        });
-        gameArea.addEventListener('contextmenu', e => e.preventDefault());
+        var frListeners = [
+            { el: document, type: 'mousemove', fn: function(e) { crosshair.style.left = e.clientX + 'px'; crosshair.style.top = e.clientY + 'px'; } },
+            { el: gameArea, type: 'mouseenter', fn: function() { if (state.isPlaying) crosshair.style.display = 'block'; } },
+            { el: gameArea, type: 'mouseleave', fn: function() { crosshair.style.display = 'none'; } },
+            { el: gameArea, type: 'mousedown', fn: handleShot },
+            { el: document, type: 'keydown', fn: function(e) { if (e.key === 'r' || e.key === 'R') initiateReload(); if (e.key === 'Escape' && startModalOpen) cancelStartModal(); } },
+            { el: gameArea, type: 'contextmenu', fn: function(e) { e.preventDefault(); } }
+        ];
+        frListeners.forEach(function(l) { l.el.addEventListener(l.type, l.fn); });
+
+        var cleanupMarker = document.createElement('div');
+        cleanupMarker.id = 'fr-cleanup-marker';
+        cleanupMarker.style.display = 'none';
+        cleanupMarker.dataset.cleanup = '1';
+        document.body.appendChild(cleanupMarker);
 
         hudWeapon.innerText = weaponStats[configWeapon]?.name || '9mm Pistol';
         const wSt = weaponStats[configWeapon];

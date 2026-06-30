@@ -69,7 +69,7 @@ class ManagedStudent extends Authenticatable
             return false;
         }
 
-        return $this->trainingSessions()
+        return $this->modules()
             ->where('module_key', $prevModule)
             ->where('status', 'completed')
             ->exists();
@@ -108,25 +108,19 @@ class ManagedStudent extends Authenticatable
         return $this->belongsTo(User::class, 'instructor_user_id');
     }
 
-    public function trainingSessions()
-    {
-        return $this->hasMany(StudentTrainingSession::class, 'student_id');
-    }
-
-    public function latestTrainingSession()
-    {
-        return $this->hasOne(StudentTrainingSession::class, 'student_id')
-            ->latest('started_at');
-    }
-
-    public function activityLogs()
-    {
-        return $this->hasMany(StudentActivityLog::class, 'student_id');
-    }
-
     public function loginVerificationCodes()
     {
         return $this->hasMany(LoginVerificationCode::class, 'student_id');
+    }
+
+    public function modules()
+    {
+        return $this->hasMany(Module::class, 'student_id');
+    }
+
+    public function latestModule()
+    {
+        return $this->hasOne(Module::class, 'student_id')->latestOfMany();
     }
 
     public function scores()

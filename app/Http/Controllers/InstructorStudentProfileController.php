@@ -3,10 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\ManagedStudent;
-use App\Models\MarksmanshipScore;
+use App\Models\AssessmentScore;
+use App\Models\AssessmentSimulation;
+use App\Models\MarksmanshipSimulation;
+use App\Models\ShotResult;
 use App\Models\StudentScore;
-use App\Models\StudentActivityLog;
-use App\Models\StudentTrainingSession;
+use App\Models\Target;
+use App\Models\TargetDetail;
+use App\Models\TargetMode;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,6 +33,7 @@ class InstructorStudentProfileController extends Controller
 
         $students = ManagedStudent::where('instructor_user_id', $user->id)
             ->with(['scores'])
+            ->take(200)
             ->get();
 
         $studentReports = $students->map(function ($student) {
@@ -151,7 +156,7 @@ class InstructorStudentProfileController extends Controller
             'moduleTitle' => 'Assembly Dissasemble',
             'moduleDescription' => 'Drag-and-drop assembly and disassembly snapping activity.',
             'moduleState' => $moduleState,
-            'firearms' => \App\Models\Firearm::with('parts')->get(),
+            'simulations' => \App\Models\AssessmentSimulation::with('parts')->get(),
         ]);
     }
 
@@ -196,6 +201,21 @@ class InstructorStudentProfileController extends Controller
 
         $time = max(5, min(999, $time));
 
+        // Resolve assessment_simulation_id from weapon slug
+        $assessmentSimulation = AssessmentSimulation::where('slug', $weapon)->first();
+        $assessmentSimulationId = $assessmentSimulation?->id;
+
+        // Resolve default target (standard)
+        $defaultTarget = Target::where('slug', 'standard')->first();
+        $targetId = $defaultTarget?->id;
+
+        // Resolve target_mode_id from mode name
+        $targetModeId = null;
+        if ($targetId && in_array($mode, ['steady', 'sideways', 'around'], true)) {
+            $targetMode = TargetMode::where('target_id', $targetId)->where('name', $mode)->first();
+            $targetModeId = $targetMode?->id;
+        }
+
         return view('Instructor.firing-range', [
             'moduleKey' => 'module-4',
             'moduleTitle' => 'Firing Range',
@@ -206,6 +226,9 @@ class InstructorStudentProfileController extends Controller
             'mode' => $mode,
             'studentId' => $studentId,
             'maxShots' => $maxShots,
+            'assessmentSimulationId' => $assessmentSimulationId,
+            'targetId' => $targetId,
+            'targetModeId' => $targetModeId,
         ]);
     }
 
@@ -232,6 +255,9 @@ class InstructorStudentProfileController extends Controller
             'max_shots' => ['nullable', 'integer', 'min:0'],
             'started_at' => ['nullable', 'string'],
             'completed_at' => ['nullable', 'string'],
+            'target_id' => ['nullable', 'integer', 'exists:targets,id'],
+            'target_mode_id' => ['nullable', 'integer', 'exists:target_modes,id'],
+            'assessment_simulation_id' => ['required', 'integer', 'exists:assessment_simulations,id'],
         ]);
 
         $student = ManagedStudent::where('student_id_number', $data['student_id'])->first();
@@ -240,56 +266,124 @@ class InstructorStudentProfileController extends Controller
             return response()->json(['message' => 'Student not found.'], 404);
         }
 
+        $defaultTarget = Target::where('slug', 'standard')->first();
+        $targetId = $data['target_id'] ?? $defaultTarget?->id;
+
+        $targetModeId = $data['target_mode_id'] ?? null;
+        if (!$targetModeId && !empty($data['target_mode']) && $targetId) {
+            $mode = TargetMode::where('target_id', $targetId)
+                ->where('name', $data['target_mode'])
+                ->first();
+            $targetModeId = $mode?->id;
+        }
+
         $score = StudentScore::create([
-            'student_id' => $student->id,
-            'recorded_by_user_id' => $user->id,
-            'module_key' => 'final',
             'score' => $data['score'],
             'max_score' => $data['max_score'],
             'recorded_at' => now(),
             'metadata' => [
+                'source' => 'marksmanship',
                 'accuracy' => $data['accuracy'] ?? null,
-                'bullseyes' => $data['bullseyes'] ?? null,
                 'total_shots' => $data['total_shots'] ?? null,
                 'hits' => $data['hits'] ?? null,
                 'weapon' => $data['weapon'] ?? null,
                 'time_limit' => $data['time_limit'] ?? null,
                 'target_mode' => $data['target_mode'] ?? null,
-                'alpha_count' => $data['alpha_count'] ?? null,
-                'bravo_count' => $data['bravo_count'] ?? null,
-                'charlie_count' => $data['charlie_count'] ?? null,
-                'delta_count' => $data['delta_count'] ?? null,
-                'miss_count' => $data['miss_count'] ?? null,
                 'max_shots' => $data['max_shots'] ?? null,
             ],
         ]);
 
-        MarksmanshipScore::create([
+        $assessmentScore = AssessmentScore::create([
             'score_id' => $score->id,
-            'student_id' => $student->id,
-            'instructor_id' => $user->id,
-            'weapon' => $data['weapon'] ?? null,
-            'time_limit' => $data['time_limit'] ?? null,
-            'target_mode' => $data['target_mode'] ?? null,
-            'total_shots' => $data['total_shots'] ?? 0,
-            'max_shots' => $data['max_shots'] ?? 0,
-            'bullseye_count' => $data['bullseyes'] ?? 0,
-            'alpha_count' => $data['alpha_count'] ?? 0,
-            'bravo_count' => $data['bravo_count'] ?? 0,
-            'charlie_count' => $data['charlie_count'] ?? 0,
-            'delta_count' => $data['delta_count'] ?? 0,
-            'miss_count' => $data['miss_count'] ?? 0,
-            'total_score' => $data['score'],
-            'max_score' => $data['max_score'],
-            'accuracy' => $data['accuracy'] ?? null,
+            'score_type' => 'marksmanship',
+            'metadata' => [
+                'student_id' => $student->id,
+                'instructor_id' => $user->id,
+                'total_score' => $data['score'],
+                'max_score' => $data['max_score'],
+                'accuracy' => $data['accuracy'] ?? null,
+            ],
+        ]);
+
+        $marksmanshipSim = MarksmanshipSimulation::create([
+            'assessment_simulation_id' => $data['assessment_simulation_id'],
+            'assessment_score_id' => $assessmentScore->id,
+            'target_id' => $targetId,
+            'target_mode_id' => $targetModeId,
+            'status' => 'completed',
             'started_at' => $data['started_at'] ?? null,
             'completed_at' => $data['completed_at'] ?? null,
+            'metadata' => [
+                'weapon' => $data['weapon'] ?? null,
+                'time_limit' => $data['time_limit'] ?? null,
+                'total_shots' => $data['total_shots'] ?? 0,
+                'max_shots' => $data['max_shots'] ?? 0,
+                'bullseye_count' => $data['bullseyes'] ?? 0,
+                'alpha_count' => $data['alpha_count'] ?? 0,
+                'bravo_count' => $data['bravo_count'] ?? 0,
+                'charlie_count' => $data['charlie_count'] ?? 0,
+                'delta_count' => $data['delta_count'] ?? 0,
+                'miss_count' => $data['miss_count'] ?? 0,
+            ],
         ]);
+
+        $this->createShotResults($marksmanshipSim, $data, $targetId);
 
         return response()->json([
             'message' => 'Score saved successfully.',
             'data' => $score,
         ]);
+    }
+
+    private function createShotResults(MarksmanshipSimulation $simulation, array $data, ?int $targetId): void
+    {
+        $zoneSlugs = ['bullseye', 'alpha', 'bravo', 'charlie', 'delta'];
+        $zoneCountKeys = ['bullseyes', 'alpha_count', 'bravo_count', 'charlie_count', 'delta_count'];
+        $details = [];
+
+        if ($targetId) {
+            $details = TargetDetail::where('target_id', $targetId)
+                ->whereIn('name', $zoneSlugs)
+                ->pluck('id', 'name');
+        }
+
+        $rows = [];
+        $shotNumber = 0;
+        $now = now();
+
+        foreach ($zoneSlugs as $i => $slug) {
+            $count = (int)($data[$zoneCountKeys[$i]] ?? 0);
+            $detailId = $details[$slug] ?? null;
+
+            for ($s = 0; $s < $count; $s++) {
+                $shotNumber++;
+                $rows[] = [
+                    'marksmanship_simulation_id' => $simulation->id,
+                    'target_detail_id' => $detailId,
+                    'shot_number' => $shotNumber,
+                    'is_hit' => true,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+        }
+
+        $missCount = (int)($data['miss_count'] ?? 0);
+        for ($s = 0; $s < $missCount; $s++) {
+            $shotNumber++;
+            $rows[] = [
+                'marksmanship_simulation_id' => $simulation->id,
+                'target_detail_id' => null,
+                'shot_number' => $shotNumber,
+                'is_hit' => false,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        if (!empty($rows)) {
+            ShotResult::insert($rows);
+        }
     }
 
     public function downloadTemplate()

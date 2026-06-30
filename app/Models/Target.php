@@ -31,4 +31,9 @@ class Target extends Model
     {
         return $this->hasMany(TargetMode::class);
     }
+
+    public function marksmanshipSimulations(): HasMany
+    {
+        return $this->hasMany(MarksmanshipSimulation::class);
+    }
 }

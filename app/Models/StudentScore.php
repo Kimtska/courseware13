@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class StudentScore extends Model
 {
@@ -13,8 +16,7 @@ class StudentScore extends Model
 
     protected $fillable = [
         'student_id',
-        'recorded_by_user_id',
-        'module_key',
+        'activity_id',
         'score',
         'max_score',
         'recorded_at',
@@ -26,13 +28,28 @@ class StudentScore extends Model
         'metadata' => 'array',
     ];
 
-    public function student()
+    public function student(): BelongsTo
     {
         return $this->belongsTo(ManagedStudent::class, 'student_id');
     }
 
-    public function recorder()
+    public function activity(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'recorded_by_user_id');
+        return $this->belongsTo(Activity::class, 'activity_id');
+    }
+
+    public function assessmentScore(): HasOne
+    {
+        return $this->hasOne(AssessmentScore::class, 'score_id');
+    }
+
+    public function activityScores(): HasMany
+    {
+        return $this->hasMany(ActivityScore::class, 'score_id');
+    }
+
+    public function assessmentSimulations(): HasMany
+    {
+        return $this->hasMany(AssessmentSimulation::class, 'score_id');
     }
 }

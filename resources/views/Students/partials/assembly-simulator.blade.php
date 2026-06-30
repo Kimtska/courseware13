@@ -49,12 +49,27 @@
         .assembly-simulator .as-toast.ok{background:#7c3aed;color:#fff}
         .assembly-simulator .as-toast.err{background:#ef4444;color:#fff}
 
+        .assembly-simulator .as-result-overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.4);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:16px}
+        .assembly-simulator .as-result-overlay.open{display:flex}
+        .assembly-simulator .as-result-panel{background:#fff;border-radius:20px;padding:32px;max-width:400px;width:100%;text-align:center;box-shadow:0 30px 70px -20px rgba(0,0,0,.35)}
+        .assembly-simulator .as-result-icon{width:64px;height:64px;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:28px}
+        .assembly-simulator .as-result-icon.pass{background:#d1fae5;color:#059669}
+        .assembly-simulator .as-result-icon.fail{background:#fef2f2;color:#dc2626}
+        .assembly-simulator .as-result-title{font-size:20px;font-weight:800;color:#111827;margin-bottom:8px}
+        .assembly-simulator .as-result-score{font-size:32px;font-weight:800;color:#7c3aed;margin-bottom:12px}
+        .assembly-simulator .as-result-details{font-size:13px;color:#6b7280;line-height:1.6;margin-bottom:20px}
+        .assembly-simulator .as-result-actions{display:flex;gap:8px;justify-content:center}
+        .assembly-simulator .as-result-actions .as-rbtn{padding:10px 24px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;margin:0}
+        .assembly-simulator .as-result-actions .as-rbtn.primary{background:#7c3aed;color:#fff;border:none}
+        .assembly-simulator .as-result-actions .as-rbtn.primary:hover{background:#6d28d9}
+        .assembly-simulator .as-result-actions .as-rbtn.secondary{background:#fff;color:#374151;border:1px solid #e5e7eb}
+        .assembly-simulator .as-result-actions .as-rbtn.secondary:hover{background:#f9fafb}
         @media (max-width:900px){.assembly-simulator .as-layout{grid-template-columns:1fr}.assembly-simulator .as-tray{min-height:auto}.assembly-simulator .as-pcard{width:calc(50% - 4px);min-width:0}.assembly-simulator .as-rbtn{margin-left:0}}
     </style>
     <div class="as-layout">
         <div class="as-tray-wrap">
             <div class="as-tray-lbl">Parts Tray</div>
-            <div class="as-tray" id="as-tray" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="asDropTray(event)"></div>
+            <div class="as-tray" id="as-tray"></div>
         </div>
 
         <div class="as-canvas-wrap">
@@ -80,17 +95,29 @@
 
     <div class="as-toast" id="as-toast"></div>
 
-
-
+    <div class="as-result-overlay" id="as-result-overlay">
+        <div class="as-result-panel">
+            <div class="as-result-icon" id="as-result-icon">
+                <i class="fas fa-check" id="as-result-check" style="display:none"></i>
+                <i class="fas fa-xmark" id="as-result-cross" style="display:none"></i>
+            </div>
+            <h3 class="as-result-title" id="as-result-title">Complete!</h3>
+            <div class="as-result-score" id="as-result-score">0 / 100</div>
+            <div class="as-result-details" id="as-result-details"></div>
+            <div class="as-result-actions">
+                <button class="as-rbtn" id="as-result-close" type="button">Close</button>
+            </div>
+        </div>
+    </div>
 
 </div>
 
 @php
-    $asFirearms = \App\Models\Firearm::with('parts')->get();
-    $asFirearmsData = [];
-    foreach ($asFirearms as $asF) {
+    $asSimulations = $simulations ?? \App\Models\AssessmentSimulation::with('parts')->get();
+    $asSimulationsData = [];
+    foreach ($asSimulations as $asS) {
         $partsData = [];
-        foreach ($asF->parts as $asP) {
+        foreach ($asS->parts as $asP) {
             $partsData[] = [
                 'id' => strtoupper($asP->slug),
                 'name' => $asP->name,
@@ -108,8 +135,8 @@
                 ],
             ];
         }
-        $asFirearmsData[$asF->slug] = [
-            'label' => $asF->name,
+        $asSimulationsData[$asS->slug] = [
+            'label' => $asS->name,
             'parts' => $partsData,
         ];
     }
@@ -122,23 +149,23 @@
 
     const $ = (id) => scope.querySelector('#' + id);
 
-    const FIREARMS_DATA = @json($asFirearmsData);
+    const SIMULATIONS_DATA = @json($asSimulationsData);
 
-    let currentFirearmSlug = '9mm';
+    let currentSimulationSlug = '9mm';
 
-    function getFirearmParts() {
-        return FIREARMS_DATA[currentFirearmSlug]?.parts || [];
+    function getSimulationParts() {
+        return SIMULATIONS_DATA[currentSimulationSlug]?.parts || [];
     }
 
-    function getFirearmLabel() {
-        return FIREARMS_DATA[currentFirearmSlug]?.label || '9mm Pistol';
+    function getSimulationLabel() {
+        return SIMULATIONS_DATA[currentSimulationSlug]?.label || '9mm Pistol';
     }
 
-    function getFirearmImg(part) {
+    function getSimulationImg(part) {
         return part.img || '';
     }
 
-    function getFirearmGlow(part) {
+    function getSimulationGlow(part) {
         return part.glow || part.img || '';
     }
 
@@ -146,19 +173,47 @@
     let placed = {};
     let dragId = null;
     let selectedTimeLimit = 30;
-    let selectedFirearm = '9mm';
+    let selectedSimulation = '9mm';
     let simulationStarted = true;
+
+    let asmResult = {
+        mode: 'asm',
+        simulation_slug: '9mm',
+        started_at: null,
+        completed_at: null,
+        wrong_attempts: 0,
+        part_attempts: {},
+        mistakes: [],
+        parts_order: [],
+        score: 0,
+        max_score: 100,
+        passed: false,
+        submitted: false
+    };
+
+    function resetAsmResult() {
+        asmResult.mode = mode;
+        asmResult.simulation_slug = selectedSimulation;
+        asmResult.started_at = null;
+        asmResult.completed_at = null;
+        asmResult.wrong_attempts = 0;
+        asmResult.part_attempts = {};
+        asmResult.mistakes = [];
+        asmResult.parts_order = [];
+        asmResult.score = 0;
+        asmResult.passed = false;
+        asmResult.submitted = false;
+    }
 
     function setInfo(html){ const el = $('as-info'); if (el) el.innerHTML = html; }
     function updateMenuSummary(){
         const timeText = selectedTimeLimit + 's';
-        const firearmText = getFirearmLabel();
+        const simulationText = getSimulationLabel();
         const st = $('as-session-time-pill'); if (st) st.textContent = 'Time: ' + timeText;
-        const sf = $('as-session-firearm-pill'); if (sf) sf.textContent = 'Firearm: ' + firearmText;
+        const sf = $('as-session-simulation-pill'); if (sf) sf.textContent = 'Simulation: ' + simulationText;
     }
 
-
-    function getNextPart(){ return getFirearmParts().find(part => !placed[part.id]) || null; }
+    function getNextPart(){ return getSimulationParts().find(part => !placed[part.id]) || null; }
     function pulseStage(){ const stage = $('as-stage'); if (!stage) return; stage.classList.add('snap-glow'); clearTimeout(stage._snapTimer); stage._snapTimer = setTimeout(() => stage.classList.remove('snap-glow'), 850); }
     function asToast(msg, type){
         const t = $('as-toast'); if (!t) return;
@@ -172,9 +227,11 @@
         const ba = $('as-btn-asm'); if (ba) ba.classList.toggle('on', nextMode === 'asm');
         const bd = $('as-btn-dis'); if (bd) bd.classList.toggle('on', nextMode === 'dis');
         const bg = $('as-badge'); if (bg) bg.textContent = nextMode === 'asm' ? 'ASSEMBLY MODE' : 'DISASSEMBLY MODE';
+        const ov = $('as-result-overlay'); if (ov) ov.classList.remove('open');
+        resetAsmResult();
         reset();
         if (nextMode === 'dis') {
-            getFirearmParts().forEach(part => placed[part.id] = true);
+            getSimulationParts().forEach(part => placed[part.id] = true);
             render();
             setInfo('Drag each part off the pistol back to the tray to disassemble it.');
         }
@@ -195,14 +252,14 @@
     function renderLayers(){
         const stage = $('as-stage'); if (!stage) return;
         stage.querySelectorAll('.as-layer').forEach(n => n.remove());
-        [...getFirearmParts()].sort((a,b) => a.zOrder - b.zOrder).forEach(part => {
+        [...getSimulationParts()].sort((a,b) => a.zOrder - b.zOrder).forEach(part => {
             if (!placed[part.id]) return;
             const layer = document.createElement('div');
             layer.className = 'as-layer';
-            layer.id = 'as-layer-' + part.id;
+            layer.dataset.pid = part.id;
             layer.style.zIndex = part.zOrder + 1;
             const img = document.createElement('img');
-            img.src = getFirearmImg(part);
+            img.src = getSimulationImg(part);
             img.alt = part.name;
             img.style.cssText = 'opacity:1;filter:drop-shadow(0 10px 16px rgba(0,0,0,.28))';
             layer.appendChild(img);
@@ -210,9 +267,6 @@
                 layer.style.cursor = 'grab';
                 layer.style.pointerEvents = 'auto';
                 layer.setAttribute('draggable', 'true');
-                layer.addEventListener('dragstart', e => { dragId = part.id; e.dataTransfer.effectAllowed = 'move'; layer.style.opacity = '.3'; });
-                layer.addEventListener('dragend', () => { layer.style.opacity = '1'; dragId = null; });
-                layer.addEventListener('mouseenter', () => setInfo(part.desc));
             }
             stage.appendChild(layer);
         });
@@ -223,11 +277,12 @@
         if (mode !== 'asm') return;
         const nextPart = getNextPart();
         stage.querySelectorAll('.as-guide-layer').forEach(n => n.remove());
-        getFirearmParts().forEach(part => {
+        getSimulationParts().forEach(part => {
             if (placed[part.id]) return;
             const z = part.zone;
             const zone = document.createElement('div');
             zone.className = 'as-dzone empty';
+            zone.dataset.pid = part.id;
             if (nextPart && nextPart.id === part.id) {
                 zone.classList.add('next');
                 const guideLayer = document.createElement('div');
@@ -235,7 +290,7 @@
                 guideLayer.id = 'as-guide-' + part.id;
                 guideLayer.style.zIndex = part.zOrder;
                 const guideImg = document.createElement('img');
-                guideImg.src = getFirearmGlow(part);
+                guideImg.src = getSimulationGlow(part);
                 guideImg.alt = part.name + ' guide';
                 guideImg.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 10px 16px rgba(34,197,94,.45))';
                 guideLayer.appendChild(guideImg);
@@ -249,17 +304,13 @@
             hint.className = 'hint';
             hint.textContent = part.name;
             zone.appendChild(hint);
-            zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('over'); });
-            zone.addEventListener('dragleave', () => zone.classList.remove('over'));
-            zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('over'); asDropZone(part.id); });
-            zone.addEventListener('mouseenter', () => setInfo(part.desc));
             stage.appendChild(zone);
         });
     }
     function renderTray(){
         const tray = $('as-tray'); if (!tray) return;
         tray.innerHTML = '';
-        const items = getFirearmParts().filter(part => mode === 'asm' ? !placed[part.id] : placed[part.id]);
+        const items = getSimulationParts().filter(part => mode === 'asm' ? !placed[part.id] : placed[part.id]);
         if (!items.length) {
             tray.innerHTML = '<div style="font-size:11px;color:#555;padding:20px;text-align:center">' + (mode === 'asm' ? 'All parts assembled!' : 'All parts removed!') + '</div>';
             return;
@@ -270,7 +321,7 @@
             card.dataset.pid = part.id;
             card.setAttribute('draggable', 'true');
             const img = document.createElement('img');
-            img.src = getFirearmImg(part);
+            img.src = getSimulationImg(part);
             img.alt = part.name;
             img.style.cssText = 'filter:drop-shadow(0 8px 12px rgba(0,0,0,.12))';
             const label = document.createElement('div');
@@ -278,63 +329,191 @@
             label.textContent = part.name;
             card.appendChild(img);
             card.appendChild(label);
-            card.addEventListener('dragstart', e => { dragId = part.id; e.dataTransfer.effectAllowed = 'move'; card.classList.add('ghost'); });
-            card.addEventListener('dragend', () => { card.classList.remove('ghost'); dragId = null; });
-            card.addEventListener('mouseenter', () => setInfo(part.desc));
             tray.appendChild(card);
         });
     }
     function asDropZone(pid){
         if (!dragId) return;
+        if (!asmResult.started_at) asmResult.started_at = new Date().toISOString();
         if (dragId !== pid) {
-            const correct = getFirearmParts().find(part => part.id === pid);
+            const correct = getSimulationParts().find(part => part.id === pid);
+            asmResult.wrong_attempts++;
+            asmResult.mistakes.push({ partId: dragId, expectedPid: pid, zonePid: pid, timeMs: Date.now() });
+            asmResult.part_attempts[dragId] = (asmResult.part_attempts[dragId] || 0) + 1;
             asToast('Wrong spot! That slot is for the ' + correct.name, 'err');
             return;
         }
         placed[pid] = true;
+        asmResult.part_attempts[pid] = (asmResult.part_attempts[pid] || 0) + 1;
+        asmResult.parts_order.push(pid);
         dragId = null;
         render();
         prog();
         pulseStage();
-        asToast(getFirearmParts().find(part => part.id === pid).name + ' installed', 'ok');
+        asToast(getSimulationParts().find(part => part.id === pid).name + ' installed', 'ok');
         checkDone();
     }
-    window.asDropTray = function (e){
-        e.preventDefault();
-        const tray = $('as-tray'); if (tray) tray.classList.remove('over');
-        if (!dragId) return;
-        if (mode === 'dis' && placed[dragId]) {
-            const partName = getFirearmParts().find(part => part.id === dragId)?.name || 'Part';
-            placed[dragId] = false;
-            render();
-            prog();
-            asToast(partName + ' removed', 'ok');
-            dragId = null;
-        }
-    };
     function checkDone(){
-        const parts = getFirearmParts();
+        const parts = getSimulationParts();
         if (Object.keys(placed).length === parts.length && parts.length > 0) {
             const stage = $('as-stage'); if (stage) stage.classList.add('done');
-            asToast('Pistol fully assembled!', 'ok');
+            asmResult.completed_at = new Date().toISOString();
+            asToast(mode === 'asm' ? 'All parts assembled!' : 'All parts removed!', 'ok');
+            setTimeout(submitAssemblyResult, 800);
         }
     }
     function prog(){
         const n = Object.values(placed).filter(Boolean).length;
-        const t = getFirearmParts().length;
+        const t = getSimulationParts().length;
         const f = $('as-pfill'); if (f) f.style.width = (t > 0 ? (n / t * 100) : 0) + '%';
         const tx = $('as-ptxt'); if (tx) tx.textContent = n + ' / ' + t;
     }
+
+    function submitAssemblyResult() {
+        if (asmResult.submitted) return;
+        const parts = getSimulationParts();
+        const total = parts.length;
+        const base = 100 / total;
+        const penalty = base * 0.5;
+        let totalScore = 0;
+        parts.forEach(function(p) {
+            const att = asmResult.part_attempts[p.id] || 0;
+            const wrong = Math.max(0, att - 1);
+            let ps = base - (wrong * penalty);
+            if (ps < 0) ps = 0;
+            totalScore += ps;
+        });
+        totalScore = Math.round(totalScore * 100) / 100;
+        if (totalScore < 0) totalScore = 0;
+        asmResult.score = totalScore;
+        asmResult.passed = (totalScore >= 100);
+        asmResult.submitted = true;
+
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
+        fetch('{{ route("student.assembly.save-score") }}', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json','X-CSRF-TOKEN': csrf},
+            body: JSON.stringify({
+                simulation_slug: asmResult.simulation_slug,
+                mode: asmResult.mode,
+                score: totalScore,
+                max_score: 100,
+                wrong_attempts: asmResult.wrong_attempts,
+                passed: asmResult.passed,
+                metadata: {
+                    started_at: asmResult.started_at,
+                    completed_at: asmResult.completed_at,
+                    part_attempts: asmResult.part_attempts,
+                    mistakes: asmResult.mistakes,
+                    parts_order: asmResult.parts_order,
+                    total_parts: total,
+                }
+            })
+        }).then(function(r){ return r.json(); }).then(function(d){
+            showResultOverlay();
+        }).catch(function(){});
+    }
+
+    function showResultOverlay() {
+        const overlay = $('as-result-overlay');
+        if (!overlay) return;
+        const icon = $('as-result-icon');
+        const check = $('as-result-check');
+        const cross = $('as-result-cross');
+        const title = $('as-result-title');
+        const scoreEl = $('as-result-score');
+        const details = $('as-result-details');
+
+        if (asmResult.passed) {
+            icon.className = 'as-result-icon pass';
+            if (check) check.style.display = 'inline';
+            if (cross) cross.style.display = 'none';
+            title.textContent = 'Perfect ' + (asmResult.mode === 'asm' ? 'Assembly' : 'Disassembly') + '!';
+        } else {
+            icon.className = 'as-result-icon fail';
+            if (check) check.style.display = 'none';
+            if (cross) cross.style.display = 'inline';
+            title.textContent = (asmResult.mode === 'asm' ? 'Assembly' : 'Disassembly') + ' Complete';
+        }
+        scoreEl.textContent = asmResult.score + ' / ' + asmResult.max_score;
+        var det = '';
+        det += 'Wrong attempts: ' + asmResult.wrong_attempts + '<br>';
+        det += 'Parts: ' + Object.keys(asmResult.part_attempts).length + ' / ' + getSimulationParts().length;
+        if (asmResult.wrong_attempts === 0) det += '<br><strong style="color:#059669">Correct order &mdash; No mistakes!</strong>';
+        details.innerHTML = det;
+
+        overlay.classList.add('open');
+    }
+
+    function asHandleDragStart(e) {
+        var target = e.target.closest('.as-pcard, .as-layer');
+        if (!target) return;
+        dragId = target.dataset.pid;
+        if (!dragId) return;
+        e.dataTransfer.effectAllowed = 'move';
+        target.classList.add('ghost');
+    }
+    function asHandleDragEnd(e) {
+        var target = e.target.closest('.as-pcard, .as-layer');
+        if (target) target.classList.remove('ghost');
+        dragId = null;
+    }
+    function asHandleDragOver(e) {
+        var zone = e.target.closest('.as-dzone, #as-tray');
+        if (zone) { e.preventDefault(); zone.classList.add('over'); }
+    }
+    function asHandleDragLeave(e) {
+        var zone = e.target.closest('.as-dzone, #as-tray');
+        if (zone) zone.classList.remove('over');
+    }
+    function asHandleDrop(e) {
+        e.preventDefault();
+        var zone = e.target.closest('.as-dzone');
+        var tray = e.target.closest('#as-tray');
+        if (zone) {
+            zone.classList.remove('over');
+            if (dragId) asDropZone(zone.dataset.pid);
+        } else if (tray) {
+            tray.classList.remove('over');
+            if (dragId && mode === 'dis' && placed[dragId]) {
+                if (!asmResult.started_at) asmResult.started_at = new Date().toISOString();
+                var partName = getSimulationParts().find(function(p) { return p.id === dragId; })?.name || 'Part';
+                placed[dragId] = false;
+                asmResult.part_attempts[dragId] = (asmResult.part_attempts[dragId] || 0) + 1;
+                asmResult.parts_order.push(dragId);
+                render();
+                prog();
+                asToast(partName + ' removed', 'ok');
+                dragId = null;
+                checkDone();
+            }
+        }
+    }
+    function asHandleMouseEnter(e) {
+        var target = e.target.closest('.as-pcard, .as-dzone');
+        if (target) {
+            var pid = target.dataset.pid;
+            if (pid) {
+                var part = getSimulationParts().find(function(p) { return p.id === pid; });
+                if (part) setInfo(part.desc);
+            }
+        }
+    }
+
+    var simRoot = scope.querySelector('.assembly-simulator') || scope;
+    simRoot.addEventListener('dragstart', asHandleDragStart);
+    simRoot.addEventListener('dragend', asHandleDragEnd);
+    simRoot.addEventListener('dragover', asHandleDragOver);
+    simRoot.addEventListener('dragleave', asHandleDragLeave);
+    simRoot.addEventListener('drop', asHandleDrop);
+    simRoot.addEventListener('mouseenter', asHandleMouseEnter, true);
+
     const ba = $('as-btn-asm'); if (ba) ba.addEventListener('click', () => setMode('asm'));
     const bd = $('as-btn-dis'); if (bd) bd.addEventListener('click', () => setMode('dis'));
-    const br = $('as-btn-reset'); if (br) br.addEventListener('click', () => reset());
-    const tray = $('as-tray');
-    if (tray) {
-        tray.addEventListener('dragover', e => { e.preventDefault(); tray.classList.add('over'); });
-        tray.addEventListener('dragleave', () => tray.classList.remove('over'));
-        tray.addEventListener('drop', window.asDropTray);
-    }
+    const br = $('as-btn-reset'); if (br) br.addEventListener('click', () => { const ov = $('as-result-overlay'); if (ov) ov.classList.remove('open'); resetAsmResult(); reset(); });
+    const rc = $('as-result-close'); if (rc) rc.addEventListener('click', function(){ const ov = $('as-result-overlay'); if (ov) ov.classList.remove('open'); });
     updateMenuSummary();
+    resetAsmResult();
     render();
     prog();
 })();

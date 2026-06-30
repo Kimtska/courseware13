@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Firearm;
+use App\Models\AssessmentSimulation;
 use App\Models\GunPart;
 use Illuminate\Database\Seeder;
 
@@ -10,7 +10,7 @@ class GunPartSeeder extends Seeder
 {
     public function run(): void
     {
-        $firearm = Firearm::where('slug', '9mm')->first();
+        $firearm = AssessmentSimulation::where('slug', '9mm')->first();
         if (!$firearm) return;
 
         $parts = [
@@ -57,7 +57,7 @@ class GunPartSeeder extends Seeder
         ];
 
         foreach ($parts as $data) {
-            $data['firearm_id'] = $firearm->id;
+            $data['assessment_simulation_id'] = $firearm->id;
             GunPart::create($data);
         }
     }

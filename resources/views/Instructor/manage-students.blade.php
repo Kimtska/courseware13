@@ -114,7 +114,7 @@
                                     $dateAdded = $student->created_at ?? null;
                                     $isStudentActive = ($student->status ?? 'active') === 'active';
                                     $progress = $student->current_progress;
-                                    $currentModule = $progress['module_key'] ?? $student->latestTrainingSession?->module_key;
+                                    $currentModule = $progress['module_key'] ?? $student->latestModule?->module_key;
                                     $currentLesson = $progress['lesson_key'] ?? null;
                                     $currentPage = $progress['page_index'] ?? null;
                                     $totalPages = $progress['total_pages'] ?? null;
@@ -126,7 +126,7 @@
                                                 $progressLabel .= ' (Page ' . $currentPage . ($totalPages ? ' of ' . $totalPages : '') . ')';
                                             }
                                         }
-                                    } elseif ($student->trainingSessions()->where('status', 'completed')->exists()) {
+                                    } elseif ($student->modules()->where('status', 'completed')->exists()) {
                                         $progressLabel = 'All modules completed';
                                     } else {
                                         $progressLabel = 'No progress yet';
@@ -209,7 +209,7 @@
                                     $sec = $student->section ?? '—';
                                     $moved = $student->archived_at;
                                     $progress = $student->current_progress;
-                                    $currentModule = $progress['module_key'] ?? $student->latestTrainingSession?->module_key;
+                                    $currentModule = $progress['module_key'] ?? $student->latestModule?->module_key;
                                     $currentLesson = $progress['lesson_key'] ?? null;
                                     $currentPage = $progress['page_index'] ?? null;
                                     $totalPages = $progress['total_pages'] ?? null;

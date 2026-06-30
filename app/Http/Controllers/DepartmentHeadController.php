@@ -65,7 +65,7 @@ class DepartmentHeadController extends Controller
                 'archived_at' => now(),
             ]);
 
-        $students = ManagedStudent::with('latestTrainingSession')
+        $students = ManagedStudent::with('latestModule')
             ->active()
             ->when($search, fn ($query) => $query->where(function ($nested) use ($search) {
                 $nested->where('student_id_number', 'like', '%' . $search . '%')

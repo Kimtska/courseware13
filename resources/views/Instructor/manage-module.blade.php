@@ -18,6 +18,8 @@
         .presentation-content{display:flex;flex-direction:column;justify-content:flex-start;gap:1rem;min-height:0;flex:1;overflow:hidden;position:relative}
         .presentation-content .layer-delete-zone,
         .presentation-content .layer-handle{display:none!important}
+        section.presentation-page[data-lesson="result"]{overflow:hidden auto!important}
+        section.presentation-page[data-lesson="result"] .presentation-content{overflow:hidden auto!important}
         .presentation-kicker{font-size:11px;letter-spacing:.28em;text-transform:uppercase;font-weight:800;color:#7c3aed}
         .presentation-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
         .presentation-btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:14px;border:1px solid #ddd6fe;background:#fff;padding:12px 16px;font-size:14px;font-weight:800;color:#6d28d9;transition:all .2s}

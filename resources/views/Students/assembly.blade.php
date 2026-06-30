@@ -88,6 +88,8 @@ body.simulation-locked{overflow:hidden}
 .toast.show{opacity:1}
 .ok{background:#7c3aed;color:#fff}
 .err{background:#ef4444;color:#fff}
+.result-icon-pass{background:#d1fae5;color:#059669}
+.result-icon-fail{background:#fef2f2;color:#dc2626}
 
 *{scrollbar-width:thin;scrollbar-color:#7c3aed #ddd6fe}
 *::-webkit-scrollbar{width:10px;height:10px}
@@ -159,7 +161,7 @@ body.simulation-locked{overflow:hidden}
 
   <div class="session-strip">
     <div class="session-pill" id="session-time-pill">Time: 30s</div>
-    <div class="session-pill" id="session-firearm-pill">Firearm: 9mm Pistol</div>
+    <div class="session-pill" id="session-simulation-pill">Simulation: 9mm Pistol</div>
   </div>
 
   <div class="mode-row">
@@ -178,7 +180,7 @@ body.simulation-locked{overflow:hidden}
   <div class="layout">
     <div class="tray-wrap">
       <div class="tray-lbl">Parts Tray</div>
-      <div class="tray" id="tray" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="dropTray(event)"></div>
+      <div class="tray" id="tray"></div>
     </div>
 
     <div class="canvas-wrap">
@@ -192,9 +194,21 @@ body.simulation-locked{overflow:hidden}
 
 <div class="toast" id="toast"></div>
 
+<div id="result-overlay" style="position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.4);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:16px">
+    <div style="background:#fff;border-radius:20px;padding:32px;max-width:400px;width:100%;text-align:center;box-shadow:0 30px 70px -20px rgba(0,0,0,.35)">
+        <div id="result-icon" style="width:64px;height:64px;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:28px"></div>
+        <h3 id="result-title" style="font-size:20px;font-weight:800;color:#111827;margin-bottom:8px">Complete!</h3>
+        <div id="result-score" style="font-size:32px;font-weight:800;color:#7c3aed;margin-bottom:12px">0 / 100</div>
+        <div id="result-details" style="font-size:13px;color:#6b7280;line-height:1.6;margin-bottom:20px"></div>
+        <div style="display:flex;gap:8px;justify-content:center">
+            <button id="result-close" style="padding:10px 24px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:none;background:#7c3aed;color:#fff;transition:all .15s">Close</button>
+        </div>
+    </div>
+</div>
+
 @php
-    $asFirearmsData = [];
-    foreach ($firearms as $asF) {
+    $asSimulationsData = [];
+    foreach ($simulations as $asF) {
         $asPartsData = [];
         foreach ($asF->parts as $asP) {
             $asPartsData[] = [
@@ -214,7 +228,7 @@ body.simulation-locked{overflow:hidden}
                 ],
             ];
         }
-        $asFirearmsData[$asF->slug] = [
+        $asSimulationsData[$asF->slug] = [
             'label' => $asF->name,
             'parts' => $asPartsData,
         ];
@@ -222,21 +236,21 @@ body.simulation-locked{overflow:hidden}
 @endphp
 
 <script>
-const FIREARMS_DATA = @json($asFirearmsData);
+const SIMULATIONS_DATA = @json($asSimulationsData);
 
-function getFirearmParts() {
-    return FIREARMS_DATA[selectedFirearm]?.parts || [];
+function getSimulationParts() {
+    return SIMULATIONS_DATA[selectedSimulation]?.parts || [];
 }
 
-function getFirearmLabel() {
-    return FIREARMS_DATA[selectedFirearm]?.label || '9mm Pistol';
+function getSimulationLabel() {
+    return SIMULATIONS_DATA[selectedSimulation]?.label || '9mm Pistol';
 }
 
-function getFirearmImg(part) {
+function getSimulationImg(part) {
     return part.img || '';
 }
 
-function getFirearmGlow(part) {
+function getSimulationGlow(part) {
     return part.glow || part.img || '';
 }
 
@@ -244,18 +258,47 @@ let mode = 'asm';
 let placed = {};
 let dragId = null;
 let selectedTimeLimit = 30;
-let selectedFirearm = '9mm';
+let selectedSimulation = '9mm';
 let simulationStarted = false;
+
+let asmResult = {
+    mode: 'asm',
+    simulation_slug: '9mm',
+    started_at: null,
+    completed_at: null,
+    wrong_attempts: 0,
+    part_attempts: {},
+    mistakes: [],
+    parts_order: [],
+    score: 0,
+    max_score: 100,
+    passed: false,
+    submitted: false
+};
+
+function resetAsmResult() {
+    asmResult.mode = mode;
+    asmResult.simulation_slug = selectedSimulation;
+    asmResult.started_at = null;
+    asmResult.completed_at = null;
+    asmResult.wrong_attempts = 0;
+    asmResult.part_attempts = {};
+    asmResult.mistakes = [];
+    asmResult.parts_order = [];
+    asmResult.score = 0;
+    asmResult.passed = false;
+    asmResult.submitted = false;
+}
 
 function setInfo(html){ document.getElementById('info').innerHTML = html; }
 
 function updateMenuSummary(){
   const timeText = selectedTimeLimit + 's';
-  const firearmText = getFirearmLabel();
+  const simulationText = getSimulationLabel();
   document.getElementById('menu-summary-time').textContent = timeText;
-  document.getElementById('menu-summary-firearm').textContent = firearmText;
+  document.getElementById('menu-summary-simulation').textContent = simulationText;
   document.getElementById('session-time-pill').textContent = 'Time: ' + timeText;
-  document.getElementById('session-firearm-pill').textContent = 'Firearm: ' + firearmText;
+  document.getElementById('session-simulation-pill').textContent = 'Simulation: ' + simulationText;
 }
 
 function selectTime(time, element){
@@ -272,9 +315,9 @@ function selectCustomAssemblyTime(element){
   selectTime(customValue, element);
 }
 
-function selectFirearm(firearm, element){
-  selectedFirearm = firearm;
-  document.querySelectorAll('[data-firearm]').forEach(el => el.classList.remove('active'));
+function selectSimulation(slug, element){
+  selectedSimulation = slug;
+  document.querySelectorAll('[data-simulation]').forEach(el => el.classList.remove('active'));
   element.classList.add('active');
   reset();
   updateMenuSummary();
@@ -282,13 +325,14 @@ function selectFirearm(firearm, element){
 
 function startSimulation(){
   simulationStarted = true;
+  asmResult.started_at = new Date().toISOString();
   document.body.classList.remove('simulation-locked');
   setInfo('Drag each part from the tray onto the pistol to assemble it layer by layer.');
-  toast('Simulation started: ' + getFirearmLabel() + ' · ' + selectedTimeLimit + 's', 'ok');
+  toast('Simulation started: ' + getSimulationLabel() + ' · ' + selectedTimeLimit + 's', 'ok');
 }
 
 function getNextPart(){
-  return getFirearmParts().find(part => !placed[part.id]) || null;
+  return getSimulationParts().find(part => !placed[part.id]) || null;
 }
 
 function pulseStage(){
@@ -311,9 +355,11 @@ function setMode(nextMode){
   document.getElementById('btn-asm').classList.toggle('on', nextMode === 'asm');
   document.getElementById('btn-dis').classList.toggle('on', nextMode === 'dis');
   document.getElementById('badge').textContent = nextMode === 'asm' ? 'ASSEMBLY MODE' : 'DISASSEMBLY MODE';
+  document.getElementById('result-overlay').style.display = 'none';
+  resetAsmResult();
   reset();
   if(nextMode === 'dis'){
-    getFirearmParts().forEach(part => placed[part.id] = true);
+    getSimulationParts().forEach(part => placed[part.id] = true);
     render();
     setInfo('Drag each part off the pistol back to the tray to disassemble it.');
   }
@@ -326,6 +372,7 @@ function reset(){
   prog();
   setInfo('Drag each part from the tray onto the pistol to assemble it layer by layer.');
   document.getElementById('stage').classList.remove('done');
+  document.getElementById('result-overlay').style.display = 'none';
 }
 
 function render(){
@@ -337,15 +384,15 @@ function render(){
 function renderLayers(){
   document.querySelectorAll('.layer').forEach(node => node.remove());
   const stage = document.getElementById('stage');
-  [...getFirearmParts()].sort((a,b) => a.zOrder - b.zOrder).forEach(part => {
+  [...getSimulationParts()].sort((a,b) => a.zOrder - b.zOrder).forEach(part => {
     if(!placed[part.id]) return;
     const layer = document.createElement('div');
     layer.className = 'layer';
-    layer.id = 'layer-' + part.id;
+    layer.dataset.pid = part.id;
     layer.style.zIndex = part.zOrder + 1;
 
     const img = document.createElement('img');
-    img.src = getFirearmImg(part);
+    img.src = getSimulationImg(part);
     img.alt = part.name;
     img.style.cssText = 'opacity:1;filter:drop-shadow(0 10px 16px rgba(0,0,0,.28))';
     layer.appendChild(img);
@@ -354,9 +401,6 @@ function renderLayers(){
       layer.style.cursor = 'grab';
       layer.style.pointerEvents = 'auto';
       layer.setAttribute('draggable', 'true');
-      layer.addEventListener('dragstart', e => { dragId = part.id; e.dataTransfer.effectAllowed = 'move'; layer.style.opacity = '.3'; });
-      layer.addEventListener('dragend', () => { layer.style.opacity = '1'; dragId = null; });
-      layer.addEventListener('mouseenter', () => setInfo(part.desc));
     }
 
     stage.appendChild(layer);
@@ -369,11 +413,12 @@ function renderZones(){
   const nextPart = getNextPart();
   const stage = document.getElementById('stage');
   document.querySelectorAll('.guide-layer').forEach(n => n.remove());
-  getFirearmParts().forEach(part => {
+  getSimulationParts().forEach(part => {
     if(placed[part.id]) return;
     const z = part.zone;
     const zone = document.createElement('div');
     zone.className = 'dzone empty';
+    zone.dataset.pid = part.id;
     if(nextPart && nextPart.id === part.id){
       zone.classList.add('next');
       const guideLayer = document.createElement('div');
@@ -382,7 +427,7 @@ function renderZones(){
       guideLayer.style.zIndex = part.zOrder;
 
       const guideImg = document.createElement('img');
-      guideImg.src = getFirearmGlow(part);
+      guideImg.src = getSimulationGlow(part);
       guideImg.alt = part.name + ' guide';
       guideImg.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 10px 16px rgba(34,197,94,.45))';
 
@@ -397,10 +442,6 @@ function renderZones(){
     hint.className = 'hint';
     hint.textContent = part.name;
     zone.appendChild(hint);
-    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('over'); });
-    zone.addEventListener('dragleave', () => zone.classList.remove('over'));
-    zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('over'); dropZone(part.id); });
-    zone.addEventListener('mouseenter', () => setInfo(part.desc));
     stage.appendChild(zone);
   });
 }
@@ -408,7 +449,7 @@ function renderZones(){
 function renderTray(){
   const tray = document.getElementById('tray');
   tray.innerHTML = '';
-  const items = getFirearmParts().filter(part => mode === 'asm' ? !placed[part.id] : placed[part.id]);
+  const items = getSimulationParts().filter(part => mode === 'asm' ? !placed[part.id] : placed[part.id]);
   if(!items.length){
     tray.innerHTML = `<div style="font-size:11px;color:#555;padding:20px;text-align:center">${mode === 'asm' ? 'All parts assembled!' : 'All parts removed!'}</div>`;
     return;
@@ -420,7 +461,7 @@ function renderTray(){
     card.setAttribute('draggable', 'true');
 
     const img = document.createElement('img');
-    img.src = getFirearmImg(part);
+    img.src = getSimulationImg(part);
     img.alt = part.name;
     img.style.cssText = 'filter:drop-shadow(0 8px 12px rgba(0,0,0,.12))';
 
@@ -430,9 +471,6 @@ function renderTray(){
 
     card.appendChild(img);
     card.appendChild(label);
-    card.addEventListener('dragstart', e => { dragId = part.id; e.dataTransfer.effectAllowed = 'move'; card.classList.add('ghost'); });
-    card.addEventListener('dragend', () => { card.classList.remove('ghost'); dragId = null; });
-    card.addEventListener('mouseenter', () => setInfo(part.desc));
     tray.appendChild(card);
   });
 }
@@ -440,56 +478,181 @@ function renderTray(){
 function dropZone(pid){
   if(!simulationStarted) return;
   if(!dragId) return;
+  if (!asmResult.started_at) asmResult.started_at = new Date().toISOString();
   if(dragId !== pid){
-    const correct = getFirearmParts().find(part => part.id === pid);
+    const correct = getSimulationParts().find(part => part.id === pid);
+    asmResult.wrong_attempts++;
+    asmResult.mistakes.push({ partId: dragId, expectedPid: pid, zonePid: pid, timeMs: Date.now() });
+    asmResult.part_attempts[dragId] = (asmResult.part_attempts[dragId] || 0) + 1;
     toast('Wrong spot! That slot is for the ' + correct.name, 'err');
     return;
   }
   placed[pid] = true;
+  asmResult.part_attempts[pid] = (asmResult.part_attempts[pid] || 0) + 1;
+  asmResult.parts_order.push(pid);
   dragId = null;
   render();
   prog();
   pulseStage();
-  toast(getFirearmParts().find(part => part.id === pid).name + ' installed', 'ok');
+  toast(getSimulationParts().find(part => part.id === pid).name + ' installed', 'ok');
   checkDone();
 }
 
-function dropTray(e){
-  e.preventDefault();
-  document.getElementById('tray').classList.remove('over');
-  if(!simulationStarted) return;
-  if(!dragId) return;
-  if(mode === 'dis' && placed[dragId]){
-    const partName = getFirearmParts().find(part => part.id === dragId)?.name || 'Part';
-    placed[dragId] = false;
-    render();
-    prog();
-    toast(partName + ' removed', 'ok');
-    dragId = null;
-  }
-}
-
 function checkDone(){
-  const parts = getFirearmParts();
+  const parts = getSimulationParts();
   if(Object.keys(placed).length === parts.length && parts.length > 0){
     document.getElementById('stage').classList.add('done');
-    toast('Pistol fully assembled!', 'ok');
+    asmResult.completed_at = new Date().toISOString();
+    toast(mode === 'asm' ? 'All parts assembled!' : 'All parts removed!', 'ok');
+    setTimeout(submitAssemblyResult, 800);
   }
 }
 
 function prog(){
   const n = Object.values(placed).filter(Boolean).length;
-  const t = getFirearmParts().length;
+  const t = getSimulationParts().length;
   document.getElementById('pfill').style.width = (t > 0 ? (n / t * 100) : 0) + '%';
   document.getElementById('ptxt').textContent = n + ' / ' + t;
 }
 
+function submitAssemblyResult() {
+    if (asmResult.submitted) return;
+    const parts = getSimulationParts();
+    const total = parts.length;
+    const base = 100 / total;
+    const penalty = base * 0.5;
+    let totalScore = 0;
+    parts.forEach(function(p) {
+        const att = asmResult.part_attempts[p.id] || 0;
+        const wrong = Math.max(0, att - 1);
+        let ps = base - (wrong * penalty);
+        if (ps < 0) ps = 0;
+        totalScore += ps;
+    });
+    totalScore = Math.round(totalScore * 100) / 100;
+    if (totalScore < 0) totalScore = 0;
+    asmResult.score = totalScore;
+    asmResult.passed = (totalScore >= 100);
+    asmResult.submitted = true;
+
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
+    fetch('{{ route("student.assembly.save-score") }}', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','X-CSRF-TOKEN': csrf},
+        body: JSON.stringify({
+            simulation_slug: asmResult.simulation_slug,
+            mode: asmResult.mode,
+            score: totalScore,
+            max_score: 100,
+            wrong_attempts: asmResult.wrong_attempts,
+            passed: asmResult.passed,
+            metadata: {
+                started_at: asmResult.started_at,
+                completed_at: asmResult.completed_at,
+                part_attempts: asmResult.part_attempts,
+                mistakes: asmResult.mistakes,
+                parts_order: asmResult.parts_order,
+                total_parts: total,
+            }
+        })
+    }).then(function(r){ return r.json(); }).then(function(d){
+        showResultOverlay();
+    }).catch(function(){});
+}
+
+function showResultOverlay() {
+    const overlay = document.getElementById('result-overlay');
+    if (!overlay) return;
+    const icon = document.getElementById('result-icon');
+    const title = document.getElementById('result-title');
+    const scoreEl = document.getElementById('result-score');
+    const details = document.getElementById('result-details');
+
+    if (asmResult.passed) {
+        icon.className = 'result-icon-pass';
+        icon.innerHTML = '<i class="fas fa-check"></i>';
+        title.textContent = 'Perfect ' + (asmResult.mode === 'asm' ? 'Assembly' : 'Disassembly') + '!';
+    } else {
+        icon.className = 'result-icon-fail';
+        icon.innerHTML = '<i class="fas fa-xmark"></i>';
+        title.textContent = (asmResult.mode === 'asm' ? 'Assembly' : 'Disassembly') + ' Complete';
+    }
+    scoreEl.textContent = asmResult.score + ' / ' + asmResult.max_score;
+    var det = '';
+    det += 'Wrong attempts: ' + asmResult.wrong_attempts + '<br>';
+    det += 'Parts: ' + Object.keys(asmResult.part_attempts).length + ' / ' + getSimulationParts().length;
+    if (asmResult.wrong_attempts === 0) det += '<br><strong style="color:#059669">Correct order &mdash; No mistakes!</strong>';
+    details.innerHTML = det;
+
+    overlay.style.display = 'flex';
+}
+
+function abHandleDragStart(e) {
+  var target = e.target.closest('.pcard, .layer');
+  if (!target) return;
+  dragId = target.dataset.pid;
+  if (!dragId) return;
+  e.dataTransfer.effectAllowed = 'move';
+  target.classList.add('ghost');
+}
+function abHandleDragEnd(e) {
+  var target = e.target.closest('.pcard, .layer');
+  if (target) target.classList.remove('ghost');
+  dragId = null;
+}
+function abHandleDragOver(e) {
+  var zone = e.target.closest('.dzone, #tray');
+  if (zone) { e.preventDefault(); zone.classList.add('over'); }
+}
+function abHandleDragLeave(e) {
+  var zone = e.target.closest('.dzone, #tray');
+  if (zone) zone.classList.remove('over');
+}
+function abHandleDrop(e) {
+  e.preventDefault();
+  var zone = e.target.closest('.dzone');
+  var tray = e.target.closest('#tray');
+  if (zone) {
+    zone.classList.remove('over');
+    if (simulationStarted && dragId) dropZone(zone.dataset.pid);
+  } else if (tray) {
+    tray.classList.remove('over');
+    if (simulationStarted && dragId && mode === 'dis' && placed[dragId]) {
+      if (!asmResult.started_at) asmResult.started_at = new Date().toISOString();
+      var partName = getSimulationParts().find(function(p) { return p.id === dragId; })?.name || 'Part';
+      placed[dragId] = false;
+      asmResult.part_attempts[dragId] = (asmResult.part_attempts[dragId] || 0) + 1;
+      asmResult.parts_order.push(dragId);
+      render();
+      prog();
+      toast(partName + ' removed', 'ok');
+      dragId = null;
+      checkDone();
+    }
+  }
+}
+function abHandleMouseEnter(e) {
+  var target = e.target.closest('.pcard, .dzone');
+  if (target) {
+    var pid = target.dataset.pid;
+    if (pid) {
+      var part = getSimulationParts().find(function(p) { return p.id === pid; });
+      if (part) setInfo(part.desc);
+    }
+  }
+}
+
+document.addEventListener('dragstart', abHandleDragStart);
+document.addEventListener('dragend', abHandleDragEnd);
+document.addEventListener('dragover', abHandleDragOver);
+document.addEventListener('dragleave', abHandleDragLeave);
+document.addEventListener('drop', abHandleDrop);
+document.addEventListener('mouseenter', abHandleMouseEnter, true);
+
 document.getElementById('btn-asm').addEventListener('click', () => setMode('asm'));
 document.getElementById('btn-dis').addEventListener('click', () => setMode('dis'));
-document.getElementById('btn-reset').addEventListener('click', () => reset());
-document.getElementById('tray').addEventListener('dragover', e => { e.preventDefault(); document.getElementById('tray').classList.add('over'); });
-document.getElementById('tray').addEventListener('dragleave', () => document.getElementById('tray').classList.remove('over'));
-document.getElementById('tray').addEventListener('drop', dropTray);
+document.getElementById('btn-reset').addEventListener('click', () => { document.getElementById('result-overlay').style.display = 'none'; resetAsmResult(); reset(); });
+document.getElementById('result-close').addEventListener('click', () => document.getElementById('result-overlay').style.display = 'none');
 document.getElementById('mobile-toggle')?.addEventListener('click', () => document.getElementById('mobile-menu')?.classList.toggle('open'));
 document.getElementById('assembly-range-custom-time')?.addEventListener('input', function () {
   const customValue = Math.max(5, parseInt(this.value || '30', 10) || 30);
