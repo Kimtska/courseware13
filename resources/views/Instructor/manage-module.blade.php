@@ -1,7 +1,7 @@
 @extends('Instructor.layout')
 
 @section('title', 'Manage Lessons')
-@section('pageTitle', 'Manage Lessons')
+@section('pageTitle', 'List of Modules')
 @section('pageSubtitle', 'Training modules available for instructor-led sessions')
 
 @section('content')
@@ -27,6 +27,7 @@
         .presentation-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
         .presentation-page-counter{font-size:13px;font-weight:700;color:#6d28d9}
         .presentation-wrapper{display:flex;gap:24px;align-items:flex-start;width:100%}
+        .presentation-wrapper .presentation-shell{flex:1;min-width:0}
         @media(max-width:1023px){.presentation-wrapper{flex-direction:column;gap:16px}}
         .cp-sidebar{flex:0 0 380px;position:relative;padding:20px 0 20px 18px;display:flex;flex-direction:column;gap:24px;overflow:hidden;border-radius:16px}
         @media(max-width:1023px){.cp-sidebar{flex:1 1 auto;width:100%;padding:20px 0 20px 36px;margin-bottom:0;gap:16px}}
@@ -377,7 +378,7 @@
             function rowHtml(r) {
                 const page = Math.max(1, (parseInt(r.current_page, 10) || 0) + 1);
                 const last = escapeHtml(relativeTime(r.last_active_at));
-                const meta = r.section || '—';
+                const meta = (r.section || '—').split(' / ').pop();
                 const idle = Math.max(0, Math.floor(Date.now() / 1000) - r.last_active_at);
                 const statusKey = idle > 15 ? 'idle' : 'active';
                 const statusPill = statusKey === 'idle'

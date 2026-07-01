@@ -1,7 +1,7 @@
 @extends('Instructor.layout')
 
 @section('title', 'Manage Students')
-@section('pageTitle', 'Manage Students')
+@section('pageTitle', 'List of Students')
 @section('pageSubtitle', 'Import and manage verified student records')
 @section('headerActions')
     <div class="ml-auto flex items-center gap-3">

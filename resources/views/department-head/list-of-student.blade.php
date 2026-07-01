@@ -87,7 +87,7 @@
             @endif
 
             <section class="glass-card rounded-3xl p-5 sm:p-6 mb-6">
-                <form method="GET" action="{{ route('department-head.manage-students') }}" id="filter-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <form method="GET" action="{{ route('department-head.manage-students') }}" id="filter-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div class="relative">
                         <label class="block text-[10px] font-bold uppercase tracking-[0.28em] text-gray-500 mb-2">Live Search</label>
                         <input type="text" name="q" value="{{ $filters['q'] ?? '' }}" id="search-input" placeholder="Search student ID or full name" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-violet-100 focus:border-violet-400 text-sm">
@@ -102,11 +102,10 @@
                             @endforeach
                         </select>
                     </div>
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase tracking-[0.28em] text-gray-500 mb-2">&nbsp;</label>
-                        <button type="submit" class="w-full px-4 py-3 rounded-xl bg-violet-700 text-white text-xs font-bold hover:bg-violet-800 transition-colors">
-                            <i class="fas fa-filter mr-1"></i> Apply Filters
-                        </button>
+                    <div class="flex items-end">
+                        <a href="{{ route('department-head.manage-students') }}" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-600 text-sm font-bold hover:bg-gray-50 transition-colors text-center">
+                            <i class="fas fa-rotate-left mr-1"></i> Clear
+                        </a>
                     </div>
                 </form>
             </section>

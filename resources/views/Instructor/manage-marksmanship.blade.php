@@ -53,7 +53,7 @@
             <div class="px-5 sm:px-6 py-4 border-b border-gray-100 flex flex-col gap-3">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                     <div>
-                        <h2 class="font-display font-bold text-xl text-gray-900">Ready to Proceed</h2>
+                        <h2 class="font-display font-bold text-xl text-gray-900">Student Performance Information</h2>
                         <p class="text-sm text-gray-500">Review students who have completed the presentation before sending them to the firing range.</p>
                     </div>
                     <div class="flex flex-wrap gap-2 text-xs">
@@ -71,7 +71,7 @@
                             <th class="px-5 sm:px-6 py-4 font-semibold">Student ID</th>
                             <th class="px-5 sm:px-6 py-4 font-semibold">Full Name</th>
                             <th class="px-5 sm:px-6 py-4 font-semibold">Section</th>
-                            <th class="px-5 sm:px-6 py-4 font-semibold">Status</th>
+                            <th class="px-5 sm:px-6 py-4 font-semibold">Modules Overall Score</th>
                             <th class="px-5 sm:px-6 py-4 text-right font-semibold">Action</th>
                         </tr>
                     </thead>
@@ -88,7 +88,7 @@
                                     <div class="font-medium text-gray-900">{{ $fullName }}</div>
                                 </td>
                                 <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">{{ $section }}</td>
-                                <td class="px-5 sm:px-6 py-4"><span class="status-pill bg-emerald-100 text-emerald-700">Completed Gun Parts</span></td>
+                                <td class="px-5 sm:px-6 py-4"><span class="status-pill bg-violet-100 text-violet-700">—</span></td>
                                 <td class="px-5 sm:px-6 py-4 text-right">
                                     <a href="{{ route('instructor.manage-module.module-4') }}?weapon=9mm&time=60&mode=steady&max_shots=10&student_id={{ urlencode($studentId) }}" target="_blank" rel="noopener" data-proceed-link data-student-id="{{ $studentId }}" class="proceed-btn inline-flex items-center justify-center gap-2 rounded-lg bg-violet-700 px-4 py-2 text-xs font-bold text-white hover:bg-violet-800 transition-colors">
                                         <i class="fas fa-arrow-right"></i>
@@ -102,8 +102,8 @@
                                 <td class="px-5 sm:px-6 py-4">
                                     <div class="font-medium text-gray-900">Juan Dela Cruz</div>
                                 </td>
-                                <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">BSCRIM / 2 / A</td>
-                                <td class="px-5 sm:px-6 py-4"><span class="status-pill bg-emerald-100 text-emerald-700">Completed Gun Parts</span></td>
+                                <td class="px-5 sm:px-6 py-4 text-sm text-gray-600">A</td>
+                                <td class="px-5 sm:px-6 py-4"><span class="status-pill bg-violet-100 text-violet-700">—</span></td>
                                 <td class="px-5 sm:px-6 py-4 text-right">
                                     <a href="{{ route('instructor.manage-module.module-4') }}?weapon=9mm&time=60&mode=steady&max_shots=10&student_id=20260001" target="_blank" rel="noopener" data-proceed-link data-student-id="20260001" class="proceed-btn inline-flex items-center justify-center gap-2 rounded-lg bg-violet-700 px-4 py-2 text-xs font-bold text-white hover:bg-violet-800 transition-colors">
                                         <i class="fas fa-arrow-right"></i>

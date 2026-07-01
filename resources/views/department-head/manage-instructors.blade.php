@@ -67,7 +67,7 @@
         <header class="bg-white border-b border-gray-100 px-8 py-4 flex justify-between items-center sticky top-0 z-10">
             <div class="flex items-center gap-4">
                 <button id="sidebar-toggle" class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-500 focus:outline-none"><i class="fas fa-bars text-lg"></i></button>
-                <div><h1 class="font-display font-bold text-xl text-black">Manage Instructors</h1><p class="text-xs text-gray-400">Create faculty accounts and manage instructor records</p></div>
+                <div><h1 class="font-display font-bold text-xl text-black">List of Instructors</h1><p class="text-xs text-gray-400">Create faculty accounts and manage instructor records</p></div>
             </div>
             <div class="flex items-center gap-3">
                 <button type="button" id="open-add-instructor" class="inline-flex items-center gap-2 px-4 py-2 bg-violet-700 text-white text-xs font-bold uppercase rounded-lg hover:bg-violet-800 transition-all">
